@@ -69,6 +69,14 @@ const ProjectForm = (onSubmit) => {
     }
   };
 
+  // 썸네일 이미지 업로드 핸들러
+  const handleThumbnailUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setThumbnail(file);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       {/* 제목 입력 */}

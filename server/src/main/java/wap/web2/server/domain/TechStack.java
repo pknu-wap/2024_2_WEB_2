@@ -15,7 +15,7 @@ public class TechStack {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long techStackId;
 
-    private TechStackType techStackType;
+    private String techStackType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")

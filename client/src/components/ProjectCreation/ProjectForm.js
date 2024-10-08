@@ -77,6 +77,12 @@ const ProjectForm = (onSubmit) => {
     }
   };
 
+  // 이미지 업로드 핸들러 (배열 반복문)
+  const handleImagesUpload = (e) => {
+    const files = Array.from(e.target.files);
+    setImages(files);
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       {/* 제목 입력 */}

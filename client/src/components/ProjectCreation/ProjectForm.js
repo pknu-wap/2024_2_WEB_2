@@ -3,9 +3,9 @@ import React, { useState } from "react";
 import TechStackSelector from "./TechStackSelector";
 
 // 프로젝트 타입
-const projectTypeOptions = ["WEB", "APP", "GAME"];
+const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
 
-const ProjectForm = (onSubmit) => {
+const ProjectForm = ({ onSubmit }) => {
   // 입력 폼 요소들의 상태
   const [title, setTitle] = useState("");
   const [projectType, setProjectType] = useState("");
@@ -13,7 +13,7 @@ const ProjectForm = (onSubmit) => {
   const [summary, setSummary] = useState("");
   const [semester, setSemester] = useState(""); // 1,2
   const [projectYear, setProjectYear] = useState(""); // 선택으로... 2024~
-  const [teamMembers, setTeamMembers] = useState([""]);
+  const [teamMembers, setTeamMembers] = useState([{ name: "", image: null }]);
   const [techStacks, setTechStacks] = useState([]);
   const [thumbnail, setThumbnail] = useState(null);
   const [images, setImages] = useState([]);
@@ -22,14 +22,10 @@ const ProjectForm = (onSubmit) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
-  // 기술 스택 선택 관련 핸들러는 일단 삭제함.
-
   // 폼 제출 핸들러
   const handleSubmit = async (e) => {
-    // 새로고침 기본동작 방지
     e.preventDefault();
 
-    // 프로젝트 데이터 구성
     const projectData = {
       title,
       projectType,
@@ -37,27 +33,28 @@ const ProjectForm = (onSubmit) => {
       summary,
       semester: parseInt(semester, 10),
       projectYear: parseInt(projectYear, 10),
-      teamMember: teamMembers
-        .filter((m) => m.trim() !== "")
-        .map((name) => ({ memberName: name })), // 빈 팀원 필터링
-      techStack: techStacks.map((name) => ({ techStackName: name })), // 선택한 기술 스택
+      teamMembers: teamMembers
+        .filter((m) => m.name.trim() !== "")
+        .map((member) => ({
+          memberName: member.name,
+          memberImage: member.image,
+        })), // 팀원 이미지 추가
+      techStacks: techStacks.map((name) => ({ techStackName: name })), // 선택한 기술 스택
     };
 
     try {
       setUploading(true);
-
-      // 프로젝트 데이터, 썸네일, 이미지 파일들을 전달하여 onSubmit 호출(ProjectForm에서 props로 받음)
       await onSubmit(projectData, thumbnail, images);
       setUploading(false);
 
-      // 데이터 전송 성공 시 폼 초기화
+      // 폼 초기화
       setTitle("");
       setProjectType("");
       setContent("");
       setSummary("");
       setSemester("");
       setProjectYear("");
-      setTeamMembers([""]);
+      setTeamMembers([{ name: "", image: null }]);
       setTechStacks([]);
       setThumbnail(null);
       setImages([]);
@@ -83,8 +80,38 @@ const ProjectForm = (onSubmit) => {
     setImages(files);
   };
 
+  // 팀원 이미지 업로드 핸들러
+  const handleMemberImageUpload = (e, index) => {
+    const file = e.target.files[0];
+    if (file) {
+      const newTeamMembers = [...teamMembers];
+      newTeamMembers[index].image = file;
+      setTeamMembers(newTeamMembers);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
+      {/* 썸네일 이미지 업로드 */}
+      <div>
+        <label>썸네일 이미지 업로드:</label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleThumbnailUpload}
+          required
+        />
+        {thumbnail && (
+          <div>
+            <img
+              src={URL.createObjectURL(thumbnail)}
+              alt="Thumbnail Preview"
+              style={{ width: "150px", marginTop: "10px" }}
+            />
+          </div>
+        )}
+      </div>
+
       {/* 제목 입력 */}
       <div>
         <label>프로젝트 제목 (팀명):</label>
@@ -164,23 +191,36 @@ const ProjectForm = (onSubmit) => {
       <div>
         <label>팀원:</label>
         {teamMembers.map((member, index) => (
-          <input
-            key={index}
-            type="text"
-            placeholder="팀원"
-            value={member}
-            onChange={(e) => {
-              const newTeamMembers = [...teamMembers];
-              newTeamMembers[index] = e.target.value;
-              setTeamMembers(newTeamMembers);
-            }}
-          />
+          <div key={index}>
+            <input
+              type="text"
+              placeholder="팀원 이름"
+              value={member.name}
+              onChange={(e) => {
+                const newTeamMembers = [...teamMembers];
+                newTeamMembers[index].name = e.target.value;
+                setTeamMembers(newTeamMembers);
+              }}
+            />
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => handleMemberImageUpload(e, index)}
+            />
+            {member.image && (
+              <img
+                src={URL.createObjectURL(member.image)}
+                alt={`Member ${index + 1} Image`}
+                style={{ width: "150px", marginTop: "10px" }}
+              />
+            )}
+          </div>
         ))}
         <button
           type="button"
           onClick={() => {
-            if (teamMembers[teamMembers.length - 1].trim() !== "") {
-              setTeamMembers([...teamMembers, ""]); // Only add an empty field if the last one is filled
+            if (teamMembers[teamMembers.length - 1].name.trim() !== "") {
+              setTeamMembers([...teamMembers, { name: "", image: null }]);
             }
           }}
         >
@@ -203,25 +243,16 @@ const ProjectForm = (onSubmit) => {
         />
       </div>
 
-      {/* 썸네일 이미지 업로드 */}
-      <div>
-        <label>썸네일 이미지 업로드:</label>
-        <input type="file" accept="image/*" required />
-        {thumbnail && (
-          <div>
-            <img
-              src={URL.createObjectURL(thumbnail)}
-              alt="Thumbnail Preview"
-              style={{ width: "150px", marginTop: "10px" }}
-            />
-          </div>
-        )}
-      </div>
-
       {/* 이미지 업로드 */}
       <div>
         <label>이미지 업로드:</label>
-        <input type="file" accept="image/*" multiple required />
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={handleImagesUpload}
+          required
+        />
         {images.length > 0 && (
           <div>
             {images.map((image, index) => (

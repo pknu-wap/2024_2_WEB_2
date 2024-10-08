@@ -18,6 +18,11 @@ const ProjectForm = ({ onSubmit }) => {
   const [thumbnail, setThumbnail] = useState(null);
   const [images, setImages] = useState([]);
 
+  // 입력 필드 글자 수 제한
+  const [inputTitle, setInputTitle] = useState(0);
+  const [inputContent, setInputContent] = useState(0);
+  const [inputSummary, setInputSummary] = useState(0);
+
   // upload 관련 상태
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -90,6 +95,17 @@ const ProjectForm = ({ onSubmit }) => {
     }
   };
 
+  // 입력 필드 글자 수 제한 핸들러
+  const handleInputLimit = (e) => {
+    if (e.target.name === "title") {
+      setInputTitle(e.target.value.length);
+    } else if (e.target.name === "content") {
+      setInputContent(e.target.value.length);
+    } else if (e.target.name === "summary") {
+      setInputSummary(e.target.value.length);
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       {/* 썸네일 이미지 업로드 */}
@@ -116,12 +132,18 @@ const ProjectForm = ({ onSubmit }) => {
       <div>
         <label>프로젝트 제목 (팀명):</label>
         <input
+          name="title"
           type="text"
           placeholder="프로젝트 이름을 입력해주세요."
+          maxLength={"20"}
           value={title}
-          onChange={(e) => setTitle(e.target.value)}
+          onChange={(e) => {
+            setTitle(e.target.value);
+            handleInputLimit(e);
+          }}
           required
         />
+        <span>{inputTitle}/20</span>
       </div>
 
       {/* 프로젝트 타입 선택 */}
@@ -148,12 +170,18 @@ const ProjectForm = ({ onSubmit }) => {
       <div>
         <label>한줄 소개:</label>
         <input
+          name="summary"
           type="text"
           placeholder="프로젝트를 한줄로 소개해주세요."
           value={summary}
-          onChange={(e) => setSummary(e.target.value)}
+          maxLength={"30"}
+          onChange={(e) => {
+            setSummary(e.target.value);
+            handleInputLimit(e);
+          }}
           required
         />
+        <span>{inputSummary}/30</span>
       </div>
 
       {/* 연도 선택 */}
@@ -235,12 +263,18 @@ const ProjectForm = ({ onSubmit }) => {
       <div>
         <label>프로젝트 상세 설명:</label>
         <textarea
+          name="content"
           placeholder="프로젝트 상세 설명을 입력해주세요."
           value={content}
-          onChange={(e) => setContent(e.target.value)}
+          maxLength={"600"}
+          onChange={(e) => {
+            setContent(e.target.value);
+            handleInputLimit(e);
+          }}
           required
           rows="5"
         />
+        <span>{inputContent}/600</span>
       </div>
 
       {/* 이미지 업로드 */}

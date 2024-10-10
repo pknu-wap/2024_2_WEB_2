@@ -1,4 +1,4 @@
-package wap.web2.server.util;
+package wap.web2.server.ouath2.util;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;

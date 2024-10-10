@@ -1,7 +1,7 @@
-package wap.web2.server.security.oauth2;
+package wap.web2.server.ouath2.security.oauth2;
 
 import com.nimbusds.oauth2.sdk.util.StringUtils;
-import wap.web2.server.util.CookieUtils;
+import wap.web2.server.ouath2.util.CookieUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;

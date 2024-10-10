@@ -1,4 +1,4 @@
-package wap.web2.server.payload;
+package wap.web2.server.ouath2.payload;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

@@ -1,18 +1,14 @@
-package wap.web2.server.security;
+package wap.web2.server.ouath2.security;
 
-import wap.web2.server.config.AppProperties;
+import wap.web2.server.ouath2.config.AppProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.SignatureException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.JwtClaimsSet;
 import org.springframework.stereotype.Service;
 
-import java.time.Instant;
 import java.util.Date;
-import java.util.stream.Collectors;
 
 @Service
 public class TokenProvider {

@@ -1,17 +1,9 @@
-package wap.web2.server.security.oauth2.user;
+package wap.web2.server.ouath2.security.oauth2.user;
 
 import wap.web2.server.exception.OAuth2AuthenticationProcessingException;
-import wap.web2.server.model.AuthProvider;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
+import wap.web2.server.domain.AuthProvider;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
-import org.springframework.web.client.RestTemplate;
-import wap.web2.server.security.oauth2.user.KakaoOAuth2UserInfo;
-import wap.web2.server.security.oauth2.user.OAuth2UserInfo;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;

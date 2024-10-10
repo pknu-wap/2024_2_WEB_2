@@ -1,14 +1,14 @@
-package wap.web2.server.controller;
+package wap.web2.server.ouath2.controller;
 
 import wap.web2.server.exception.BadRequestException;
-import wap.web2.server.model.AuthProvider;
-import wap.web2.server.model.User;
-import wap.web2.server.payload.ApiResponse;
-import wap.web2.server.payload.AuthResponse;
-import wap.web2.server.payload.LoginRequest;
-import wap.web2.server.payload.SignUpRequest;
+import wap.web2.server.domain.AuthProvider;
+import wap.web2.server.domain.User;
+import wap.web2.server.ouath2.payload.ApiResponse;
+import wap.web2.server.ouath2.payload.AuthResponse;
+import wap.web2.server.ouath2.payload.LoginRequest;
+import wap.web2.server.ouath2.payload.SignUpRequest;
 import wap.web2.server.repository.UserRepository;
-import wap.web2.server.security.TokenProvider;
+import wap.web2.server.ouath2.security.TokenProvider;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

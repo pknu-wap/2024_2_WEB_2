@@ -1,7 +1,7 @@
-package wap.web2.server.security;
+package wap.web2.server.ouath2.security;
 
 import wap.web2.server.exception.ResourceNotFoundException;
-import wap.web2.server.model.User;
+import wap.web2.server.domain.User;
 import wap.web2.server.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -9,7 +9,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import wap.web2.server.security.UserPrincipal;
 
 /**
  * Created by rajeevkumarsingh on 02/08/17.

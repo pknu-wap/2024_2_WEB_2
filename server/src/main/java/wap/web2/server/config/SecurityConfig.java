@@ -110,7 +110,8 @@ public class SecurityConfig {
                         "/**.jpg",
                         "/**.html",
                         "/**.css",
-                        "/**.js")
+                        "/**.js",
+                            "/**") // 모든 요청에 로그인인증 필요 없음
                         .permitAll()
                     .requestMatchers("/auth/**", "/oauth2/**")
                         .permitAll()

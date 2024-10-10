@@ -1,6 +1,6 @@
-package wap.web2.server.security;
+package wap.web2.server.ouath2.security;
 
-import wap.web2.server.model.User;
+import wap.web2.server.domain.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

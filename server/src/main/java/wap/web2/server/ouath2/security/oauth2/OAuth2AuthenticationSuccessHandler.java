@@ -1,9 +1,9 @@
-package wap.web2.server.security.oauth2;
+package wap.web2.server.ouath2.security.oauth2;
 
-import wap.web2.server.config.AppProperties;
+import wap.web2.server.ouath2.config.AppProperties;
 import wap.web2.server.exception.BadRequestException;
-import wap.web2.server.security.TokenProvider;
-import wap.web2.server.util.CookieUtils;
+import wap.web2.server.ouath2.security.TokenProvider;
+import wap.web2.server.ouath2.util.CookieUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -13,13 +13,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-import wap.web2.server.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Optional;
-
-import static wap.web2.server.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME;
 
 @Component
 public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationSuccessHandler {
@@ -53,7 +50,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     }
 
     protected String determineTargetUrl(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {
-        Optional<String> redirectUri = CookieUtils.getCookie(request, REDIRECT_URI_PARAM_COOKIE_NAME)
+        Optional<String> redirectUri = CookieUtils.getCookie(request, HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME)
                 .map(Cookie::getValue);
 
         if(redirectUri.isPresent() && !isAuthorizedRedirectUri(redirectUri.get())) {

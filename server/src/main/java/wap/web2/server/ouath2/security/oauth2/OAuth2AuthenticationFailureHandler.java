@@ -1,6 +1,6 @@
-package wap.web2.server.security.oauth2;
+package wap.web2.server.ouath2.security.oauth2;
 
-import wap.web2.server.util.CookieUtils;
+import wap.web2.server.ouath2.util.CookieUtils;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -10,12 +10,11 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-import wap.web2.server.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository;
 
 
 import java.io.IOException;
 
-import static wap.web2.server.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME;
+import static wap.web2.server.ouath2.security.oauth2.HttpCookieOAuth2AuthorizationRequestRepository.REDIRECT_URI_PARAM_COOKIE_NAME;
 
 
 @Component

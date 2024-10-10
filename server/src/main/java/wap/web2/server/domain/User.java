@@ -1,4 +1,4 @@
-package wap.web2.server.model;
+package wap.web2.server.domain;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
@@ -8,8 +8,9 @@ import lombok.Setter;
 
 
 @Entity
-@Getter @Setter
-@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "email")})
+@Getter
+@Setter // User 엔티티만 Setter 사용
+@Table(name = "users", uniqueConstraints = {@UniqueConstraint(columnNames = "email")}) // 테이블명은 user 가 아닌 users (DB 예약어 피함)
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

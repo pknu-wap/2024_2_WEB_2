@@ -1,4 +1,4 @@
-package wap.web2.server.config;
+package wap.web2.server.ouath2.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;

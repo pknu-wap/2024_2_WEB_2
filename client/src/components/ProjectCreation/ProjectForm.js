@@ -1,6 +1,5 @@
 // src/components/ProjectForm.js
 import React, { useState } from "react";
-import TechStackSelector from "./TechStackSelector";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -86,6 +85,7 @@ const ProjectForm = ({ onSubmit }) => {
       setSummary("");
       setSemester("");
       setProjectYear("");
+      setIsLeader(false);
       setTeamMembers([{ name: "", image: null, role: "" }]);
       setTechStacks([]);
       setThumbnail(null);
@@ -365,8 +365,7 @@ const ProjectForm = ({ onSubmit }) => {
         </button>
       </div>
 
-      {/* 기술 스택 선택 컴포넌트 */}
-      {/* <TechStackSelector /> */}
+      {/* 기술 스택 선택 컴포넌트 추가 예정 */}
 
       {/* 프로젝트 상세 설명 */}
       <div>

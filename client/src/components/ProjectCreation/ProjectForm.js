@@ -1,6 +1,5 @@
 // src/components/ProjectForm.js
 
-// 입력 시 반드시 필요한 것 : 프로젝트 이름, 한줄소개, 카테고리 선택
 import React, { useState } from "react";
 import TechStackSelector from "./TechStackSelector";
 
@@ -15,7 +14,7 @@ const roleOptions = [
   "Designer",
   "AI",
   "Game",
-  "Haedware",
+  "Hardware",
   "FullStack",
   "기타",
 ];
@@ -44,9 +43,16 @@ const ProjectForm = ({ onSubmit }) => {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
 
+  // 오류 메시지 상태
+  const [errorMessage, setErrorMessage] = useState({});
+
   // 폼 제출 핸들러
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!validateForm()) {
+      return; // 유효성 검사가 실패하면 제출하지 않음
+    }
 
     const projectData = {
       title,
@@ -83,6 +89,7 @@ const ProjectForm = ({ onSubmit }) => {
       setTechStacks([]);
       setThumbnail(null);
       setImages([]);
+      setErrorMessage({});
       setUploadError(null);
     } catch (error) {
       console.error("프로젝트 생성 실패:", error);
@@ -124,13 +131,51 @@ const ProjectForm = ({ onSubmit }) => {
 
   // 입력 필드 글자 수 제한 핸들러
   const handleInputLimit = (e) => {
-    if (e.target.name === "title") {
-      setInputTitle(e.target.value.length);
-    } else if (e.target.name === "content") {
-      setInputContent(e.target.value.length);
-    } else if (e.target.name === "summary") {
-      setInputSummary(e.target.value.length);
+    const { name, value } = e.target; // name과 value 추출
+    if (name === "title") {
+      setInputTitle(value.length);
+    } else if (name === "content") {
+      setInputContent(value.length);
+    } else if (name === "summary") {
+      setInputSummary(value.length);
     }
+  };
+
+  // 유효성 검사 함수
+  const validateForm = () => {
+    const errors = {};
+
+    // 필수 입력 필드 검사
+    if (title.trim() === "") {
+      errors.title = "프로젝트 제목을 입력해주세요.";
+    }
+
+    if (summary.trim() === "") {
+      errors.summary = "한줄 소개를 입력해주세요.";
+    }
+
+    if (!projectType) {
+      errors.projectType = "프로젝트 타입을 선택해주세요.";
+    }
+
+    if (!thumbnail) {
+      errors.thumbnail = "썸네일 이미지를 업로드해주세요.";
+    }
+
+    // 팀원 유효성 검사
+    /*teamMembers.forEach((member, index) => {
+      if (member.name.trim() === "") {
+        errors[`teamMembers.${index}.name`] = "팀원 이름을 입력해주세요.";
+      }
+      if (!member.role) {
+        errors[`teamMembers.${index}.role`] = "팀원 역할을 선택해주세요.";
+      }
+    });*/
+
+    setErrorMessage(errors);
+
+    // 오류가 있으면 false 반환, 없으면 true 반환
+    return Object.keys(errors).length === 0;
   };
 
   return (
@@ -138,12 +183,7 @@ const ProjectForm = ({ onSubmit }) => {
       {/* 썸네일 이미지 업로드 */}
       <div>
         <label>썸네일 이미지 업로드:</label>
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleThumbnailUpload}
-          required
-        />
+        <input type="file" accept="image/*" onChange={handleThumbnailUpload} />
         {thumbnail && (
           <div>
             <img
@@ -152,6 +192,9 @@ const ProjectForm = ({ onSubmit }) => {
               style={{ width: "150px", marginTop: "10px" }}
             />
           </div>
+        )}
+        {errorMessage.thumbnail && (
+          <p style={{ color: "red" }}>{errorMessage.thumbnail}</p>
         )}
       </div>
 
@@ -168,29 +211,11 @@ const ProjectForm = ({ onSubmit }) => {
             setTitle(e.target.value);
             handleInputLimit(e);
           }}
-          required
         />
         <span>{inputTitle}/20</span>
-      </div>
-
-      {/* 프로젝트 타입 선택 */}
-      <div>
-        <label>프로젝트 타입:</label>
-        <div>
-          {projectTypeOptions.map((type) => (
-            <label key={type} style={{ marginRight: "10px" }}>
-              <input
-                type="radio"
-                name="projectType"
-                value={type}
-                checked={projectType === type}
-                onChange={(e) => setProjectType(e.target.value)}
-                required
-              />
-              {type}
-            </label>
-          ))}
-        </div>
+        {errorMessage.title && (
+          <p style={{ color: "red" }}>{errorMessage.title}</p>
+        )}
       </div>
 
       {/* 한줄 소개 입력 */}
@@ -206,9 +231,33 @@ const ProjectForm = ({ onSubmit }) => {
             setSummary(e.target.value);
             handleInputLimit(e);
           }}
-          required
         />
         <span>{inputSummary}/30</span>
+        {errorMessage.summary && (
+          <p style={{ color: "red" }}>{errorMessage.summary}</p>
+        )}
+      </div>
+
+      {/* 프로젝트 타입 선택 */}
+      <div>
+        <label>프로젝트 타입:</label>
+        <div>
+          {projectTypeOptions.map((type) => (
+            <label key={type} style={{ marginRight: "10px" }}>
+              <input
+                type="radio"
+                name="projectType"
+                value={type}
+                checked={projectType === type}
+                onChange={(e) => setProjectType(e.target.value)}
+              />
+              {type}
+            </label>
+          ))}
+        </div>
+        {errorMessage.projectType && (
+          <p style={{ color: "red" }}>{errorMessage.projectType}</p>
+        )}
       </div>
 
       {/* 연도 선택 */}
@@ -217,7 +266,6 @@ const ProjectForm = ({ onSubmit }) => {
         <select
           value={projectYear}
           onChange={(e) => setProjectYear(e.target.value)}
-          required
         >
           <option value="">연도를 선택해주세요.</option>
           {Array.from({ length: 76 }, (_, i) => 2024 + i).map((year) => (
@@ -231,11 +279,7 @@ const ProjectForm = ({ onSubmit }) => {
       {/* 학기 선택 */}
       <div>
         <label>학기:</label>
-        <select
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-          required
-        >
+        <select value={semester} onChange={(e) => setSemester(e.target.value)}>
           <option value="">학기를 선택해주세요.</option>
           <option value="1">1학기</option>
           <option value="2">2학기</option>
@@ -246,7 +290,25 @@ const ProjectForm = ({ onSubmit }) => {
       <div>
         <label>팀원:</label>
         {teamMembers.map((member, index) => (
-          <div key={index}>
+          <div key={index} style={{ marginBottom: "20px" }}>
+            {/* 팀원 이름 입력 */}
+            <input
+              type="text"
+              placeholder="팀원 이름"
+              value={member.name}
+              onChange={(e) => {
+                const newTeamMembers = [...teamMembers];
+                newTeamMembers[index].name = e.target.value;
+                setTeamMembers(newTeamMembers);
+              }}
+            />
+            {errorMessage[`teamMembers.${index}.name`] && (
+              <p style={{ color: "red" }}>
+                {errorMessage[`teamMembers.${index}.name`]}
+              </p>
+            )}
+
+            {/* 팀원 이미지 업로드 */}
             <input
               type="file"
               accept="image/*"
@@ -259,22 +321,12 @@ const ProjectForm = ({ onSubmit }) => {
                 style={{ width: "150px", marginTop: "10px" }}
               />
             )}
-            <input
-              type="text"
-              placeholder="팀원 이름"
-              value={member.name}
-              onChange={(e) => {
-                const newTeamMembers = [...teamMembers];
-                newTeamMembers[index].name = e.target.value;
-                setTeamMembers(newTeamMembers);
-              }}
-            />
+
             {/* 팀원 역할 선택 */}
             <label>역할:</label>
             <select
               value={member.role}
               onChange={(e) => handleRoleChange(e, index)}
-              required
             >
               <option value="">역할을 선택해주세요</option>
               {roleOptions.map((role) => (
@@ -283,18 +335,27 @@ const ProjectForm = ({ onSubmit }) => {
                 </option>
               ))}
             </select>
+            {errorMessage[`teamMembers.${index}.role`] && (
+              <p style={{ color: "red" }}>
+                {errorMessage[`teamMembers.${index}.role`]}
+              </p>
+            )}
           </div>
         ))}
 
+        {/* 팀원 추가 버튼 */}
         <button
           type="button"
           onClick={() => {
             if (teamMembers[teamMembers.length - 1].name.trim() !== "") {
-              setTeamMembers([...teamMembers, { name: "", image: null }]);
+              setTeamMembers([
+                ...teamMembers,
+                { name: "", image: null, role: "" },
+              ]);
             }
           }}
         >
-          Add Team Member
+          팀원 추가
         </button>
       </div>
 
@@ -317,6 +378,9 @@ const ProjectForm = ({ onSubmit }) => {
           rows="5"
         />
         <span>{inputContent}/600</span>
+        {errorMessage.content && (
+          <p style={{ color: "red" }}>{errorMessage.content}</p>
+        )}
       </div>
 
       {/* 이미지 업로드 */}
@@ -327,7 +391,6 @@ const ProjectForm = ({ onSubmit }) => {
           accept="image/*"
           multiple
           onChange={handleImagesUpload}
-          required
         />
         {images.length > 0 && (
           <div>

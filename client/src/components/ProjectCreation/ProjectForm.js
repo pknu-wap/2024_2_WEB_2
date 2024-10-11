@@ -1,5 +1,4 @@
 // src/components/ProjectForm.js
-
 import React, { useState } from "react";
 import TechStackSelector from "./TechStackSelector";
 
@@ -26,7 +25,9 @@ const ProjectForm = ({ onSubmit }) => {
   const [content, setContent] = useState("");
   const [summary, setSummary] = useState("");
   const [semester, setSemester] = useState(""); // 1,2
-  const [projectYear, setProjectYear] = useState(""); // 선택으로... 2024~
+  const [projectYear, setProjectYear] = useState(""); // 선택으로... 2024~2099
+  // 팀장 선택 상태관리
+  const [isLearder, setIsLeader] = useState(false);
   const [teamMembers, setTeamMembers] = useState([
     { name: "", image: null, role: "" },
   ]);
@@ -112,6 +113,21 @@ const ProjectForm = ({ onSubmit }) => {
     setImages(files);
   };
 
+  // 팀원 이름 입력 포커스 핸들러
+  const handleMemberNameFocus = (e, index) => {
+    if (!index && !isLearder) {
+      alert("첫 번째 팀원으로는 팀장을 입력해주세요.");
+      setIsLeader(true);
+    }
+  };
+
+  // 팀원 이름 변경 핸들러
+  const handleMemberNameChange = (e, index) => {
+    const newTeamMembers = [...teamMembers];
+    newTeamMembers[index].name = e.target.value;
+    setTeamMembers(newTeamMembers);
+  };
+
   // 팀원 이미지 업로드 핸들러
   const handleMemberImageUpload = (e, index) => {
     const file = e.target.files[0];
@@ -141,7 +157,7 @@ const ProjectForm = ({ onSubmit }) => {
     }
   };
 
-  // 유효성 검사 함수
+  // 유효성 검사 함수(프로젝트 명, 한줄 소개, 프로젝트 타입, 썸네일)
   const validateForm = () => {
     const errors = {};
 
@@ -161,16 +177,6 @@ const ProjectForm = ({ onSubmit }) => {
     if (!thumbnail) {
       errors.thumbnail = "썸네일 이미지를 업로드해주세요.";
     }
-
-    // 팀원 유효성 검사
-    /*teamMembers.forEach((member, index) => {
-      if (member.name.trim() === "") {
-        errors[`teamMembers.${index}.name`] = "팀원 이름을 입력해주세요.";
-      }
-      if (!member.role) {
-        errors[`teamMembers.${index}.role`] = "팀원 역할을 선택해주세요.";
-      }
-    });*/
 
     setErrorMessage(errors);
 
@@ -297,10 +303,10 @@ const ProjectForm = ({ onSubmit }) => {
               placeholder="팀원 이름"
               value={member.name}
               onChange={(e) => {
-                const newTeamMembers = [...teamMembers];
-                newTeamMembers[index].name = e.target.value;
-                setTeamMembers(newTeamMembers);
+                handleMemberNameChange(e, index);
               }}
+              // 팀장 입력 포커스 이벤트
+              onFocus={(e) => handleMemberNameFocus(e, index)}
             />
             {errorMessage[`teamMembers.${index}.name`] && (
               <p style={{ color: "red" }}>
@@ -360,7 +366,7 @@ const ProjectForm = ({ onSubmit }) => {
       </div>
 
       {/* 기술 스택 선택 컴포넌트 */}
-      <TechStackSelector />
+      {/* <TechStackSelector /> */}
 
       {/* 프로젝트 상세 설명 */}
       <div>

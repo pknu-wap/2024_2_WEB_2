@@ -1,6 +1,6 @@
 package wap.web2.server.repository;
 
-import wap.web2.server.model.User;
+import wap.web2.server.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

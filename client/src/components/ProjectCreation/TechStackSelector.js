@@ -23,7 +23,6 @@ const TechStackSelector = () => {
             <input type="checkbox" value={tech} />
             <img
               src={require(`../../assets/TechStack/${tech}.svg`)}
-              // require를 사용하여 이미지 파일을 동적으로 불러옴
               alt={tech}
               style={{ width: "40px", height: "40px", marginLeft: "10px" }}
             />

@@ -1,9 +1,24 @@
 // src/components/ProjectForm.js
+
+// 입력 시 반드시 필요한 것 : 프로젝트 이름, 한줄소개, 카테고리 선택
 import React, { useState } from "react";
 import TechStackSelector from "./TechStackSelector";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
+
+// 팀원 역할
+const roleOptions = [
+  "PM",
+  "Client",
+  "Server",
+  "Designer",
+  "AI",
+  "Game",
+  "Haedware",
+  "FullStack",
+  "기타",
+];
 
 const ProjectForm = ({ onSubmit }) => {
   // 입력 폼 요소들의 상태
@@ -13,7 +28,9 @@ const ProjectForm = ({ onSubmit }) => {
   const [summary, setSummary] = useState("");
   const [semester, setSemester] = useState(""); // 1,2
   const [projectYear, setProjectYear] = useState(""); // 선택으로... 2024~
-  const [teamMembers, setTeamMembers] = useState([{ name: "", image: null }]);
+  const [teamMembers, setTeamMembers] = useState([
+    { name: "", image: null, role: "" },
+  ]);
   const [techStacks, setTechStacks] = useState([]);
   const [thumbnail, setThumbnail] = useState(null);
   const [images, setImages] = useState([]);
@@ -38,12 +55,15 @@ const ProjectForm = ({ onSubmit }) => {
       summary,
       semester: parseInt(semester, 10),
       projectYear: parseInt(projectYear, 10),
+
+      // 팀원 정보 (이름, 사진, 역할)
       teamMembers: teamMembers
         .filter((m) => m.name.trim() !== "")
         .map((member) => ({
           memberName: member.name,
           memberImage: member.image,
-        })), // 팀원 이미지 추가
+          memberRole: member.role,
+        })),
       techStacks: techStacks.map((name) => ({ techStackName: name })), // 선택한 기술 스택
     };
 
@@ -59,7 +79,7 @@ const ProjectForm = ({ onSubmit }) => {
       setSummary("");
       setSemester("");
       setProjectYear("");
-      setTeamMembers([{ name: "", image: null }]);
+      setTeamMembers([{ name: "", image: null, role: "" }]);
       setTechStacks([]);
       setThumbnail(null);
       setImages([]);
@@ -93,6 +113,13 @@ const ProjectForm = ({ onSubmit }) => {
       newTeamMembers[index].image = file;
       setTeamMembers(newTeamMembers);
     }
+  };
+
+  // 팀원 역할 변경 핸들러
+  const handleRoleChange = (e, index) => {
+    const newTeamMembers = [...teamMembers];
+    newTeamMembers[index].role = e.target.value;
+    setTeamMembers(newTeamMembers);
   };
 
   // 입력 필드 글자 수 제한 핸들러
@@ -221,16 +248,6 @@ const ProjectForm = ({ onSubmit }) => {
         {teamMembers.map((member, index) => (
           <div key={index}>
             <input
-              type="text"
-              placeholder="팀원 이름"
-              value={member.name}
-              onChange={(e) => {
-                const newTeamMembers = [...teamMembers];
-                newTeamMembers[index].name = e.target.value;
-                setTeamMembers(newTeamMembers);
-              }}
-            />
-            <input
               type="file"
               accept="image/*"
               onChange={(e) => handleMemberImageUpload(e, index)}
@@ -242,8 +259,33 @@ const ProjectForm = ({ onSubmit }) => {
                 style={{ width: "150px", marginTop: "10px" }}
               />
             )}
+            <input
+              type="text"
+              placeholder="팀원 이름"
+              value={member.name}
+              onChange={(e) => {
+                const newTeamMembers = [...teamMembers];
+                newTeamMembers[index].name = e.target.value;
+                setTeamMembers(newTeamMembers);
+              }}
+            />
+            {/* 팀원 역할 선택 */}
+            <label>역할:</label>
+            <select
+              value={member.role}
+              onChange={(e) => handleRoleChange(e, index)}
+              required
+            >
+              <option value="">역할을 선택해주세요</option>
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
+              ))}
+            </select>
           </div>
         ))}
+
         <button
           type="button"
           onClick={() => {

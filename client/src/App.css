@@ -1,38 +1,108 @@
-.App {
-  text-align: center;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+.container{
+  background-color: black;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
+  
 }
 
 .App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  background-color: black;
+  color: white;
+  position: sticky;
+  z-index: 100;
+  top: 0;
+  left: 0;
+  right: 0;
+  top: 0;
+  
+}
+
+.waplogo{
+  width: 90px;
+  height: auto;
+}
+
+.menu-icon {
+  cursor: pointer;
+  font-size: 25px;
+
+}
+.menuContainer{
+    display: flex;
+    justify-content: flex-end; /* 오른쪽 정렬 */
+    right: 0;
+    position: sticky;
+    z-index: 100;
+    top: 30px;
+    left: 0;
+    right: 0;
+    
+}
+.menu {
+  background-color: #333;
+  color: white;
+  width: 120px;
+  padding: 10px;
+  position: fixed;
+}
+
+.menu ul{
+  list-style-type: none; /* 기본 리스트 스타일 제거 */
+  padding: 0;
+  margin: 0;
+}
+
+.menu li{
+  margin-right: 40px; /* 각 아이템 간의 간격 조절 */
+  color: white;
+  padding: 5px;
+}
+
+
+ul {
+  list-style-type: none;
+  padding: 0;
+}
+
+li {
+  padding: 10px 0;
+  
+}
+
+.content-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
+  margin-top: 15px;
 }
 
-.App-link {
-  color: #61dafb;
+.box {
+  width: 340px;
+  height: 110px;
+  background-color: white;
+  margin: 10px;
+  padding: 15px;
+  border-radius: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  text-align: center;
+  cursor: pointer;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-start;
+
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.box h2 {
+  margin: 0;
 }
+
+.box p {
+  margin: 5px 0 0;
+}
+

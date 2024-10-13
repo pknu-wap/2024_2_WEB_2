@@ -1,23 +1,45 @@
 package wap.web2.server.domain;
 
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 
-@Entity
 @Getter
-@AllArgsConstructor
-@NoArgsConstructor
-public class TechStack {
+public enum TechStack {
+    // Frontend
+    REACT("React", "", TechStackType.FRONT),
+    ANGULAR("Angular", "", TechStackType.FRONT),
+    NEXT_JS("Next.js", "", TechStackType.FRONT),
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long techStackId;
+    // Backend
+    SPRING("Spring", "", TechStackType.BACK),
+    DJANGO("Django", "", TechStackType.BACK),
+    FLASK("Flask", "", TechStackType.BACK),
+    EXPRESS("Express.js", "", TechStackType.BACK),
 
-    private String techStackType;
+    // App
+    ANDROID("Android", "", TechStackType.APP),
+    IOS("iOS", "", TechStackType.APP),
+    REACT_NATIVE("React Native", "", TechStackType.APP),
+    FLUTTER("Flutter", "", TechStackType.APP),
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id")
-    private Project project;
+    // DEPLOYMENT
+    AWS("AWS", "", TechStackType.DEPLOYMENT),
+    AZURE("Azure", "", TechStackType.DEPLOYMENT),
+    GOOGLE_CLOUD("Google Cloud", "", TechStackType.DEPLOYMENT),
+    DOCKER("Docker", "", TechStackType.DEPLOYMENT),
+
+    // Game Development
+    UNITY("Unity", "", TechStackType.GAME),
+    UNREAL_ENGINE("Unreal Engine", "", TechStackType.GAME),
+    GODOT("Godot", "", TechStackType.GAME),
+    GAME_MAKER("GameMaker", "", TechStackType.GAME);
+
+    private final String name;
+    private final String image;
+    private final TechStackType type;
+
+    TechStack(String name, String image, TechStackType type) {
+        this.name = name;
+        this.image = image;
+        this.type = type;
+    }
 }

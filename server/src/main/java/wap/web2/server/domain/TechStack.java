@@ -7,15 +7,20 @@ import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 public class TechStack {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long techStackId;
 
-    private String techStackType;
+    private String image;
+
+    @Enumerated(EnumType.STRING)
+    private TechStackName techStackName;
+
+    @Enumerated(EnumType.STRING)
+    private TechStackType techStackType;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id")

@@ -72,6 +72,8 @@ const ProjectForm = ({ onSubmit }) => {
   // 구조 분해 할당
   const {
     // 상태
+    teamName,
+    setTeamName,
     title,
     setTitle,
     projectType,
@@ -127,6 +129,79 @@ const ProjectForm = ({ onSubmit }) => {
         )}
       </div>
 
+      {/* 연도 선택 */}
+      <div className="form-group">
+        <label>연도:</label>
+        <select
+          className="select-field"
+          value={projectYear}
+          onChange={(e) => setProjectYear(e.target.value)}
+        >
+          <option value="">연도를 선택해주세요.</option>
+          {Array.from({ length: 76 }, (_, i) => 2024 + i).map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* 학기 선택 */}
+      <div className="form-group">
+        <label>학기:</label>
+        <select
+          className="select-field"
+          value={semester}
+          onChange={(e) => setSemester(e.target.value)}
+        >
+          <option value="">학기를 선택해주세요.</option>
+          <option value="1">1학기</option>
+          <option value="2">2학기</option>
+        </select>
+      </div>
+
+      {/* 프로젝트 타입 선택 */}
+      <div className="form-group">
+        <label>프로젝트 타입:</label>
+        <div className="radio-group">
+          {projectTypeOptions.map((type) => (
+            <label key={type} className="radio-option">
+              <input
+                type="radio"
+                name="projectType"
+                value={type}
+                checked={projectType === type}
+                onChange={(e) => setProjectType(e.target.value)}
+              />
+              {type}
+            </label>
+          ))}
+        </div>
+        {errorMessage.projectType && (
+          <p className="error-message">{errorMessage.projectType}</p>
+        )}
+      </div>
+      {/*팀명*/}
+      <div className="form-group">
+        <label>팀명:</label>
+        <input
+          name="teamName"
+          className="input-field"
+          type="text"
+          placeholder="팀명을 입력해주세요."
+          maxLength={"20"}
+          value={teamName}
+          onChange={(e) => {
+            setTeamName(e.target.value);
+            handleInputLimit(e);
+          }}
+        />
+        <span className="char-count">{teamName.length}/20</span>
+        {errorMessage.teamName && (
+          <p className="error-message">{errorMessage.teamName}</p>
+        )}
+      </div>
+
       {/* 제목 입력 */}
       <div className="form-group">
         <label>프로젝트 제목 (팀명):</label>
@@ -167,82 +242,6 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.summary && (
           <p className="error-message">{errorMessage.summary}</p>
         )}
-      </div>
-
-      {/* 프로젝트 타입 선택 */}
-      <div className="form-group">
-        <label>프로젝트 타입:</label>
-        <div className="radio-group">
-          {projectTypeOptions.map((type) => (
-            <label key={type} className="radio-option">
-              <input
-                type="radio"
-                name="projectType"
-                value={type}
-                checked={projectType === type}
-                onChange={(e) => setProjectType(e.target.value)}
-              />
-              {type}
-            </label>
-          ))}
-        </div>
-        {errorMessage.projectType && (
-          <p className="error-message">{errorMessage.projectType}</p>
-        )}
-      </div>
-
-      {/* 연도 선택 */}
-      <div className="form-group">
-        <label>연도:</label>
-        <select
-          className="select-field"
-          value={projectYear}
-          onChange={(e) => setProjectYear(e.target.value)}
-        >
-          <option value="">연도를 선택해주세요.</option>
-          {Array.from({ length: 76 }, (_, i) => 2024 + i).map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* 학기 선택 */}
-      <div className="form-group">
-        <label>학기:</label>
-        <select
-          className="select-field"
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-        >
-          <option value="">학기를 선택해주세요.</option>
-          <option value="1">1학기</option>
-          <option value="2">2학기</option>
-        </select>
-      </div>
-
-      {/* 팀원 입력 */}
-      <div className="form-group">
-        <label>팀원:</label>
-        {teamMembers.map((member, index) => (
-          <TeamMemberInput
-            key={index}
-            member={member}
-            index={index}
-            handleMemberNameChange={handleMemberNameChange}
-            handleMemberImageUpload={handleMemberImageUpload}
-            handleRoleChange={handleRoleChange}
-            handleMemberNameFocus={handleMemberNameFocus}
-          />
-        ))}
-        <button
-          className="add-member-btn"
-          type="button"
-          onClick={addTeamMember}
-        >
-          팀원 추가
-        </button>
       </div>
 
       {/* 프로젝트 상세 설명 */}
@@ -287,6 +286,31 @@ const ProjectForm = ({ onSubmit }) => {
           </div>
         )}
       </div>
+
+      {/* 팀원 입력 */}
+      <div className="form-group">
+        <label>팀원:</label>
+        {teamMembers.map((member, index) => (
+          <TeamMemberInput
+            key={index}
+            member={member}
+            index={index}
+            handleMemberNameChange={handleMemberNameChange}
+            handleMemberImageUpload={handleMemberImageUpload}
+            handleRoleChange={handleRoleChange}
+            handleMemberNameFocus={handleMemberNameFocus}
+          />
+        ))}
+        <button
+          className="add-member-btn"
+          type="button"
+          onClick={addTeamMember}
+        >
+          팀원 추가
+        </button>
+      </div>
+
+      {/* 기술 스택 추가 예정 */}
 
       {uploadError && <p className="error-message">{uploadError}</p>}
 

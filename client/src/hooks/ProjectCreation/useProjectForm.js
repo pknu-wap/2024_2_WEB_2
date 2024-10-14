@@ -4,6 +4,7 @@ import { useState } from "react";
 
 const useProjectForm = () => {
   // 입력 폼 요소들의 상태
+  const [teamName, setTeamName] = useState("");
   const [title, setTitle] = useState("");
   const [projectType, setProjectType] = useState("");
   const [content, setContent] = useState("");
@@ -97,6 +98,8 @@ const useProjectForm = () => {
       setInputContent(value.length);
     } else if (name === "summary") {
       setInputSummary(value.length);
+    } else if (name === "teamName") {
+      setTeamName(value);
     }
   };
 
@@ -105,6 +108,11 @@ const useProjectForm = () => {
     const errors = {};
 
     const requiredFields = [
+      {
+        value: teamName,
+        fieldName: "teamName",
+        message: "팀 이름을 입력해주세요.",
+      },
       {
         value: title,
         fieldName: "title",
@@ -172,6 +180,7 @@ const useProjectForm = () => {
       setUploading(false);
 
       // 폼 초기화
+      setTeamName("");
       setTitle("");
       setProjectType("");
       setContent("");
@@ -194,6 +203,8 @@ const useProjectForm = () => {
 
   return {
     // 상태
+    teamName,
+    setTeamName,
     title,
     setTitle,
     projectType,

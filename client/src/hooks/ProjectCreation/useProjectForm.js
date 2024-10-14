@@ -1,6 +1,7 @@
 // src/hooks/useProjectForm.js
 // Custon Hook for Project Form
 import { useState } from "react";
+import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS 파일 경로 추가
 
 const useProjectForm = () => {
   // 입력 폼 요소들의 상태
@@ -42,6 +43,10 @@ const useProjectForm = () => {
     if (file) {
       setThumbnail(file);
     }
+  };
+
+  const handleIconClick = (e) => {
+    document.querySelector(`.${styles.img_upload_btn}`).click();
   };
 
   // 이미지 업로드 핸들러 (배열 반복문)
@@ -229,6 +234,7 @@ const useProjectForm = () => {
     errorMessage,
 
     // 핸들러
+    handleIconClick,
     handleThumbnailUpload,
     handleImagesUpload,
     handleMemberNameFocus,

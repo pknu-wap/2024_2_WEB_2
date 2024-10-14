@@ -113,7 +113,7 @@ const ProjectForm = ({ onSubmit }) => {
     <form className="project-form" onSubmit={(e) => handleSubmit(e, onSubmit)}>
       {/* 썸네일 이미지 업로드 */}
       <div className="form-group">
-        <label>썸네일 이미지 업로드:</label>
+        <label>썸네일 이미지 업로드: </label>
         <input type="file" accept="image/*" onChange={handleThumbnailUpload} />
         {thumbnail && (
           <div className="thumbnail-preview">
@@ -204,7 +204,7 @@ const ProjectForm = ({ onSubmit }) => {
 
       {/* 제목 입력 */}
       <div className="form-group">
-        <label>프로젝트 제목 (팀명):</label>
+        <label>프로젝트 제목:</label>
         <input
           name="title"
           className="input-field"

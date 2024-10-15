@@ -1,24 +1,25 @@
 .year-selector{
-  width: 360px;
+  width: 342px;
   height: 135px;
   padding-top: 15px;
   background-color: #2A2A2A;
   color: #7E7E7E;
   border-radius: 10px;
   margin: 0 auto; 
+  text-align: left;
 
 }
 
 .year-label{
   text-align: left;
-  margin-left: 28px;
+  margin-left: 33px;
   margin-bottom: 3px;
   font-size: 12px;
 }
 
   
 .scroll-container {
-    width: 322px;
+    width: 80%; /* 스크롤 영역 너비 */
     height: 85px; /* 스크롤 영역 높이 */
     overflow-y: scroll;
     overflow-x: hidden;
@@ -48,7 +49,7 @@
   
   .year-item {
     height: 10px; /* 각 아이템의 높이 */
-    margin-left: 10px;
+
     padding: 2px 0;
     text-align: left;
     cursor: pointer;

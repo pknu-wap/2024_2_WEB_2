@@ -4,6 +4,7 @@ import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS
 import useProjectForm from "../../hooks/ProjectCreation/useProjectForm"; // Custome Hook 경로
 import ImageUploader from "./ImageUploader";
 import YearScroll from "./YearSelector";
+import RadioButton from "./RadioButton";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -122,21 +123,17 @@ const ProjectForm = ({ onSubmit }) => {
         handleImgUpload={(file) => handleImgUpload(file, "thumbnail")}
         type="thumbnail"
       />
-
+      {/* 년도 선택 */}
       <YearScroll setSelectedYear={setProjectYear} selectedYear={projectYear} />
-
       {/* 학기 선택 */}
-      <div className="form-group">
-        <label>학기:</label>
-        <select
-          className="select-field"
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-        >
-          <option value="">학기를 선택해주세요.</option>
-          <option value="1">1학기</option>
-          <option value="2">2학기</option>
-        </select>
+      <div>
+        <RadioButton
+          labelname={"학기"}
+          name="semester" // 그룹 이름
+          options={["1", "2"]} // 옵션 배열
+          selected={semester} // 선택된 값
+          setSelected={setSemester} // 선택 상태 업데이트 함수
+        />
       </div>
 
       {/* 프로젝트 타입 선택 */}

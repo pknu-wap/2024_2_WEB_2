@@ -68,9 +68,8 @@ const YearSelector = ({ selectedYear, setSelectedYear }) => {
 
   return (
     <div className="year-selector">
-      <div className="year-label">
-        <label>년도</label>
-      </div>
+      <label className="year-label">년도</label>
+
       <div className="scroll-container" ref={scrollRef}>
         {years.map((year) => (
           <p

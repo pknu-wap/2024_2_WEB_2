@@ -135,8 +135,17 @@ const ProjectForm = ({ onSubmit }) => {
           setSelected={setSemester} // 선택 상태 업데이트 함수
         />
       </div>
+      <div>
+        <RadioButton
+          labelname={"프로젝트 타입"}
+          name="projectType"
+          options={projectTypeOptions}
+          selected={projectType}
+          setSelected={setProjectType}
+        />
+      </div>
 
-      {/* 프로젝트 타입 선택 */}
+      {/* 프로젝트 타입 선택
       <div className="form-group">
         <label>프로젝트 타입:</label>
         <div className="radio-group">
@@ -156,7 +165,7 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.projectType && (
           <p className="error-message">{errorMessage.projectType}</p>
         )}
-      </div>
+      </div> */}
 
       {/* 팀명 */}
       <div className="form-group">

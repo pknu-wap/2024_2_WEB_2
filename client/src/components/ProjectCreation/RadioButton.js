@@ -8,9 +8,20 @@ const RadioButton = ({ labelname, name, options, selected, setSelected }) => {
       {options.map((option, index) => (
         <label key={index}>
           <div className="radio-option">
-            <div className="option-name">{option}</div>
+            <div className="option-name">
+              <label
+                htmlFor={`${name}-${option}`}
+                style={{
+                  color: selected === option ? "#FFFFFF" : "#7E7E7E", // 선택된 상태에 따라 색상 변경
+                  fontWeight: selected === option ? "bold" : "normal", // 선택된 상태에 따라 글자 굵기 변경
+                }}
+              >
+                {option}
+              </label>
+            </div>
             <div className="option">
               <input
+                id={`${name}-${option}`} // ID 추가
                 type="radio"
                 name={name}
                 value={option}

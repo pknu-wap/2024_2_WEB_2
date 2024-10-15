@@ -1,7 +1,8 @@
 .radio-button{
     width: 342px;
-    height: 135px;
+    height: 100%;
     padding-top: 15px;
+    padding-bottom: 20px;
     background-color: #2A2A2A;
     color: #7E7E7E;
     border-radius: 10px;
@@ -18,7 +19,7 @@
 .button-label { /* .radio-button 내부의 직접적인 label만 선택 */
     margin-top: 10px;
     margin-left: 33px;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 12px;
 }
 
@@ -27,7 +28,7 @@
     justify-content: space-between;
 
     font-size: 14px;
-    font-weight: bold;
+
     margin: 0 auto;
     width: 80%;
 }
@@ -49,5 +50,6 @@
     box-shadow: 0 0 0 1.5px #02FF2E;
     background-color: #02FF2E; 
     border: 3px solid #2A2A2A; 
-    
+
 }
+

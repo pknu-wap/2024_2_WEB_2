@@ -1,5 +1,5 @@
 .project_form {
-    max-width: 500px;
+    max-width: 394px;
     margin: 0 auto;
     background-color: #974a4a;
     text-align: center;
@@ -10,10 +10,11 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 20px; /* 내부 여백 */
+    max-width: 394px;
     width: 394px; /* 너비 */
+    max-height: 282px; /* 최대 높이 */
     height: 282px;
-    margin: 20px auto; /* 가운데 정렬 */
+    margin: 10px auto; /* 가운데 정렬 */
     background-color: #2A2A2A; /* 배경색 */
     transition: border-color 0.3s; /* 경계선 색상 변화 애니메이션
      */

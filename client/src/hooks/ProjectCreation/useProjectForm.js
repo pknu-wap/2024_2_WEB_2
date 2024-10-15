@@ -1,5 +1,4 @@
 // src/hooks/useProjectForm.js
-// Custon Hook for Project Form
 import { useState } from "react";
 
 const useProjectForm = () => {
@@ -10,7 +9,7 @@ const useProjectForm = () => {
   const [content, setContent] = useState("");
   const [summary, setSummary] = useState("");
   const [semester, setSemester] = useState(""); // 1,2
-  const [projectYear, setProjectYear] = useState(""); // 선택으로... 2024~2099
+  const [projectYear, setProjectYear] = useState(""); // 2024~2099
 
   // 팀장 선택 상태관리
   const [isLeader, setIsLeader] = useState(false);
@@ -18,9 +17,8 @@ const useProjectForm = () => {
     { name: "", image: null, role: "" },
   ]);
 
-  //const [techStacks, setTechStacks] = useState([]);
   const [thumbnail, setThumbnail] = useState(null);
-  const [image, setImage] = useState(null);
+  const [images, setImages] = useState([null, null, null, null]); // 4개의 이미지 업로더
 
   // 입력 필드 글자 수 제한
   const [inputTitle, setInputTitle] = useState(0);
@@ -36,30 +34,13 @@ const useProjectForm = () => {
 
   // 핸들러 함수들
 
-  // 썸네일 이미지 업로드 핸들러
-  // const handleImgUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file && e.target.name === "thumbnail") {
-  //     setThumbnail(file);
-  //   } else if (file && e.target.name === "image") {
-  //     setImages([...image, file]);
-  //   }
-  // };
-
-  // 썸네일 및 이미지 업로드 핸들러
-  // const handleImgUpload = (e) => {
-  //   const file = e.target.files[0];
-  //   if (file) {
-  //     setThumbnail(file);
-  //   }
-  // };
-
   // 썸네일 및 일반 이미지 업로드 핸들러
-  const handleImgUpload = (file, type) => {
+  const handleImgUpload = (file, type, index = null) => {
     if (!file.type.startsWith("image/")) {
+      const key = type === "thumbnail" ? "thumbnail" : `image${index}`;
       setErrorMessage((prev) => ({
         ...prev,
-        [type]: "이미지 파일만 업로드할 수 있습니다.",
+        [key]: "이미지 파일만 업로드할 수 있습니다.",
       }));
       return;
     }
@@ -67,13 +48,16 @@ const useProjectForm = () => {
     if (type === "thumbnail") {
       setThumbnail(file);
     } else if (type === "image") {
-      setImage(file);
+      const newImages = [...images];
+      newImages[index] = file;
+      setImages(newImages);
     }
 
     // 에러 메시지 초기화
+    const key = type === "thumbnail" ? "thumbnail" : `image${index}`;
     setErrorMessage((prev) => ({
       ...prev,
-      [type]: "",
+      [key]: "",
     }));
   };
 
@@ -118,7 +102,7 @@ const useProjectForm = () => {
 
   // 입력 필드 글자 수 제한 핸들러
   const handleInputLimit = (e) => {
-    const { name, value } = e.target; // name과 value 추출
+    const { name, value } = e.target;
     if (name === "title") {
       setInputTitle(value.length);
     } else if (name === "content") {
@@ -130,7 +114,7 @@ const useProjectForm = () => {
     }
   };
 
-  // 유효성 검사 함수(프로젝트 명, 한줄 소개, 프로젝트 타입, 썸네일)
+  // 유효성 검사 함수
   const validateForm = () => {
     const errors = {};
 
@@ -170,7 +154,6 @@ const useProjectForm = () => {
 
     setErrorMessage(errors);
 
-    // 오류가 있으면 false 반환, 없으면 true 반환
     return Object.keys(errors).length === 0;
   };
 
@@ -179,7 +162,7 @@ const useProjectForm = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      return; // 유효성 검사가 실패하면 제출하지 않음
+      return;
     }
 
     const projectData = {
@@ -191,7 +174,7 @@ const useProjectForm = () => {
       semester: parseInt(semester, 10),
       projectYear: parseInt(projectYear, 10),
 
-      // 팀원 정보 (이름, 사진, 역할)
+      // 팀원 정보
       teamMembers: teamMembers
         .filter((m) => m.name.trim() !== "")
         .map((member) => ({
@@ -199,12 +182,11 @@ const useProjectForm = () => {
           memberImage: member.image,
           memberRole: member.role,
         })),
-      //techStacks: techStacks.map((name) => ({ techStackName: name })), // 선택한 기술 스택
     };
 
     try {
       setUploading(true);
-      await onSubmit(projectData, thumbnail, image);
+      await onSubmit(projectData, thumbnail, images);
       setUploading(false);
 
       // 폼 초기화
@@ -217,9 +199,8 @@ const useProjectForm = () => {
       setProjectYear("");
       setIsLeader(false);
       setTeamMembers([{ name: "", image: null, role: "" }]);
-      //setTechStacks([]);
       setThumbnail(null);
-      setImage(null);
+      setImages([null, null, null, null]);
       setErrorMessage({});
       setUploadError(null);
     } catch (error) {
@@ -247,7 +228,7 @@ const useProjectForm = () => {
     setProjectYear,
     teamMembers,
     thumbnail,
-    image,
+    images,
 
     inputTitle,
     inputContent,

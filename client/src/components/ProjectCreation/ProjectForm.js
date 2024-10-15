@@ -3,6 +3,7 @@ import React from "react";
 import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS 파일 경로 추가
 import useProjectForm from "../../hooks/ProjectCreation/useProjectForm"; // Custome Hook 경로
 import ImageUploader from "./ImageUploader";
+import YearScroll from "./YearScroll";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -70,7 +71,6 @@ const TeamMemberInput = ({
 
 const ProjectForm = ({ onSubmit }) => {
   // 커스텀 훅 사용
-  // 구조 분해 할당
   const {
     // 상태
     teamName,
@@ -89,7 +89,7 @@ const ProjectForm = ({ onSubmit }) => {
     setProjectYear,
     teamMembers,
     thumbnail,
-    image,
+    images,
 
     inputTitle,
     inputContent,
@@ -115,55 +115,16 @@ const ProjectForm = ({ onSubmit }) => {
       onSubmit={(e) => handleSubmit(e, onSubmit)}
     >
       {/* 썸네일 이미지 업로드 */}
-      {/* <div className={styles.image_uploader}>
-        <label style={{ marginBottom: "15px" }}>메인 이미지 등록</label>
-        <svg
-          id="custom_image_uploader"
-          width="31"
-          height="31"
-          viewBox="0 0 31 31"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          onClick={handleIconClick}
-          style={{ cursor: "pointer" }} // 포인터 커서 추가
-        >
-          <path
-            d="M15.5 0C6.93935 0 0 6.93935 0 15.5C0 24.0606 6.93935 31 15.5 31C24.0606 31 31 24.0606 31 15.5C31 6.93935 24.0606 0 15.5 0ZM21.7 17.05H17.05V21.7C17.05 22.5556 16.3556 23.25 15.5 23.25C14.6444 23.25 13.95 22.5556 13.95 21.7V17.05H9.3C8.4444 17.05 7.75 16.3556 7.75 15.5C7.75 14.6444 8.4444 13.95 9.3 13.95H13.95V9.3C13.95 8.4444 14.6444 7.75 15.5 7.75C16.3556 7.75 17.05 8.4444 17.05 9.3V13.95H21.7C22.5556 13.95 23.25 14.6444 23.25 15.5C23.25 16.3556 22.5556 17.05 21.7 17.05Z"
-            fill="#EFEFEF"
-          />
-        </svg>
-
-        <input
-          className={styles.img_upload_btn}
-          type="file"
-          accept="image/*"
-          onChange={handleThumbnailUpload}
-          style={{ display: "none" }} // 파일 입력 요소 숨기기
-        />
-        {thumbnail && (
-          <div className="thumbnail-preview">
-            <img
-              src={URL.createObjectURL(thumbnail)}
-              alt="Thumbnail Preview"
-              style={{ width: "150px", marginTop: "10px" }}
-            />
-          </div>
-        )}
-        {errorMessage.thumbnail && (
-          <p className="error-message">{errorMessage.thumbnail}</p>
-        )}
-      </div> */}
-
       <ImageUploader
         imgText={"메인 이미지 등록"}
         imgName={thumbnail}
-        errorMessage={errorMessage}
-        handleImgUpload={handleImgUpload}
+        errorMessage={errorMessage.thumbnail}
+        handleImgUpload={(file) => handleImgUpload(file, "thumbnail")}
         type="thumbnail"
       />
 
       {/* 연도 선택 */}
-      <div className="form-group">
+      {/* <div className="form-group">
         <label>연도:</label>
         <select
           className="select-field"
@@ -177,7 +138,9 @@ const ProjectForm = ({ onSubmit }) => {
             </option>
           ))}
         </select>
-      </div>
+      </div> */}
+
+      <YearScroll />
 
       {/* 학기 선택 */}
       <div className="form-group">
@@ -214,7 +177,8 @@ const ProjectForm = ({ onSubmit }) => {
           <p className="error-message">{errorMessage.projectType}</p>
         )}
       </div>
-      {/*팀명*/}
+
+      {/* 팀명 */}
       <div className="form-group">
         <label>팀명:</label>
         <input
@@ -294,39 +258,25 @@ const ProjectForm = ({ onSubmit }) => {
           rows="5"
         />
         <span className="char-count">{inputContent}/600</span>
+        {errorMessage.content && (
+          <p className="error-message">{errorMessage.content}</p>
+        )}
       </div>
 
-      {/* 이미지 업로드 */}
-      {/* <div className="form-group">
+      {/* 이미지 업로더들 */}
+      <div className="form-group">
         <label>이미지 업로드:</label>
-        <input
-          className="file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleImagesUpload}
-        />
-        {images.length > 0 && (
-          <div className="image-preview">
-            {images.map((image, index) => (
-              <img
-                key={index}
-                className="uploaded-image"
-                src={URL.createObjectURL(image)}
-                alt={`Image Preview ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
-      </div> */}
-
-      <ImageUploader
-        imgText={"이미지 등록"}
-        imgName={image}
-        errorMessage={errorMessage}
-        handleImgUpload={handleImgUpload}
-        type="image"
-      />
+        {images.map((img, index) => (
+          <ImageUploader
+            key={index}
+            imgText={`이미지 등록 ${index + 1}`}
+            imgName={images[index]}
+            errorMessage={errorMessage[`image${index}`]}
+            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
+            type="image"
+          />
+        ))}
+      </div>
 
       {/* 팀원 입력 */}
       <div className="form-group">

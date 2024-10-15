@@ -3,7 +3,7 @@ import React from "react";
 import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS 파일 경로 추가
 import useProjectForm from "../../hooks/ProjectCreation/useProjectForm"; // Custome Hook 경로
 import ImageUploader from "./ImageUploader";
-import YearScroll from "./YearScroll";
+import YearScroll from "./YearSelector";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -123,24 +123,7 @@ const ProjectForm = ({ onSubmit }) => {
         type="thumbnail"
       />
 
-      {/* 연도 선택 */}
-      {/* <div className="form-group">
-        <label>연도:</label>
-        <select
-          className="select-field"
-          value={projectYear}
-          onChange={(e) => setProjectYear(e.target.value)}
-        >
-          <option value="">연도를 선택해주세요.</option>
-          {Array.from({ length: 76 }, (_, i) => 2024 + i).map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div> */}
-
-      <YearScroll />
+      <YearScroll setSelectedYear={setProjectYear} selectedYear={projectYear} />
 
       {/* 학기 선택 */}
       <div className="form-group">

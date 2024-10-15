@@ -2,7 +2,6 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import "./index.css";
 import ProjectForm from "./components/ProjectCreation/ProjectForm";
-import YearScroll from "./components/ProjectCreation/YearScroll";
 
 import reportWebVitals from "./reportWebVitals";
 
@@ -10,7 +9,6 @@ const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <ProjectForm />
-    {/* <YearScroll /> */}
   </React.StrictMode>
 );
 

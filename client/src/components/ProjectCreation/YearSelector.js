@@ -1,19 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-// 스크롤 이벤트를 등록하기 위해 useeffect, useRef, useState 사용
-import "./YearScroll.css"; // External CSS file
+import React, { useEffect, useRef } from "react";
+// 스크롤 이벤트를 등록하기 위해 useEffect, useRef 사용
+import "../../assets/ProjectCreation/YearSelector.css"; // External CSS file
 
-const YearScroll = () => {
-  // 스크롤이벤트 설정을 위한 Hook 사용
-  // 선택한 년도 상태 관리
-  const [selectedYear, setSelectedYear] = useState(null);
-
+const YearSelector = ({ selectedYear, setSelectedYear }) => {
   // 스크롤 컨테이너 참조
   const scrollRef = useRef(null);
 
   // 현재 년도까지의 년도를 배열로 생성
   const generateYear = () => {
     const today = new Date();
-
     const startYear = 2000;
     const endYear = today.getFullYear();
     const years = [];
@@ -31,8 +26,7 @@ const YearScroll = () => {
       if (scrollRef.current) {
         const scrollPosition = scrollRef.current.scrollTop;
         // 각 아이템의 높이 지정
-        // 사용에 유용한 방식으로 설정하기 위해 53으로 픽스해놓음.
-        const itemHeight = 53;
+        const itemHeight = 26;
         // 스크롤 위치에 따른 인덱스 계산
         let index = Math.round(scrollPosition / itemHeight);
         // 날짜 배열 생성
@@ -56,19 +50,33 @@ const YearScroll = () => {
         scrollElement.removeEventListener("scroll", handleScroll);
       }
     };
-  }, []);
+  }, [setSelectedYear]);
 
   // 날짜 배열 생성
   const years = generateYear();
 
+  // 클릭 핸들러
+  const handleYearClick = (year) => {
+    setSelectedYear(year); // 클릭한 년도로 선택 변경
+    if (scrollRef.current) {
+      // 클릭 시 스크롤을 해당 년도로 이동 (선택된 년도 위치)
+      const index = years.indexOf(year);
+      const itemHeight = 26; // 각 아이템의 높이
+      scrollRef.current.scrollTop = index * itemHeight; // 스크롤 위치 설정
+    }
+  };
+
   return (
-    <div>
-      <label>년도</label>
+    <div className="year-selector">
+      <div className="year-label">
+        <label>년도</label>
+      </div>
       <div className="scroll-container" ref={scrollRef}>
         {years.map((year) => (
           <p
             key={year}
             className={`year-item ${year === selectedYear ? "selected" : ""}`}
+            onClick={() => handleYearClick(year)} // 클릭 이벤트 추가
           >
             {year}
           </p>
@@ -78,4 +86,4 @@ const YearScroll = () => {
   );
 };
 
-export default YearScroll;
+export default YearSelector;

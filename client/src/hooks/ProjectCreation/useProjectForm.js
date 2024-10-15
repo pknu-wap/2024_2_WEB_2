@@ -9,7 +9,10 @@ const useProjectForm = () => {
   const [content, setContent] = useState("");
   const [summary, setSummary] = useState("");
   const [semester, setSemester] = useState(""); // 1,2
-  const [projectYear, setProjectYear] = useState(""); // 2024~2099
+
+  // 프로젝트 년도 선택 상태관리
+  // 원래 ""이었으나, null로 변경 -> "" 설정하고 props 전달하니까 "is not a function"
+  const [projectYear, setProjectYear] = useState(null);
 
   // 팀장 선택 상태관리
   const [isLeader, setIsLeader] = useState(false);

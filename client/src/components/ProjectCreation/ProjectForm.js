@@ -1,7 +1,11 @@
 // src/components/ProjectForm.js
 import React from "react";
-import "../../assets/ProjectCreation/ProjectForm.css"; // CSS 파일 경로 추가
+import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS 파일 경로 추가
 import useProjectForm from "../../hooks/ProjectCreation/useProjectForm"; // Custome Hook 경로
+import ImageUploader from "./ImageUploader";
+import YearScroll from "./YearSelector";
+import RadioButton from "./RadioButton";
+import InputForm from "./InputForm";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -69,7 +73,6 @@ const TeamMemberInput = ({
 
 const ProjectForm = ({ onSubmit }) => {
   // 커스텀 훅 사용
-  // 구조 분해 할당
   const {
     // 상태
     teamName,
@@ -98,8 +101,7 @@ const ProjectForm = ({ onSubmit }) => {
     errorMessage,
 
     // 핸들러
-    handleThumbnailUpload,
-    handleImagesUpload,
+    handleImgUpload,
     handleMemberNameFocus,
     handleMemberNameChange,
     handleMemberImageUpload,
@@ -110,57 +112,40 @@ const ProjectForm = ({ onSubmit }) => {
   } = useProjectForm();
 
   return (
-    <form className="project-form" onSubmit={(e) => handleSubmit(e, onSubmit)}>
+    <form
+      className={styles.project_form}
+      onSubmit={(e) => handleSubmit(e, onSubmit)}
+    >
       {/* 썸네일 이미지 업로드 */}
-      <div className="form-group">
-        <label>썸네일 이미지 업로드: </label>
-        <input type="file" accept="image/*" onChange={handleThumbnailUpload} />
-        {thumbnail && (
-          <div className="thumbnail-preview">
-            <img
-              src={URL.createObjectURL(thumbnail)}
-              alt="Thumbnail Preview"
-              style={{ width: "150px", marginTop: "10px" }}
-            />
-          </div>
-        )}
-        {errorMessage.thumbnail && (
-          <p className="error-message">{errorMessage.thumbnail}</p>
-        )}
-      </div>
-
-      {/* 연도 선택 */}
-      <div className="form-group">
-        <label>연도:</label>
-        <select
-          className="select-field"
-          value={projectYear}
-          onChange={(e) => setProjectYear(e.target.value)}
-        >
-          <option value="">연도를 선택해주세요.</option>
-          {Array.from({ length: 76 }, (_, i) => 2024 + i).map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
-      </div>
+      <ImageUploader
+        imgText={"메인 이미지 등록"}
+        imgName={thumbnail}
+        errorMessage={errorMessage.thumbnail}
+        handleImgUpload={(file) => handleImgUpload(file, "thumbnail")}
+        type="thumbnail"
+      />
+      {/* 년도 선택 */}
+      <YearScroll setSelectedYear={setProjectYear} selectedYear={projectYear} />
 
       {/* 학기 선택 */}
-      <div className="form-group">
-        <label>학기:</label>
-        <select
-          className="select-field"
-          value={semester}
-          onChange={(e) => setSemester(e.target.value)}
-        >
-          <option value="">학기를 선택해주세요.</option>
-          <option value="1">1학기</option>
-          <option value="2">2학기</option>
-        </select>
-      </div>
+      <RadioButton
+        labelname={"학기"}
+        name="semester" // 그룹 이름
+        options={["1", "2"]} // 옵션 배열
+        selected={semester} // 선택된 값
+        setSelected={setSemester} // 선택 상태 업데이트 함수
+      />
 
       {/* 프로젝트 타입 선택 */}
+      <RadioButton
+        labelname={"프로젝트 타입"}
+        name="projectType"
+        options={projectTypeOptions}
+        selected={projectType}
+        setSelected={setProjectType}
+      />
+
+      {/* 프로젝트 타입 선택
       <div className="form-group">
         <label>프로젝트 타입:</label>
         <div className="radio-group">
@@ -180,9 +165,10 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.projectType && (
           <p className="error-message">{errorMessage.projectType}</p>
         )}
-      </div>
-      {/*팀명*/}
-      <div className="form-group">
+      </div> */}
+
+      {/* 팀명 */}
+      {/* <div className="form-group">
         <label>팀명:</label>
         <input
           name="teamName"
@@ -200,10 +186,34 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.teamName && (
           <p className="error-message">{errorMessage.teamName}</p>
         )}
-      </div>
+      </div> */}
+
+      <InputForm
+        name="teamName"
+        placeholder="팀명"
+        maxLen="20"
+        value={teamName}
+        onChange={(e) => {
+          setTeamName(e.target.value);
+          handleInputLimit(e);
+        }}
+        errorMessage={errorMessage}
+      />
+
+      <InputForm
+        name="title"
+        placeholder="프로젝트 명"
+        maxLen="20"
+        value={title}
+        onChange={(e) => {
+          setTitle(e.target.value);
+          handleInputLimit(e);
+        }}
+        errorMessage={errorMessage}
+      />
 
       {/* 제목 입력 */}
-      <div className="form-group">
+      {/* <div className="form-group">
         <label>프로젝트 제목:</label>
         <input
           name="title"
@@ -221,10 +231,22 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.title && (
           <p className="error-message">{errorMessage.title}</p>
         )}
-      </div>
+      </div> */}
+
+      <InputForm
+        name="summary"
+        placeholder="한줄 소개"
+        maxLen="20"
+        value={summary}
+        onChange={(e) => {
+          setSummary(e.target.value);
+          handleInputLimit(e);
+        }}
+        errorMessage={errorMessage}
+      />
 
       {/* 한줄 소개 입력 */}
-      <div className="form-group">
+      {/* <div className="form-group">
         <label>한줄 소개:</label>
         <input
           name="summary"
@@ -242,10 +264,22 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.summary && (
           <p className="error-message">{errorMessage.summary}</p>
         )}
-      </div>
+      </div> */}
+
+      <InputForm
+        name="content"
+        placeholder="상세 설명"
+        maxLen="600"
+        value={content}
+        onChange={(e) => {
+          setContent(e.target.value);
+          handleInputLimit(e);
+        }}
+        errorMessage={errorMessage}
+      />
 
       {/* 프로젝트 상세 설명 */}
-      <div className="form-group">
+      {/* <div className="form-group">
         <label>프로젝트 상세 설명:</label>
         <textarea
           className="textarea-field"
@@ -261,30 +295,24 @@ const ProjectForm = ({ onSubmit }) => {
           rows="5"
         />
         <span className="char-count">{inputContent}/600</span>
-      </div>
+        {errorMessage.content && (
+          <p className="error-message">{errorMessage.content}</p>
+        )}
+      </div> */}
 
-      {/* 이미지 업로드 */}
+      {/* 이미지 업로더들 */}
       <div className="form-group">
         <label>이미지 업로드:</label>
-        <input
-          className="file-input"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={handleImagesUpload}
-        />
-        {images.length > 0 && (
-          <div className="image-preview">
-            {images.map((image, index) => (
-              <img
-                key={index}
-                className="uploaded-image"
-                src={URL.createObjectURL(image)}
-                alt={`Image Preview ${index + 1}`}
-              />
-            ))}
-          </div>
-        )}
+        {images.map((img, index) => (
+          <ImageUploader
+            key={index}
+            imgText={`이미지 등록 ${index + 1}`}
+            imgName={images[index]}
+            errorMessage={errorMessage[`image${index}`]}
+            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
+            type="image"
+          />
+        ))}
       </div>
 
       {/* 팀원 입력 */}

@@ -1,13 +1,32 @@
-.project-form {
-    max-width: 600px;
+.project_form {
+    max-width: 394px;
     margin: 0 auto;
-    padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
+    background-color: #000000;
+    text-align: center;
   }
+
+  .image_uploader{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: 394px;
+    width: 394px; /* 너비 */
+    max-height: 282px; /* 최대 높이 */
+    height: 282px;
+    margin: 10px auto; /* 가운데 정렬 */
+    background-color: #2A2A2A; /* 배경색 */
+    transition: border-color 0.3s; /* 경계선 색상 변화 애니메이션
+     */
+    color: #EBEBEB;
+  }
+
+.img_upload_btn{
+  display: none;
+}
+
   
-  .form-group {
+  .group {
     margin-bottom: 20px;
   }
   

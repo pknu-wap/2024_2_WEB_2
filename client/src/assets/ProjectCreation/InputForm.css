@@ -1,0 +1,28 @@
+.input-form input[type="text"] {
+    width: 100%;
+    border: none;
+    background-color: transparent;
+    color: #7E7E7E;
+    outline: none; /* 포커스 시 외곽선 제거 */
+}
+
+.input-field {
+    width: 80%;
+    margin: 0 auto;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+}
+
+
+.input-form {
+    width: 342px;
+    height: 100%;
+    padding-top: 25px;
+    padding-bottom: 25px;
+    background-color: #2A2A2A;
+    color: #7E7E7E;
+    border-radius: 10px;
+    margin: 0 auto; 
+    margin-top: 10px;
+}

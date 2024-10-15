@@ -14,18 +14,22 @@ const InputForm = ({
   return (
     <div className="input-form">
       <div className="input-field">
-        <input
-          name={name} // 수정: name의 길이가 아닌 name 자체를 전달
-          className="input-field"
-          type="text"
-          placeholder={placeholder}
-          maxLength={maxLen}
-          value={value}
-          onChange={onChange}
-        />
-        <span className="char-count">
-          {value?.length || 0}/{maxLen}
-        </span>
+        <div>
+          <input
+            name={name} // 수정: name의 길이가 아닌 name 자체를 전달
+            className="input-field"
+            type="text"
+            placeholder={placeholder}
+            maxLength={maxLen}
+            value={value}
+            onChange={onChange}
+          />
+        </div>
+        <div>
+          <span className="char-count">
+            {value?.length || 0}/{maxLen}
+          </span>
+        </div>
       </div>
 
       {errorMessage?.[name] && ( // 옵셔널 체이닝 사용

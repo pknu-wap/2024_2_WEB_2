@@ -268,7 +268,7 @@ const ProjectForm = ({ onSubmit }) => {
 
       <InputForm
         name="content"
-        placeholder="프로젝트 상세 설명"
+        placeholder="상세 설명"
         maxLen="600"
         value={content}
         onChange={(e) => {

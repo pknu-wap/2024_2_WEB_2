@@ -1,0 +1,26 @@
+.input-form input[type="text"] {
+    border: none;
+    background-color: transparent;
+    font-size: 14px;
+    color: #7E7E7E;
+
+}
+
+.input-field {
+    width: 80%;
+    margin: 0 auto;
+}
+
+
+
+.input-form{
+    width: 342px;
+    height: 100%;
+    padding-top: 15px;
+    padding-bottom: 20px;
+    background-color: #2A2A2A;
+    color: #7E7E7E;
+    border-radius: 10px;
+    margin: 0 auto; 
+    margin-top: 10px;
+}

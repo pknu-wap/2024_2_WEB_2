@@ -3,7 +3,7 @@ import { useState } from "react";
 
 const useProjectForm = () => {
   // 입력 폼 요소들의 상태
-  const [teamName, setTeamName] = useState("");
+  const [teamName, setTeamName] = useState(null);
   const [title, setTitle] = useState("");
   const [projectType, setProjectType] = useState("");
   const [content, setContent] = useState("");
@@ -24,7 +24,7 @@ const useProjectForm = () => {
   const [images, setImages] = useState([null, null, null, null]); // 4개의 이미지 업로더
 
   // 입력 필드 글자 수 제한
-  const [inputTitle, setInputTitle] = useState(0);
+  const [inputTitle, setInputTitle] = useState(null);
   const [inputContent, setInputContent] = useState(0);
   const [inputSummary, setInputSummary] = useState(0);
 
@@ -103,17 +103,25 @@ const useProjectForm = () => {
     }
   };
 
-  // 입력 필드 글자 수 제한 핸들러
   const handleInputLimit = (e) => {
     const { name, value } = e.target;
-    if (name === "title") {
-      setInputTitle(value.length);
-    } else if (name === "content") {
-      setInputContent(value.length);
-    } else if (name === "summary") {
-      setInputSummary(value.length);
-    } else if (name === "teamName") {
-      setTeamName(value);
+
+    switch (name) {
+      case "title":
+        setInputTitle(value.length);
+        break;
+      case "content":
+        setInputContent(value.length);
+        break;
+      case "summary":
+        setInputSummary(value.length);
+        break;
+      case "teamName":
+        setTeamName(value);
+        break;
+      // 다른 필드가 있다면 여기에 추가
+      default:
+        break; // 아무것도 하지 않음
     }
   };
 

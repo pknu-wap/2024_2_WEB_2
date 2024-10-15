@@ -2,6 +2,7 @@
 import React from "react";
 import styles from "../../assets/ProjectCreation/ProjectForm.module.css"; // CSS 파일 경로 추가
 import useProjectForm from "../../hooks/ProjectCreation/useProjectForm"; // Custome Hook 경로
+import ImageUploader from "./ImageUploader";
 
 // 프로젝트 타입
 const projectTypeOptions = ["WEB", "APP", "GAME", "기타"];
@@ -88,7 +89,7 @@ const ProjectForm = ({ onSubmit }) => {
     setProjectYear,
     teamMembers,
     thumbnail,
-    images,
+    image,
 
     inputTitle,
     inputContent,
@@ -98,9 +99,7 @@ const ProjectForm = ({ onSubmit }) => {
     errorMessage,
 
     // 핸들러
-    handleIconClick,
-    handleThumbnailUpload,
-    handleImagesUpload,
+    handleImgUpload,
     handleMemberNameFocus,
     handleMemberNameChange,
     handleMemberImageUpload,
@@ -116,7 +115,7 @@ const ProjectForm = ({ onSubmit }) => {
       onSubmit={(e) => handleSubmit(e, onSubmit)}
     >
       {/* 썸네일 이미지 업로드 */}
-      <div className={styles.image_uploader}>
+      {/* <div className={styles.image_uploader}>
         <label style={{ marginBottom: "15px" }}>메인 이미지 등록</label>
         <svg
           id="custom_image_uploader"
@@ -153,7 +152,15 @@ const ProjectForm = ({ onSubmit }) => {
         {errorMessage.thumbnail && (
           <p className="error-message">{errorMessage.thumbnail}</p>
         )}
-      </div>
+      </div> */}
+
+      <ImageUploader
+        imgText={"메인 이미지 등록"}
+        imgName={thumbnail}
+        errorMessage={errorMessage}
+        handleImgUpload={handleImgUpload}
+        type="thumbnail"
+      />
 
       {/* 연도 선택 */}
       <div className="form-group">
@@ -290,7 +297,7 @@ const ProjectForm = ({ onSubmit }) => {
       </div>
 
       {/* 이미지 업로드 */}
-      <div className="form-group">
+      {/* <div className="form-group">
         <label>이미지 업로드:</label>
         <input
           className="file-input"
@@ -311,7 +318,15 @@ const ProjectForm = ({ onSubmit }) => {
             ))}
           </div>
         )}
-      </div>
+      </div> */}
+
+      <ImageUploader
+        imgText={"이미지 등록"}
+        imgName={image}
+        errorMessage={errorMessage}
+        handleImgUpload={handleImgUpload}
+        type="image"
+      />
 
       {/* 팀원 입력 */}
       <div className="form-group">

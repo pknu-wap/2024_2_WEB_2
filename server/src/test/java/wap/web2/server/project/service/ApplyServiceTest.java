@@ -6,6 +6,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static wap.web2.server.util.SemesterGenerator.generateSemester;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +16,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import wap.web2.server.admin.entity.TeamBuildingMeta;
+import wap.web2.server.admin.entity.TeamBuildingStatus;
+import wap.web2.server.admin.repository.TeamBuildingMetaRepository;
+import wap.web2.server.exception.ForbiddenException;
 import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
@@ -29,6 +34,9 @@ import wap.web2.server.teambuild.service.ApplyService;
 
 @ExtendWith(MockitoExtension.class)
 class ApplyServiceTest {
+
+    @Mock
+    TeamBuildingMetaRepository teamBuildingMetaRepository;
 
     @Mock
     UserRepository userRepository;
@@ -67,6 +75,11 @@ class ApplyServiceTest {
             )
         );
 
+        when(teamBuildingMetaRepository.findBySemester(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(
+                1L, generateSemester(),
+                TeamBuildingStatus.APPLY)));
+
         // when
         applyService.apply(principal, request);
 
@@ -101,7 +114,7 @@ class ApplyServiceTest {
 
         // when & then
         assertThatThrownBy(() -> applyService.getApplies(principal, 1L)).isInstanceOf(
-            IllegalArgumentException.class
+            ForbiddenException.class
         );
     }
 }

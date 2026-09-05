@@ -47,6 +47,12 @@ public class ApplyService {
 
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request) {
+        apply(userPrincipal, request, 1);
+    }
+
+    @Transactional
+    public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request, int round) {
+        validateRound(round);
         if (!isTeamApplyOpen()) {
             throw new ConflictException("현재 팀빌딩 상태에서는 지원할 수 없습니다.");
         }
@@ -67,6 +73,7 @@ public class ApplyService {
             applyRepository.save(
                     ProjectApply.builder()
                             .priority(priority++)
+                            .round(round)
                             .position(parsePosition(applyRequest.getPosition()))
                             .comment(applyRequest.getComment())
                             .career(applyRequest.getCareer())
@@ -79,6 +86,12 @@ public class ApplyService {
 
     @Transactional(readOnly = true)
     public boolean hasRecruited(UserPrincipal userPrincipal, Long projectId) {
+        return hasRecruited(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasRecruited(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
@@ -86,11 +99,17 @@ public class ApplyService {
             throw new ForbiddenException("프로젝트 열람 권한이 없습니다.");
         }
 
-        return recruitRepository.existsByProjectIdAndSemester(projectId, generateSemester());
+        return recruitRepository.existsByProjectIdAndSemesterAndRound(projectId, generateSemester(), round);
     }
 
     @Transactional(readOnly = true)
     public ProjectAppliesResponse getApplies(UserPrincipal userPrincipal, Long projectId) {
+        return getApplies(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectAppliesResponse getApplies(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
@@ -98,7 +117,7 @@ public class ApplyService {
             throw new ForbiddenException("프로젝트 열람 권한이 없습니다.");
         }
 
-        List<ProjectApply> applies = applyRepository.findAllByProject(project);
+        List<ProjectApply> applies = applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), round);
         log.info("getApplies-user:{}", user.getName());
 
         return ProjectAppliesResponse.fromEntities(applies);
@@ -106,15 +125,27 @@ public class ApplyService {
 
     @Transactional(readOnly = true)
     public ProjectAppliesResponse getRecruitPageData(UserPrincipal userPrincipal, Long projectId) {
-        if (hasRecruited(userPrincipal, projectId)) {
+        return getRecruitPageData(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectAppliesResponse getRecruitPageData(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
+        if (hasRecruited(userPrincipal, projectId, round)) {
             throw new ConflictException("이미 제출된 모집이 존재합니다.");
         }
 
-        return getApplies(userPrincipal, projectId);
+        return getApplies(userPrincipal, projectId, round);
     }
 
     @Transactional
     public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request) {
+        setPreference(userPrincipal, request, 1);
+    }
+
+    @Transactional
+    public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request, int round) {
+        validateRound(round);
         if (!isTeamRecruitOpen()) {
             throw new ConflictException("현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
         }
@@ -132,6 +163,7 @@ public class ApplyService {
         for (RecruitmentInfo roaster : roasters) {
             ProjectRecruit recruit = recruitRepository.save(
                 ProjectRecruit.builder()
+                    .round(round)
                     .leaderId(user.getId())
                     .projectId(project.getProjectId())
                     .position(parsePosition(roaster.getPosition()))
@@ -160,6 +192,12 @@ public class ApplyService {
     public boolean hasAppliedThisSemester(Long userId) {
         findUser(userId);
         return applyRepository.existsByUserIdAndSemester(userId, generateSemester());
+    }
+
+    private void validateRound(int round) {
+        if (round != 1 && round != 2) {
+            throw new BadRequestException("지원 및 모집 차수는 1 또는 2여야 합니다.");
+        }
     }
 
     private boolean isTeamApplyOpen() {

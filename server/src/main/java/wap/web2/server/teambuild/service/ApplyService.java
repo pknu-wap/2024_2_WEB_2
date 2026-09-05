@@ -178,6 +178,8 @@ public class ApplyService {
         log.info("setPreference-user:{},project:{}", user.getId(), project.getProjectId());
 
         List<RecruitmentInfo> roasters = request.getRoasters();
+        RecruitmentPolicy.validate(roasters,
+            applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), round), round);
         for (RecruitmentInfo roaster : roasters) {
             ProjectRecruit recruit = recruitRepository.save(
                 ProjectRecruit.builder()

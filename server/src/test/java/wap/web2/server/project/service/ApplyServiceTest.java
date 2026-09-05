@@ -58,7 +58,7 @@ class ApplyServiceTest {
         when(principal.getName()).thenReturn("tester");
 
         User user = new User();
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
 
         Project p1 = Project.builder().projectId(10L).title("A").build();
         Project p2 = Project.builder().projectId(20L).title("B").build();
@@ -102,7 +102,7 @@ class ApplyServiceTest {
         owner.setId(1L);
         User other = new User();
         other.setId(2L);
-        // when(userRepository.findById(1L)).thenReturn(Optional.of(owner));
+        // when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(owner));
         when(userRepository.findById(2L)).thenReturn(Optional.of(other));
 
         Project project = Project.builder()

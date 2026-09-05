@@ -70,7 +70,11 @@ class ApplyRoundTest {
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
     void savesApplicationInRequestedRound(int round) {
-        owner();
+        User user = new User();
+        user.setId(1L);
+        when(principal.getId()).thenReturn(1L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
         status(TeamBuildingStatus.APPLY);
         service.apply(principal, new ProjectAppliesRequest(List.of(
             new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), round);

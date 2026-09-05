@@ -4,6 +4,9 @@ import static wap.web2.server.util.SemesterGenerator.generateSemester;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -57,9 +60,24 @@ public class ApplyService {
             throw new ConflictException("현재 팀빌딩 상태에서는 지원할 수 없습니다.");
         }
 
-        User user = findUser(userPrincipal.getId());
+        // Serialize submissions by the same applicant so concurrent requests cannot exceed five.
+        User user = userRepository.findByIdForUpdate(userPrincipal.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
         List<ApplyRequest> applies = request.getApplies();
-        int priority = 1;
+        List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
+            user.getId(), generateSemester(), round);
+        if (applies == null || applies.isEmpty() || existing.size() + applies.size() > 5) {
+            throw new BadRequestException("차수별 지원은 1개 이상 5개 이하만 가능합니다.");
+        }
+        Set<ApplicationChoice> choices = new HashSet<>();
+        existing.forEach(a -> choices.add(new ApplicationChoice(a.getProject().getProjectId(), a.getPosition())));
+        for (ApplyRequest entry : applies) {
+            if (entry == null || entry.getProjectId() == null ||
+                !choices.add(new ApplicationChoice(entry.getProjectId(), parsePosition(entry.getPosition())))) {
+                throw new BadRequestException("동일한 프로젝트와 직무에 중복 지원할 수 없습니다.");
+            }
+        }
+        int priority = existing.stream().mapToInt(ProjectApply::getPriority).max().orElse(0) + 1;
 
         for (ApplyRequest applyRequest : applies) {
             Project project = findProject(applyRequest.getProjectId());
@@ -76,7 +94,7 @@ public class ApplyService {
                             .round(round)
                             .position(parsePosition(applyRequest.getPosition()))
                             .comment(applyRequest.getComment())
-                            .career(applyRequest.getCareer())
+                            .career(applyRequest.getExperience())
                             .user(user)
                             .project(project)
                             .build()
@@ -234,10 +252,12 @@ public class ApplyService {
             .orElseThrow(() -> new ResourceNotFoundException("프로젝트를 찾을 수 없습니다."));
     }
 
+    private record ApplicationChoice(Long projectId, Position position) {}
+
     private Position parsePosition(String position) {
         try {
-            return Position.valueOf(position);
-        } catch (IllegalArgumentException e) {
+            return Position.valueOf(position.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
             throw new BadRequestException("유효하지 않은 포지션입니다.");
         }
     }

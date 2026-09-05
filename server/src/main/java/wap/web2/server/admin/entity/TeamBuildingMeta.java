@@ -46,6 +46,11 @@ public class TeamBuildingMeta {
         this.status = next;
     }
 
+    public void completeThirdRound() {
+        round = 3;
+        completedRound = 3;
+    }
+
     public void completeRound() {
         completedRound = round;
     }

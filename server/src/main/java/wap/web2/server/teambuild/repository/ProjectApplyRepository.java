@@ -14,6 +14,8 @@ import wap.web2.server.teambuild.entity.ProjectApply;
 public interface ProjectApplyRepository extends JpaRepository<ProjectApply, Long> {
     List<ProjectApply> findAllByProject(Project project);
 
+    List<ProjectApply> findAllByProjectAndSemesterAndRound(Project project, String semester, int round);
+
     List<ProjectApply> findAllBySemesterAndPosition(String semester, Position position);
 
     List<ProjectApply> findByProject_ProjectIdAndSemesterAndUser_IdInOrderByPriorityAsc(

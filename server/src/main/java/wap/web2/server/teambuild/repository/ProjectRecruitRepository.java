@@ -12,6 +12,8 @@ import wap.web2.server.teambuild.entity.ProjectRecruit;
 public interface ProjectRecruitRepository extends JpaRepository<ProjectRecruit, Long> {
     Boolean existsByProjectIdAndSemester(Long projectId, String semester);
 
+    boolean existsByProjectIdAndSemesterAndRound(Long projectId, String semester, int round);
+
     List<ProjectRecruit> findAllBySemesterAndPosition(String semester, Position position);
 
     Page<ProjectRecruit> findAllBySemester(String semester, PageRequest of);

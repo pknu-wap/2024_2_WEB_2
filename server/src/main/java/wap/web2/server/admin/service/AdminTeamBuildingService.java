@@ -122,8 +122,9 @@ public class AdminTeamBuildingService {
 
     // TODO: 내부 객체에 position 빼기
     private Map<Long, List<ApplyInfo>> getApplies(Position pos) {
-        List<ProjectApply> applyEntities = applyRepository.findAllBySemesterAndPosition(
+        List<ProjectApply> applyEntities = applyRepository.findAllBySemesterAndRoundAndPosition(
             generateSemester(),
+            1, // 기존 관리자 배정은 1차 데이터만 사용한다.
             pos
         );
         if (applyEntities.isEmpty()) {
@@ -151,8 +152,9 @@ public class AdminTeamBuildingService {
     }
 
     private Map<Long, RecruitInfo> getRecruits(Position pos, List<Project> projects) {
-        List<ProjectRecruit> recruitEntities = recruitRepository.findAllBySemesterAndPosition(
+        List<ProjectRecruit> recruitEntities = recruitRepository.findAllBySemesterAndRoundAndPosition(
             generateSemester(),
+            1, // 기존 관리자 배정은 1차 데이터만 사용한다.
             pos
         );
         if (recruitEntities.isEmpty()) {

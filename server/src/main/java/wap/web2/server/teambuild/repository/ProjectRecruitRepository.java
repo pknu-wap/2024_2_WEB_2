@@ -14,7 +14,7 @@ public interface ProjectRecruitRepository extends JpaRepository<ProjectRecruit, 
 
     boolean existsByProjectIdAndSemesterAndRound(Long projectId, String semester, int round);
 
-    List<ProjectRecruit> findAllBySemesterAndPosition(String semester, Position position);
+    List<ProjectRecruit> findAllBySemesterAndRoundAndPosition(String semester, int round, Position position);
 
     Page<ProjectRecruit> findAllBySemester(String semester, PageRequest of);
 }

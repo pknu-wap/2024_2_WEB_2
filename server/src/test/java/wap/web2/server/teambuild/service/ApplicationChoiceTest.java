@@ -34,13 +34,17 @@ class ApplicationChoiceTest {
     @InjectMocks ApplyService service;
 
     private UserPrincipal applicant() {
+        return applicant(1);
+    }
+
+    private UserPrincipal applicant(int round) {
         UserPrincipal principal = mock(UserPrincipal.class);
         when(principal.getId()).thenReturn(1L);
         User user = new User();
         user.setId(1L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(teamBuildingMetaRepository.findBySemester(generateSemester())).thenReturn(Optional.of(
-            new TeamBuildingMeta(1L, generateSemester(), TeamBuildingStatus.APPLY)));
+            new TeamBuildingMeta(round, 0, 1L, generateSemester(), TeamBuildingStatus.APPLY)));
         return principal;
     }
 
@@ -69,7 +73,7 @@ class ApplicationChoiceTest {
 
     @Test
     void countsPreviouslySubmittedApplicationsInSameRound() {
-        UserPrincipal principal = applicant();
+        UserPrincipal principal = applicant(2);
         ProjectApply existing = ProjectApply.builder().project(Project.builder().projectId(10L).build())
             .priority(1).position(Position.AI).build();
         when(applyRepository.findAllByUserIdAndSemesterAndRound(1L, generateSemester(), 2))

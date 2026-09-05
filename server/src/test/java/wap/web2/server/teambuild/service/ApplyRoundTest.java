@@ -62,9 +62,9 @@ class ApplyRoundTest {
         when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
     }
 
-    private void status(TeamBuildingStatus status) {
+    private void status(TeamBuildingStatus status, int round) {
         when(teamBuildingMetaRepository.findBySemester(generateSemester()))
-            .thenReturn(Optional.of(new TeamBuildingMeta(1L, generateSemester(), status)));
+            .thenReturn(Optional.of(new TeamBuildingMeta(round, 0, 1L, generateSemester(), status)));
     }
 
     @ParameterizedTest
@@ -75,7 +75,7 @@ class ApplyRoundTest {
         when(principal.getId()).thenReturn(1L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
         when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
-        status(TeamBuildingStatus.APPLY);
+        status(TeamBuildingStatus.APPLY, round);
         service.apply(principal, new ProjectAppliesRequest(List.of(
             new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), round);
         ArgumentCaptor<ProjectApply> captor = ArgumentCaptor.forClass(ProjectApply.class);
@@ -87,7 +87,7 @@ class ApplyRoundTest {
     @ValueSource(ints = {1, 2})
     void savesRecruitmentInRequestedRound(int round) {
         owner();
-        status(TeamBuildingStatus.RECRUIT);
+        status(TeamBuildingStatus.RECRUIT, round);
         when(recruitRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         service.setPreference(principal, new RecruitmentDto(10L, List.of(
             new RecruitmentDto.RecruitmentInfo(2, "BACKEND", List.of()))), round);

@@ -56,7 +56,7 @@ public class ApplyService {
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request, int round) {
         validateRound(round);
-        if (!isTeamApplyOpen()) {
+        if (!isTeamApplyOpen(round)) {
             throw new ConflictException("현재 팀빌딩 상태에서는 지원할 수 없습니다.");
         }
 
@@ -164,7 +164,7 @@ public class ApplyService {
     @Transactional
     public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request, int round) {
         validateRound(round);
-        if (!isTeamRecruitOpen()) {
+        if (!isTeamRecruitOpen(round)) {
             throw new ConflictException("현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
         }
 
@@ -211,7 +211,9 @@ public class ApplyService {
     @Transactional(readOnly = true)
     public boolean hasAppliedThisSemester(Long userId) {
         findUser(userId);
-        return applyRepository.existsByUserIdAndSemester(userId, generateSemester());
+        int round = teamBuildingMetaRepository.findBySemester(generateSemester())
+            .map(TeamBuildingMeta::getRound).orElse(1);
+        return !applyRepository.findAllByUserIdAndSemesterAndRound(userId, generateSemester(), round).isEmpty();
     }
 
     private void validateRound(int round) {
@@ -220,7 +222,7 @@ public class ApplyService {
         }
     }
 
-    private boolean isTeamApplyOpen() {
+    private boolean isTeamApplyOpen(int round) {
         String semester = generateSemester();
         TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
             .findBySemester(semester)
@@ -228,10 +230,10 @@ public class ApplyService {
                 new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
             );
 
-        return teamBuildingMeta.getStatus() == TeamBuildingStatus.APPLY;
+        return teamBuildingMeta.getRound() == round && teamBuildingMeta.getStatus() == TeamBuildingStatus.APPLY;
     }
 
-    private boolean isTeamRecruitOpen() {
+    private boolean isTeamRecruitOpen(int round) {
         String semester = generateSemester();
         TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
             .findBySemester(semester)
@@ -239,7 +241,7 @@ public class ApplyService {
                 new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
             );
 
-        return teamBuildingMeta.getStatus() == TeamBuildingStatus.RECRUIT;
+        return teamBuildingMeta.getRound() == round && teamBuildingMeta.getStatus() == TeamBuildingStatus.RECRUIT;
     }
 
     private User findUser(Long userId) {

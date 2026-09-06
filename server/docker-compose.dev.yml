@@ -1,3 +1,7 @@
+include:
+  - path: ./cloudflare/config.yml
+    project_directory: .
+
 services:
   app:
     platform: linux/arm64
@@ -69,8 +73,11 @@ services:
     image: cloudflare/cloudflared:2026.8.3
     container_name: cloudflared
     restart: unless-stopped
-    volumes:
-      - /Users/mb/cloudflare:/etc/cloudflared:ro
+    secrets:
+      - cloudflared_credentials
+    configs:
+      - source: cloudflared_config
+        target: /etc/cloudflared/config.yml
     command: tunnel --config /etc/cloudflared/config.yml run waps-dev
     networks:
       - waps-network

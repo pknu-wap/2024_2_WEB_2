@@ -1,0 +1,16 @@
+# Docker Compose fragment; content is mounted as /etc/cloudflared/config.yml.
+configs:
+  cloudflared_config:
+    content: |
+      tunnel: waps
+      credentials-file: /run/secrets/cloudflared_credentials
+      protocol: http2
+
+      ingress:
+        - hostname: "${CLOUDFLARE_HOSTNAME}"
+          service: http://app:8080
+        - service: http_status:404
+
+secrets:
+  cloudflared_credentials:
+    environment: CLOUDFLARE_TUNNEL_CREDENTIALS

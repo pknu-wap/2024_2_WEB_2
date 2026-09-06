@@ -1,0 +1,86 @@
+services:
+  app:
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: waps-server
+    environment:
+      # Database
+      DB_HOST: ${DB_HOST}
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-waps}
+      DB_USER: ${DB_USER:-waps}
+      DB_PASSWORD: ${DB_PASSWORD:-waps1234}
+      # JWT
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      # OAuth2
+      KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}
+      KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
+      SERVER_URL: ${SERVER_URL:-http://localhost}
+      # Azure Blob Storage
+      AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
+      # AWS S3
+      AWS_ACCESS_KEY: ${AWS_ACCESS_KEY}
+      AWS_SECRET_KEY: ${AWS_SECRET_KEY}
+      AWS_S3_BUCKET_NAME: ${AWS_S3_BUCKET_NAME}
+      AWS_REGION: ${AWS_REGION:-ap-northeast-2}
+      # Oracle Object Storage
+      OCI_NAMESPACE: ${OCI_NAMESPACE}
+      OCI_BUCKET_NAME: ${OCI_BUCKET_NAME}
+      OCI_REGION: ${OCI_REGION}
+      OCI_CONFIG_PATH: /home/ubuntu/.oci/config
+      # Swagger
+      SWAGGER_SERVER_URL: ${SWAGGER_SERVER_URL:-http://localhost}
+      # Spring
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - waps-network
+    volumes:
+      - ${HOME}/.oci:/home/ubuntu/.oci:ro
+    restart: unless-stopped
+
+  mysql:
+    image: mysql:8.0
+    container_name: waps-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root1234}
+      MYSQL_DATABASE: ${DB_NAME:-waps}
+      MYSQL_USER: ${DB_USER:-waps}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-waps1234}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - waps-network
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.3
+    container_name: cloudflared
+    restart: unless-stopped
+    volumes:
+      - /Users/mb/cloudflare:/etc/cloudflared:ro
+    command: tunnel --config /etc/cloudflared/config.yml run waps-dev
+    networks:
+      - waps-network
+    depends_on:
+      app:
+        condition: service_healthy
+
+networks:
+  waps-network:
+    driver: bridge
+
+volumes:
+  mysql-data:

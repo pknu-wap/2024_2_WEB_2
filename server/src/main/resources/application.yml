@@ -56,16 +56,12 @@ app:
     tokenSecret: ${JWT_SECRET_KEY}
     tokenExpirationMsec: 86400000
     refreshTokenExpirationMsec: 1209600000
-  #  cors:
-  #    allowedOrigins:
-  #      - https://wap-projects.netlify.app
-  #      - http://localhost:3000
-  #      - http://localhost:8080
   oauth2:
     authorizedRedirectUris:
       - https://waps.im/oauth2/redirect
       - https://wapst.netlify.app/oauth2/redirect
       - https://waps-deploy.netlify.app/oauth2/redirect
+      - https://waps-web.netlify.app/oauth2/redirect
       - http://localhost:3000/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect

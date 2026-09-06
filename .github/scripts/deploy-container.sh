@@ -59,8 +59,10 @@ fi
 # Exported environment variables take precedence over the server's .env file.
 install -m 644 "$REMOTE_DIR/Caddyfile" "$compose_dir/Caddyfile"
 install -m 644 "$REMOTE_DIR/docker-compose.yml" "$compose_dir/docker-compose.yml"
+# Remote Bash reads this script from stdin; validation must not consume the remaining commands.
 docker compose -p "$compose_project" -f "$compose_dir/docker-compose.yml" \
-  run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+  run --rm --no-deps --interactive=false caddy \
+  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile </dev/null
 docker compose -p "$compose_project" -f "$compose_dir/docker-compose.yml" \
   up -d --no-deps --force-recreate caddy
 

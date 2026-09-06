@@ -78,6 +78,8 @@ jobs:
           # and no real tokens are issued during CI spec extraction.
           JWT_SECRET_KEY: ${{ secrets.CI_JWT_SECRET_KEY }}
           KAKAO_REST_API_KEY: ${{ secrets.CI_KAKAO_REST_API_KEY }}
+          # Spec extraction does not perform OAuth login.
+          KAKAO_CLIENT_SECRET: swagger-ci-unused
           SERVER_URL: ${{ vars.PUBLIC_SERVER_URL }}
           SWAGGER_SERVER_URL: ${{ vars.PUBLIC_SERVER_URL }}
           SPRING_PROFILES_ACTIVE: ""

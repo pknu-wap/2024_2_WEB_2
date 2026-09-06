@@ -10,7 +10,7 @@ trap 'rm -rf -- "$REMOTE_DIR"' EXIT
 
 # Environment values arrive through shell-quoted exports over verified SSH.
 for name in CADDY_DOMAIN IMAGE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
-  JWT_SECRET_KEY KAKAO_REST_API_KEY SERVER_URL SWAGGER_SERVER_URL \
+  JWT_SECRET_KEY KAKAO_REST_API_KEY KAKAO_CLIENT_SECRET SERVER_URL SWAGGER_SERVER_URL \
   OCI_NAMESPACE OCI_BUCKET_NAME OCI_REGION; do
   if ! printenv "$name" | grep -q .; then
     echo "Missing required environment variable: $name" >&2
@@ -96,7 +96,7 @@ if ! docker run -d \
   --mount type=bind,src=/home/ubuntu/.oci,dst=/home/ubuntu/.oci,readonly \
   -e SPRING_PROFILES_ACTIVE=oracle \
   -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \
-  -e JWT_SECRET_KEY -e KAKAO_REST_API_KEY -e SERVER_URL \
+  -e JWT_SECRET_KEY -e KAKAO_REST_API_KEY -e KAKAO_CLIENT_SECRET -e SERVER_URL \
   -e OCI_NAMESPACE -e OCI_BUCKET_NAME -e OCI_REGION \
   -e OCI_CONFIG_PATH=/home/ubuntu/.oci/config \
   -e SWAGGER_SERVER_URL \

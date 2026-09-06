@@ -37,6 +37,59 @@ WAP 구성원이 보다 편하게 탐색하고 참여하며 기록을 남길 수
 | **Database**       | MySQL                                   |
 | **Infrastructure** | Oracle Cloud, Grafana, Prometheus       |
 
+## 💻 실행 방법
+
+클라이언트와 서버는 각각 별도의 터미널에서 실행한다. 아래 명령은 저장소 루트에서 시작한다.
+
+### 🖥️ Client
+
+1. 의존성을 설치한다.
+
+   ```bash
+   cd client
+   npm ci
+   ```
+
+2. `client/.env.local` 파일을 만들고 API 서버 주소를 설정한다.
+
+   ```dotenv
+   REACT_APP_API_BASE_URL=http://localhost:8080
+   ```
+
+3. 개발 서버를 실행한다.
+
+   ```bash
+   npm start
+   ```
+
+### ⚙️ Server
+
+1. MySQL에 로컬 개발용 `waps` 데이터베이스를 준비한다.
+
+2. `server/.env` 파일에 아래 설정을 작성한다. 빈 값은 직접 작성한다.
+
+   ```yaml
+   DB_HOST: "localhost"
+   DB_PORT: "3306"
+   DB_NAME: "waps"
+   DB_USER: ""
+   DB_PASSWORD: ""
+   JWT_SECRET_KEY: ""
+   KAKAO_REST_API_KEY: ""
+   SERVER_URL: "http://localhost:8080"
+   SWAGGER_SERVER_URL: "http://localhost:8080"
+   SPRING_PROFILES_ACTIVE: "local"
+   ```
+
+   `local` 프로필에서는 클라우드 스토리지를 사용하지 않아 이미지 업로드가 실제로 저장되지 않는다. 업로드 기능을 사용하려면 `oracle`, `aws`, `azure` 중 하나의 프로파일과 해당 스토리지 설정이 필요하다.
+
+3. 서버를 실행한다.
+
+   ```bash
+   cd server
+   ./gradlew bootRun
+   ```
+
 ## 🚀 WAPs service
 
 [Waps 보러가기](https://waps.im)

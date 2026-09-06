@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import wap.web2.server.global.security.CurrentUser;
 import wap.web2.server.global.security.UserPrincipal;
@@ -59,27 +60,30 @@ public class TeamBuildingControllerV3 {
     @PostMapping("/apply/submit")
     public ResponseEntity<String> apply(
         @CurrentUser UserPrincipal userPrincipal,
+        @RequestParam(name = "round", defaultValue = "1") int round,
         @Valid @RequestBody ProjectAppliesRequest request
     ) {
-        applyService.apply(userPrincipal, request);
+        applyService.apply(userPrincipal, request, round);
         return ResponseEntity.ok("지원이 완료되었습니다.");
     }
 
     @PostMapping("/recruit/submit")
     public ResponseEntity<String> setPreference(
         @CurrentUser UserPrincipal userPrincipal,
+        @RequestParam(name = "round", defaultValue = "1") int round,
         @Valid @RequestBody RecruitmentDto request
     ) {
-        applyService.setPreference(userPrincipal, request);
+        applyService.setPreference(userPrincipal, request, round);
         return ResponseEntity.ok("모집 정보가 등록되었습니다.");
     }
 
     @GetMapping("/{projectId}/applies")
     public ResponseEntity<ProjectAppliesResponse> getRecruitPageData(
         @CurrentUser UserPrincipal userPrincipal,
+        @RequestParam(name = "round", defaultValue = "1") int round,
         @PathVariable("projectId") Long projectId
     ) {
-        ProjectAppliesResponse response = applyService.getRecruitPageData(userPrincipal, projectId);
+        ProjectAppliesResponse response = applyService.getRecruitPageData(userPrincipal, projectId, round);
         return ResponseEntity.ok(response);
     }
 

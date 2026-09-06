@@ -26,6 +26,25 @@ class TeamBuildingResultServiceTest {
     @Mock
     private ProjectApplyRepository projectApplyRepository;
 
+    @Mock private wap.web2.server.member.repository.UserRepository userRepository;
+    @Mock private wap.web2.server.project.repository.ProjectRepository projectRepository;
+    @Mock private wap.web2.server.teambuild.repository.TeamRepository teamRepository;
+
+    @Test
+    void resultsUseActualAssignedPositionWithoutRequiringAnApplicationToThatProject() {
+        User leader = user(1L, "leader");
+        User member = user(2L, "member");
+        when(projectRepository.findProjectsBySemester(anyString())).thenReturn(List.of(
+            Project.builder().projectId(10L).user(leader).build()));
+        when(teamRepository.findAllBySemester(anyString())).thenReturn(List.of(
+            wap.web2.server.teambuild.entity.Team.builder().projectId(10L).memberId(2L)
+                .position(Position.BACKEND).round(3).build()));
+        when(userRepository.findAllById(List.of(2L))).thenReturn(List.of(member));
+        var result = teamBuildingResultService.getResults();
+        assertThat(result.getResults().get(0).getMembers()).containsExactly(
+            new TeamMemberResult(2L, "member", Position.BACKEND));
+    }
+
     @InjectMocks
     private TeamBuildingResultService teamBuildingResultService;
 

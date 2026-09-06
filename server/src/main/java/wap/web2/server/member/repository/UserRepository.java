@@ -1,5 +1,7 @@
 package wap.web2.server.member.repository;
 
+import jakarta.persistence.LockModeType;
+import org.springframework.data.jpa.repository.Lock;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -12,6 +14,10 @@ import wap.web2.server.member.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT u FROM User u WHERE u.id = :id")
+    Optional<User> findByIdForUpdate(@Param("id") Long id);
+
     Optional<User> findByEmail(String email);
 
     Boolean existsByEmail(String email);

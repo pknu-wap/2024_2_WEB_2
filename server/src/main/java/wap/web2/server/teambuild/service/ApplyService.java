@@ -4,6 +4,9 @@ import static wap.web2.server.util.SemesterGenerator.generateSemester;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,13 +50,34 @@ public class ApplyService {
 
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request) {
-        if (!isTeamApplyOpen()) {
-            throw new ConflictException("현재 팀빌딩 상태에서는 지원할 수 없습니다.");
-        }
+        apply(userPrincipal, request, 1);
+    }
 
-        User user = findUser(userPrincipal.getId());
+    @Transactional
+    public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request, int round) {
+        validateRound(round);
+        String semester = generateSemester();
+        validateAndLockSubmission(semester, round, TeamBuildingStatus.APPLY,
+            "현재 팀빌딩 상태에서는 지원할 수 없습니다.");
+
+        // Serialize submissions by the same applicant so concurrent requests cannot exceed five.
+        User user = userRepository.findByIdForUpdate(userPrincipal.getId())
+            .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
         List<ApplyRequest> applies = request.getApplies();
-        int priority = 1;
+        List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
+            user.getId(), semester, round);
+        if (applies == null || applies.isEmpty() || existing.size() + applies.size() > 5) {
+            throw new BadRequestException("차수별 지원은 1개 이상 5개 이하만 가능합니다.");
+        }
+        Set<ApplicationChoice> choices = new HashSet<>();
+        existing.forEach(a -> choices.add(new ApplicationChoice(a.getProject().getProjectId(), a.getPosition())));
+        for (ApplyRequest entry : applies) {
+            if (entry == null || entry.getProjectId() == null ||
+                !choices.add(new ApplicationChoice(entry.getProjectId(), parsePosition(entry.getPosition())))) {
+                throw new BadRequestException("동일한 프로젝트와 직무에 중복 지원할 수 없습니다.");
+            }
+        }
+        int priority = existing.stream().mapToInt(ProjectApply::getPriority).max().orElse(0) + 1;
 
         for (ApplyRequest applyRequest : applies) {
             Project project = findProject(applyRequest.getProjectId());
@@ -67,9 +91,11 @@ public class ApplyService {
             applyRepository.save(
                     ProjectApply.builder()
                             .priority(priority++)
+                            .round(round)
+                            .semester(semester)
                             .position(parsePosition(applyRequest.getPosition()))
                             .comment(applyRequest.getComment())
-                            .career(applyRequest.getCareer())
+                            .career(applyRequest.getExperience())
                             .user(user)
                             .project(project)
                             .build()
@@ -79,6 +105,12 @@ public class ApplyService {
 
     @Transactional(readOnly = true)
     public boolean hasRecruited(UserPrincipal userPrincipal, Long projectId) {
+        return hasRecruited(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasRecruited(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
@@ -86,11 +118,17 @@ public class ApplyService {
             throw new ForbiddenException("프로젝트 열람 권한이 없습니다.");
         }
 
-        return recruitRepository.existsByProjectIdAndSemester(projectId, generateSemester());
+        return recruitRepository.existsByProjectIdAndSemesterAndRound(projectId, generateSemester(), round);
     }
 
     @Transactional(readOnly = true)
     public ProjectAppliesResponse getApplies(UserPrincipal userPrincipal, Long projectId) {
+        return getApplies(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectAppliesResponse getApplies(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
@@ -98,7 +136,7 @@ public class ApplyService {
             throw new ForbiddenException("프로젝트 열람 권한이 없습니다.");
         }
 
-        List<ProjectApply> applies = applyRepository.findAllByProject(project);
+        List<ProjectApply> applies = applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), round);
         log.info("getApplies-user:{}", user.getName());
 
         return ProjectAppliesResponse.fromEntities(applies);
@@ -106,18 +144,30 @@ public class ApplyService {
 
     @Transactional(readOnly = true)
     public ProjectAppliesResponse getRecruitPageData(UserPrincipal userPrincipal, Long projectId) {
-        if (hasRecruited(userPrincipal, projectId)) {
+        return getRecruitPageData(userPrincipal, projectId, 1);
+    }
+
+    @Transactional(readOnly = true)
+    public ProjectAppliesResponse getRecruitPageData(UserPrincipal userPrincipal, Long projectId, int round) {
+        validateRound(round);
+        if (hasRecruited(userPrincipal, projectId, round)) {
             throw new ConflictException("이미 제출된 모집이 존재합니다.");
         }
 
-        return getApplies(userPrincipal, projectId);
+        return getApplies(userPrincipal, projectId, round);
     }
 
     @Transactional
     public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request) {
-        if (!isTeamRecruitOpen()) {
-            throw new ConflictException("현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
-        }
+        setPreference(userPrincipal, request, 1);
+    }
+
+    @Transactional
+    public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request, int round) {
+        validateRound(round);
+        String semester = generateSemester();
+        validateAndLockSubmission(semester, round, TeamBuildingStatus.RECRUIT,
+            "현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
 
         User user = findUser(userPrincipal.getId());
         Project project = findProject(request.getProjectId());
@@ -129,9 +179,13 @@ public class ApplyService {
         log.info("setPreference-user:{},project:{}", user.getId(), project.getProjectId());
 
         List<RecruitmentInfo> roasters = request.getRoasters();
+        RecruitmentPolicy.validate(roasters,
+            applyRepository.findAllByProjectAndSemesterAndRound(project, semester, round), round);
         for (RecruitmentInfo roaster : roasters) {
             ProjectRecruit recruit = recruitRepository.save(
                 ProjectRecruit.builder()
+                    .round(round)
+                    .semester(semester)
                     .leaderId(user.getId())
                     .projectId(project.getProjectId())
                     .position(parsePosition(roaster.getPosition()))
@@ -159,29 +213,28 @@ public class ApplyService {
     @Transactional(readOnly = true)
     public boolean hasAppliedThisSemester(Long userId) {
         findUser(userId);
-        return applyRepository.existsByUserIdAndSemester(userId, generateSemester());
+        int round = teamBuildingMetaRepository.findBySemester(generateSemester())
+            .map(TeamBuildingMeta::getRound).orElse(1);
+        return !applyRepository.findAllByUserIdAndSemesterAndRound(userId, generateSemester(), round).isEmpty();
     }
 
-    private boolean isTeamApplyOpen() {
-        String semester = generateSemester();
-        TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
-            .findBySemester(semester)
+    private void validateRound(int round) {
+        if (round != 1 && round != 2) {
+            throw new BadRequestException("지원 및 모집 차수는 1 또는 2여야 합니다.");
+        }
+    }
+
+    private void validateAndLockSubmission(String semester, int round,
+                                           TeamBuildingStatus expectedStatus, String message) {
+        // Lock meta before user/data access, matching admin operations. The caller's
+        // transaction keeps this lock through commit so closing cannot overtake a submission.
+        TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
             .orElseThrow(() ->
                 new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
             );
-
-        return teamBuildingMeta.getStatus() == TeamBuildingStatus.APPLY;
-    }
-
-    private boolean isTeamRecruitOpen() {
-        String semester = generateSemester();
-        TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
-            .findBySemester(semester)
-            .orElseThrow(() ->
-                new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
-            );
-
-        return teamBuildingMeta.getStatus() == TeamBuildingStatus.RECRUIT;
+        if (meta.getRound() != round || meta.getStatus() != expectedStatus) {
+            throw new ConflictException(message);
+        }
     }
 
     private User findUser(Long userId) {
@@ -196,10 +249,12 @@ public class ApplyService {
             .orElseThrow(() -> new ResourceNotFoundException("프로젝트를 찾을 수 없습니다."));
     }
 
+    private record ApplicationChoice(Long projectId, Position position) {}
+
     private Position parsePosition(String position) {
         try {
-            return Position.valueOf(position);
-        } catch (IllegalArgumentException e) {
+            return Position.valueOf(position.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
             throw new BadRequestException("유효하지 않은 포지션입니다.");
         }
     }

@@ -17,7 +17,7 @@ services:
       # OAuth2
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      SERVER_URL: ${SERVER_URL:-http://localhost}
+      SERVER_URL: ${DEV_SERVER_URL:-http://localhost}
       # Azure Blob Storage
       AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
       # AWS S3

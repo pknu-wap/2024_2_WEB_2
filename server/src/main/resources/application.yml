@@ -66,6 +66,7 @@ app:
       - https://waps.im/oauth2/redirect
       - https://wapst.netlify.app/oauth2/redirect
       - https://waps-deploy.netlify.app/oauth2/redirect
+      - https://waps-web.netlify.app/oauth2/redirect
       - http://localhost:3000/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect

@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, Outlet } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from "../../utils/authStorage";
 
 const PrivateRoute = ({ requireRole = null }) => {
   const token = Cookies.get("authToken");

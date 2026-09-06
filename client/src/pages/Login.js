@@ -2,7 +2,7 @@ import "../assets/Login.css";
 import wapsLogo from "../assets/img/waps_logo.png";
 import img from "../assets/img/pngwing.com.png";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import { authApi } from "../api/auth";
 
 const Login = () => {

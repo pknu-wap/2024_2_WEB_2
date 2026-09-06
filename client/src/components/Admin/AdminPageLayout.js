@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, Outlet } from "react-router-dom";
 import styles from "../../assets/Admin/AdminPageLayout.module.css";
 import SideBar from "./SideBar";
-import Cookies from "js-cookie";
+import Cookies from "../../utils/authStorage";
 
 // 어드민 페이지 공용 레이아웃
 const AdminPageLayout = () => {

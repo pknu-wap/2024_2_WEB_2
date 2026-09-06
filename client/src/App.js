@@ -7,6 +7,7 @@ import {
 } from "react-router-dom";
 import ProjectPage from "./pages/ProjectPage";
 import Login from "./pages/Login";
+import LoginDev from "./pages/LoginDev";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
 import SplashPage from "./pages/SplashPage";
 import Callback from "./components/Login/Callback";
@@ -57,6 +58,7 @@ function App() {
           <Route path="/" element={<SplashPage />} />
           {/* 로그인 화면 */}
           <Route path="/login" element={<Login />} />
+          <Route path="/login-dev" element={<LoginDev />} />
           {/* 카카오 인증 Callback */}
           <Route path="/oauth/callback" element={<Callback />} />
           {/* 경로 */}

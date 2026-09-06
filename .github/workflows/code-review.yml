@@ -21,7 +21,7 @@ jobs:
     name: Code Review
     steps:
       - name: DeepSeek Code Review
-        uses: hustcer/deepseek-review@v1
+        uses: psvm203/deepseek-review@v1.0
         with:
           model: "deepseek-v4-flash"
           watch-mention: "/review"

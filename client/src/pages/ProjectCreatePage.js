@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { projectApi } from "../api/project";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import ProjectFormNew from "../components/ProjectCreation/ProjectFormNew";

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import Menu from "./Menu";
 import wapsLogo from "../assets/img/waps_logo.png";
 

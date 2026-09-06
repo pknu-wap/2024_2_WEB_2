@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { userApi } from "../../api/user";
-import Cookies from "js-cookie";
+import Cookies from "../../utils/authStorage";
 
 const ProtectedPage = () => {
   const [userInfo, setUserInfo] = useState(null);

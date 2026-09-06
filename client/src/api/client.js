@@ -1,6 +1,6 @@
 // 공통 axios 인스턴트 설정
 import axios from "axios";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 
 const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:8080",

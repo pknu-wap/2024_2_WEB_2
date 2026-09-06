@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import { POSITIONS } from "../constants/positions";
@@ -76,7 +76,6 @@ function TeamBuildPage({ round = 1 }) {
   useEffect(() => {
     const token =
       Cookies.get("authToken") ||
-      window.localStorage.getItem("authToken") ||
       "";
     if (!token) {
       alert("로그인이 필요합니다.");

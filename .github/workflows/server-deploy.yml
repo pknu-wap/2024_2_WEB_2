@@ -20,6 +20,7 @@ jobs:
       OCI_HOST: ${{ secrets.OCI_HOST }}
       OCI_USER: ${{ secrets.OCI_USER }}
       OCI_SSH_PORT: ${{ vars.OCI_SSH_PORT || '22' }}
+      CADDY_DOMAIN: ${{ vars.CADDY_DOMAIN }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -37,6 +38,7 @@ jobs:
 
           source .github/scripts/deploy-ssh.sh
 
+          : "${CADDY_DOMAIN:?Set the CADDY_DOMAIN GitHub Actions variable}"
           : "${OCI_SSH_KEY:?}" "${OCI_SSH_FINGERPRINT:?}"
           [[ "$OCI_HOST" =~ ^[A-Za-z0-9][A-Za-z0-9.:-]*$ ]]
           [[ "$OCI_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
@@ -106,6 +108,7 @@ jobs:
           printf 'remote_dir=%s\n' "$remote_dir" >> "$GITHUB_OUTPUT"
           scp "${ssh_options[@]}" -P "$OCI_SSH_PORT" \
             "$state/image.tar.gz" "$state/image.tar.gz.sha256" \
+            server/Caddyfile server/docker-compose.yml \
             "$OCI_USER@[$OCI_HOST]:$remote_dir/"
       - name: Deploy via SSH
         timeout-minutes: 15
@@ -132,7 +135,7 @@ jobs:
 
           # Quote values for remote Bash without printing secrets in the job log.
           {
-            for name in IMAGE REMOTE_DIR DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
+            for name in CADDY_DOMAIN IMAGE REMOTE_DIR DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
               JWT_SECRET_KEY KAKAO_REST_API_KEY SERVER_URL SWAGGER_SERVER_URL \
               OCI_NAMESPACE OCI_BUCKET_NAME OCI_REGION; do
               printf 'export %s=%q\n' "$name" "${!name}"

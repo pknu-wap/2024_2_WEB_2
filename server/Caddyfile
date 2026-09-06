@@ -1,0 +1,6 @@
+{$CADDY_DOMAIN} {
+    reverse_proxy app:8080
+
+    # Enable compression
+    encode zstd gzip
+}

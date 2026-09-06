@@ -9,7 +9,7 @@ fi
 trap 'rm -rf -- "$REMOTE_DIR"' EXIT
 
 # Environment values arrive through shell-quoted exports over verified SSH.
-for name in IMAGE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
+for name in CADDY_DOMAIN IMAGE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
   JWT_SECRET_KEY KAKAO_REST_API_KEY SERVER_URL SWAGGER_SERVER_URL \
   OCI_NAMESPACE OCI_BUCKET_NAME OCI_REGION; do
   if ! printenv "$name" | grep -q .; then
@@ -19,6 +19,24 @@ for name in IMAGE DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
 done
 
 docker info > /dev/null
+# Reuse the existing Compose project so certificate volumes and the DB network stay intact.
+compose_project=
+compose_dir=
+for container in caddy waps-mysql; do
+  compose_project=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$container" 2>/dev/null || true)
+  compose_dir=$(docker inspect --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' "$container" 2>/dev/null || true)
+  if [[ -n "$compose_project" && "$compose_project" != '<no value>' && "$compose_dir" == /* ]]; then
+    break
+  fi
+done
+if [[ -z "$compose_project" || "$compose_project" == '<no value>' || "$compose_dir" != /* ]]; then
+  echo 'Existing Caddy or MySQL Compose project not found; initialize Docker Compose on OCI first.' >&2
+  exit 1
+fi
+deploy_network="${compose_project}_waps-network"
+docker network inspect "$deploy_network" > /dev/null
+docker compose version > /dev/null
+
 test -f /home/ubuntu/.oci/config
 
 # Verify and load the transferred archive before touching the running container.
@@ -36,6 +54,15 @@ if docker container inspect waps-server-previous > /dev/null 2>&1; then
   echo 'Previous deployment backup exists; inspect it before retrying.' >&2
   exit 1
 fi
+
+# Apply the workflow's domain to Caddy before replacing the running app.
+# Exported environment variables take precedence over the server's .env file.
+install -m 644 "$REMOTE_DIR/Caddyfile" "$compose_dir/Caddyfile"
+install -m 644 "$REMOTE_DIR/docker-compose.yml" "$compose_dir/docker-compose.yml"
+docker compose -p "$compose_project" -f "$compose_dir/docker-compose.yml" \
+  run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+docker compose -p "$compose_project" -f "$compose_dir/docker-compose.yml" \
+  up -d --no-deps --force-recreate caddy
 
 had_previous=false
 if docker container inspect waps-server > /dev/null 2>&1; then
@@ -63,7 +90,7 @@ rollback() {
 if ! docker run -d \
   --name waps-server \
   --restart unless-stopped \
-  -p 80:8080 \
+  --network "$deploy_network" --network-alias app \
   --mount type=bind,src=/home/ubuntu/.oci,dst=/home/ubuntu/.oci,readonly \
   -e SPRING_PROFILES_ACTIVE=oracle \
   -e DB_HOST -e DB_PORT -e DB_NAME -e DB_USER -e DB_PASSWORD \

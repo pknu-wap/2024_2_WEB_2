@@ -30,7 +30,7 @@ spring:
         registration:
           kakao:
             client-id: ${KAKAO_REST_API_KEY}
-            client-secret: 1aad561b8ca76979450e2a05adaf8b35
+            client-secret: ${KAKAO_CLIENT_SECRET}
             scope: profile_nickname,account_email
             client-name: kakao-login
             authorization-grant-type: authorization_code

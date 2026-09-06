@@ -123,6 +123,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           JWT_SECRET_KEY: ${{ secrets.JWT_SECRET_KEY }}
           KAKAO_REST_API_KEY: ${{ secrets.KAKAO_REST_API_KEY }}
+          KAKAO_CLIENT_SECRET: ${{ secrets.KAKAO_CLIENT_SECRET }}
           SERVER_URL: ${{ secrets.SERVER_URL }}
           SWAGGER_SERVER_URL: ${{ secrets.SWAGGER_SERVER_URL }}
           OCI_NAMESPACE: ${{ secrets.OCI_NAMESPACE }}
@@ -136,7 +137,7 @@ jobs:
           # Quote values for remote Bash without printing secrets in the job log.
           {
             for name in CADDY_DOMAIN IMAGE REMOTE_DIR DB_HOST DB_PORT DB_NAME DB_USER DB_PASSWORD \
-              JWT_SECRET_KEY KAKAO_REST_API_KEY SERVER_URL SWAGGER_SERVER_URL \
+              JWT_SECRET_KEY KAKAO_REST_API_KEY KAKAO_CLIENT_SECRET SERVER_URL SWAGGER_SERVER_URL \
               OCI_NAMESPACE OCI_BUCKET_NAME OCI_REGION; do
               printf 'export %s=%q\n' "$name" "${!name}"
             done

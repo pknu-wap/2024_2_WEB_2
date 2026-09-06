@@ -76,12 +76,15 @@ WAP 구성원이 보다 편하게 탐색하고 참여하며 기록을 남길 수
    DB_PASSWORD: ""
    JWT_SECRET_KEY: ""
    KAKAO_REST_API_KEY: ""
+   KAKAO_CLIENT_SECRET: ""
    SERVER_URL: "http://localhost:8080"
    SWAGGER_SERVER_URL: "http://localhost:8080"
    SPRING_PROFILES_ACTIVE: "local"
    ```
 
    `local` 프로필에서는 클라우드 스토리지를 사용하지 않아 이미지 업로드가 실제로 저장되지 않는다. 업로드 기능을 사용하려면 `oracle`, `aws`, `azure` 중 하나의 프로파일과 해당 스토리지 설정이 필요하다.
+
+   `KAKAO_REST_API_KEY`와 `KAKAO_CLIENT_SECRET`은 카카오디벨로퍼스의 동일한 REST API 키에 연결된 값을 사용한다. 운영 배포는 GitHub Actions Secrets에도 두 값을 등록해야 한다. 시크릿 변경 후 서버를 재배포한다.
 
 3. 서버를 실행한다.
 

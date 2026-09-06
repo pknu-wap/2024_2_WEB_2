@@ -75,10 +75,13 @@ const Callback = () => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
 
-    if (token) {
+    if (params.get("code") === "AUTH_OAUTH2_FAILURE") {
+      alert("카카오 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.");
+      navigate("/login");
+    } else if (token) {
       fetchUserInfo(token);
     } else {
-      alert("인증 코드가 없습니다. 다시 로그인해주세요.");
+      alert("로그인 토큰이 없습니다. 다시 로그인해주세요.");
       navigate("/login");
     }
   }, [navigate, fetchUserInfo]);

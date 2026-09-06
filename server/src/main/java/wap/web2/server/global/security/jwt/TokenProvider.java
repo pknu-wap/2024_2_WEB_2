@@ -10,6 +10,9 @@ import io.jsonwebtoken.security.Keys;
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
+import java.time.Instant;
+import org.springframework.beans.factory.ObjectProvider;
+import wap.web2.server.auth.DevLoginSessionValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
@@ -23,9 +26,11 @@ public class TokenProvider {
 
     private final AppProperties appProperties;
     private final Key key;
+    private final ObjectProvider<DevLoginSessionValidator> devSessions;
 
-    public TokenProvider(AppProperties appProperties) {
+    public TokenProvider(AppProperties appProperties, ObjectProvider<DevLoginSessionValidator> devSessions) {
         this.appProperties = appProperties;
+        this.devSessions = devSessions;
         this.key = Keys.hmacShaKeyFor(
             appProperties.getAuth().getTokenSecret().getBytes(StandardCharsets.UTF_8)
         );
@@ -43,6 +48,18 @@ public class TokenProvider {
             .setSubject(Long.toString(userPrincipal.getId()))
             .setIssuedAt(now)
             .setExpiration(expiryDate)
+            .signWith(key, SignatureAlgorithm.HS512)
+            .compact();
+    }
+
+    public String createDevToken(Authentication authentication, String tokenId, Instant expiresAt) {
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        return Jwts.builder()
+            .setSubject(Long.toString(principal.getId()))
+            .setId(tokenId)
+            .claim("devLogin", true)
+            .setIssuedAt(new Date())
+            .setExpiration(Date.from(expiresAt))
             .signWith(key, SignatureAlgorithm.HS512)
             .compact();
     }
@@ -75,7 +92,13 @@ public class TokenProvider {
 
     public ErrorCode getAccessTokenErrorCode(String authToken) {
         try {
-            Jwts.parser().setSigningKey(key).build().parseClaimsJws(authToken);
+            Claims claims = Jwts.parser().setSigningKey(key).build().parseClaimsJws(authToken).getBody();
+            if (Boolean.TRUE.equals(claims.get("devLogin", Boolean.class))) {
+                var validator = devSessions.getIfAvailable();
+                if (validator == null || !validator.isActive(claims.getId(), Long.valueOf(claims.getSubject()))) {
+                    return ErrorCode.AUTH_INVALID_TOKEN;
+                }
+            }
             return null;
         } catch (SecurityException | MalformedJwtException ex) {
             log.warn("유효하지 않은 JWT 서명입니다. message={}", ex.getMessage());

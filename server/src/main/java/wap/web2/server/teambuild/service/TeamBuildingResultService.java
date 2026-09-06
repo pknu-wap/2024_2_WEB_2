@@ -27,6 +27,7 @@ import wap.web2.server.teambuild.repository.TeamRepository;
 @RequiredArgsConstructor
 public class TeamBuildingResultService {
 
+    private final wap.web2.server.member.repository.UserRepository userRepository;
     private final TeamRepository teamRepository;
     private final ProjectRepository projectRepository;
     private final ProjectApplyRepository projectApplyRepository;
@@ -60,7 +61,15 @@ public class TeamBuildingResultService {
                 projectId,
                 Collections.emptyList()
             );
-            List<TeamMemberResult> members = buildAssignedMembers(projectId, semester, memberIds);
+            Map<Long, wap.web2.server.member.entity.User> users = userRepository.findAllById(memberIds).stream()
+                .collect(Collectors.toMap(wap.web2.server.member.entity.User::getId, u -> u));
+            List<TeamMemberResult> members = teams.stream()
+                .filter(t -> t.getProjectId().equals(projectId))
+                .map(t -> {
+                    var user = users.get(t.getMemberId());
+                    if (user == null) throw new wap.web2.server.exception.ResourceNotFoundException("배정된 사용자를 찾을 수 없습니다.");
+                    return new TeamMemberResult(user.getId(), user.getName(), t.getPosition());
+                }).toList();
 
             // 리더 정보
             TeamMemberResult leader = TeamMemberResult.fromLeader(project.getUser());
@@ -71,25 +80,6 @@ public class TeamBuildingResultService {
         }
 
         return results;
-    }
-
-    private List<TeamMemberResult> buildAssignedMembers(
-        Long projectId,
-        String semester,
-        List<Long> memberIds
-    ) {
-        if (memberIds.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        List<ProjectApply> assignedApplies =
-            projectApplyRepository.findByProject_ProjectIdAndSemesterAndUser_IdInOrderByPriorityAsc(
-                projectId,
-                semester,
-                memberIds
-            );
-
-        return assignedApplies.stream().map(TeamMemberResult::from).toList();
     }
 
     @Transactional(readOnly = true)

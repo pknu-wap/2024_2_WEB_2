@@ -44,6 +44,10 @@ public class ProjectApply {
     @Column(columnDefinition = "TEXT")
     private String career;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private int round = 1;
+
     @Column(nullable = false, length = 7)
     private String semester; // "year-semester"
 

@@ -47,6 +47,10 @@ public class ProjectRecruit {
     @Column(nullable = false)
     private Integer capacity;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private int round = 1;
+
     @Column(nullable = false, length = 7)
     private String semester; // "year-semester"
 

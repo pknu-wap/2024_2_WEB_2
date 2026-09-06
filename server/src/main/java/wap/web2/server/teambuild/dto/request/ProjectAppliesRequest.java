@@ -39,6 +39,16 @@ public class ProjectAppliesRequest {
 
         private String career;
 
+        private String experience;
+
+        public ApplyRequest(Long projectId, String position, String comment, String career) {
+            this(projectId, position, comment, career, null);
+        }
+
+        public String getExperience() {
+            return experience != null ? experience : career;
+        }
+
         public ApplyRequest(Long projectId, String position, String comment) {
             this(projectId, position, comment, null);
         }

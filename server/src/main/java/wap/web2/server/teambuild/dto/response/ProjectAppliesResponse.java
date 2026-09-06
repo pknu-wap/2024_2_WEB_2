@@ -22,6 +22,10 @@ public class ProjectAppliesResponse {
         private String position;
         private String comment;
         private String career;
+
+        public String getExperience() {
+            return career;
+        }
         private String applicantName;
         private Long applicantId;
     }

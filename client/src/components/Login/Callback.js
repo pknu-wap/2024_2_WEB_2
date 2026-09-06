@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies, { clearDevSession } from "../../utils/authStorage";
 import LoadingPage from "../../components/LoadingPage";
 
 const Callback = () => {
@@ -22,6 +22,7 @@ const Callback = () => {
           return response.json();
         })
         .then((data) => {
+          clearDevSession();
           Cookies.set("userName", data.userName, { expires: 7 });
           Cookies.set("authToken", token, { expires: 7 });
 

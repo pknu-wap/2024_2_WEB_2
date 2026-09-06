@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import { FaChevronRight } from "react-icons/fa";
 import "../assets/Menu.css";
 

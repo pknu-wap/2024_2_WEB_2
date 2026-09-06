@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import LoadingPage from "../components/LoadingPage";
@@ -142,7 +142,7 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [applicationDragOverPlacement, setApplicationDragOverPlacement] = useState("before");
   const [primaryPosition, setPrimaryPosition] = useState("");
   useEffect(() => {
-    const token = Cookies.get("authToken") || window.localStorage.getItem("authToken") || "";
+    const token = Cookies.get("authToken") || "";
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/login");
@@ -153,7 +153,7 @@ function TeamBuildApplyPage({ round = 1 }) {
     let active = true;
 
     const fetchData = async () => {
-      const token = Cookies.get("authToken") || window.localStorage.getItem("authToken") || "";
+      const token = Cookies.get("authToken") || "";
       if (!token) {
         setIsLoading(false);
         return;

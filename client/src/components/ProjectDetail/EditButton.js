@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import Cookies from "js-cookie";
+import Cookies from "../../utils/authStorage";
 import { projectApi } from "../../api/project";
 import styles from "../../assets/ProjectDetail/EditButton.module.css";
 

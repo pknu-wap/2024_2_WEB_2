@@ -75,7 +75,7 @@ class ApplyServiceTest {
             )
         );
 
-        when(teamBuildingMetaRepository.findBySemester(generateSemester()))
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
             .thenReturn(Optional.of(new TeamBuildingMeta(
                 1L, generateSemester(),
                 TeamBuildingStatus.APPLY)));

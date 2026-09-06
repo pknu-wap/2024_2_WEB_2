@@ -63,7 +63,7 @@ class ApplyRoundTest {
     }
 
     private void status(TeamBuildingStatus status, int round) {
-        when(teamBuildingMetaRepository.findBySemester(generateSemester()))
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
             .thenReturn(Optional.of(new TeamBuildingMeta(round, 0, 1L, generateSemester(), status)));
     }
 
@@ -81,6 +81,7 @@ class ApplyRoundTest {
         ArgumentCaptor<ProjectApply> captor = ArgumentCaptor.forClass(ProjectApply.class);
         verify(applyRepository).save(captor.capture());
         assertThat(captor.getValue().getRound()).isEqualTo(round);
+        assertThat(captor.getValue().getSemester()).isEqualTo(generateSemester());
     }
 
     @ParameterizedTest
@@ -94,6 +95,31 @@ class ApplyRoundTest {
         ArgumentCaptor<ProjectRecruit> captor = ArgumentCaptor.forClass(ProjectRecruit.class);
         verify(recruitRepository).save(captor.capture());
         assertThat(captor.getValue().getRound()).isEqualTo(round);
+        assertThat(captor.getValue().getSemester()).isEqualTo(generateSemester());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void rejectsClosedSubmissionsBeforeAccessingUserOrApplicationData(int round) {
+        status(TeamBuildingStatus.CLOSED, round);
+        assertThatThrownBy(() -> service.apply(principal, null, round))
+            .isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.setPreference(principal, null, round))
+            .isInstanceOf(ConflictException.class);
+        verifyNoInteractions(userRepository, projectRepository, applyRepository,
+            recruitRepository, recruitWishRepository);
+    }
+
+    @Test
+    void rejectsStaleRoundAfterLockingMeta() {
+        status(TeamBuildingStatus.APPLY, 2);
+        assertThatThrownBy(() -> service.apply(principal, null, 1))
+            .isInstanceOf(ConflictException.class);
+        status(TeamBuildingStatus.RECRUIT, 2);
+        assertThatThrownBy(() -> service.setPreference(principal, null, 1))
+            .isInstanceOf(ConflictException.class);
+        verifyNoInteractions(userRepository, projectRepository, applyRepository,
+            recruitRepository, recruitWishRepository);
     }
 
     @Test

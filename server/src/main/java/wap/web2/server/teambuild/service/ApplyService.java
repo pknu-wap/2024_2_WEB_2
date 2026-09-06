@@ -56,16 +56,16 @@ public class ApplyService {
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request, int round) {
         validateRound(round);
-        if (!isTeamApplyOpen(round)) {
-            throw new ConflictException("현재 팀빌딩 상태에서는 지원할 수 없습니다.");
-        }
+        String semester = generateSemester();
+        validateAndLockSubmission(semester, round, TeamBuildingStatus.APPLY,
+            "현재 팀빌딩 상태에서는 지원할 수 없습니다.");
 
         // Serialize submissions by the same applicant so concurrent requests cannot exceed five.
         User user = userRepository.findByIdForUpdate(userPrincipal.getId())
             .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
         List<ApplyRequest> applies = request.getApplies();
         List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
-            user.getId(), generateSemester(), round);
+            user.getId(), semester, round);
         if (applies == null || applies.isEmpty() || existing.size() + applies.size() > 5) {
             throw new BadRequestException("차수별 지원은 1개 이상 5개 이하만 가능합니다.");
         }
@@ -92,6 +92,7 @@ public class ApplyService {
                     ProjectApply.builder()
                             .priority(priority++)
                             .round(round)
+                            .semester(semester)
                             .position(parsePosition(applyRequest.getPosition()))
                             .comment(applyRequest.getComment())
                             .career(applyRequest.getExperience())
@@ -164,9 +165,9 @@ public class ApplyService {
     @Transactional
     public void setPreference(UserPrincipal userPrincipal, RecruitmentDto request, int round) {
         validateRound(round);
-        if (!isTeamRecruitOpen(round)) {
-            throw new ConflictException("현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
-        }
+        String semester = generateSemester();
+        validateAndLockSubmission(semester, round, TeamBuildingStatus.RECRUIT,
+            "현재 팀빌딩 상태에서는 모집을 제출할 수 없습니다.");
 
         User user = findUser(userPrincipal.getId());
         Project project = findProject(request.getProjectId());
@@ -179,11 +180,12 @@ public class ApplyService {
 
         List<RecruitmentInfo> roasters = request.getRoasters();
         RecruitmentPolicy.validate(roasters,
-            applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), round), round);
+            applyRepository.findAllByProjectAndSemesterAndRound(project, semester, round), round);
         for (RecruitmentInfo roaster : roasters) {
             ProjectRecruit recruit = recruitRepository.save(
                 ProjectRecruit.builder()
                     .round(round)
+                    .semester(semester)
                     .leaderId(user.getId())
                     .projectId(project.getProjectId())
                     .position(parsePosition(roaster.getPosition()))
@@ -222,26 +224,17 @@ public class ApplyService {
         }
     }
 
-    private boolean isTeamApplyOpen(int round) {
-        String semester = generateSemester();
-        TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
-            .findBySemester(semester)
+    private void validateAndLockSubmission(String semester, int round,
+                                           TeamBuildingStatus expectedStatus, String message) {
+        // Lock meta before user/data access, matching admin operations. The caller's
+        // transaction keeps this lock through commit so closing cannot overtake a submission.
+        TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
             .orElseThrow(() ->
                 new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
             );
-
-        return teamBuildingMeta.getRound() == round && teamBuildingMeta.getStatus() == TeamBuildingStatus.APPLY;
-    }
-
-    private boolean isTeamRecruitOpen(int round) {
-        String semester = generateSemester();
-        TeamBuildingMeta teamBuildingMeta = teamBuildingMetaRepository
-            .findBySemester(semester)
-            .orElseThrow(() ->
-                new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")
-            );
-
-        return teamBuildingMeta.getRound() == round && teamBuildingMeta.getStatus() == TeamBuildingStatus.RECRUIT;
+        if (meta.getRound() != round || meta.getStatus() != expectedStatus) {
+            throw new ConflictException(message);
+        }
     }
 
     private User findUser(Long userId) {

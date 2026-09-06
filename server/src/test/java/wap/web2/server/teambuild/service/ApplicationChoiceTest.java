@@ -43,7 +43,7 @@ class ApplicationChoiceTest {
         User user = new User();
         user.setId(1L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
-        when(teamBuildingMetaRepository.findBySemester(generateSemester())).thenReturn(Optional.of(
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester())).thenReturn(Optional.of(
             new TeamBuildingMeta(round, 0, 1L, generateSemester(), TeamBuildingStatus.APPLY)));
         return principal;
     }

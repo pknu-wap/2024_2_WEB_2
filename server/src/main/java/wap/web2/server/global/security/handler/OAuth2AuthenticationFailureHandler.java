@@ -40,6 +40,7 @@ public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationF
             .queryParam("code", ErrorCode.AUTH_OAUTH2_FAILURE.getCode())
             .queryParam("message", ErrorCode.AUTH_OAUTH2_FAILURE.getDefaultMessage())
             .build()
+            .encode()
             .toUriString();
 
         httpCookieOAuth2AuthorizationRequestRepository.removeAuthorizationRequestCookies(

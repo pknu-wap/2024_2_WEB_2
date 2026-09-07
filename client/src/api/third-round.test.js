@@ -27,6 +27,11 @@ test("서버 배치안 ID와 버전으로 생성·이동·삭제 요청을 전�
     "/admin/team/building/third-round/slots/7",
     { teamId: 3, revision: 4 },
   );
+  thirdRoundApi.move("slot-7", null, 5);
+  expect(apiClient.patch).toHaveBeenCalledWith(
+    "/admin/team/building/third-round/slots/7",
+    { teamId: null, revision: 5 },
+  );
   thirdRoundApi.delete(3, 5);
   expect(apiClient.delete).toHaveBeenCalledWith(
     "/admin/team/building/third-round/teams/3",

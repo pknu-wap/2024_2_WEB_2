@@ -60,7 +60,9 @@ beforeEach(() => {
     savedBoard.teams.forEach((team) => {
       team.members = team.members.filter((m) => m.id !== id);
     });
-    savedBoard.teams.find((team) => team.id === teamId).members.push(member);
+    if (teamId === null) savedBoard.unassigned.push(member);
+    else
+      savedBoard.teams.find((team) => team.id === teamId).members.push(member);
     savedBoard.revision++;
     return snapshot();
   });
@@ -74,7 +76,8 @@ beforeEach(() => {
   });
 });
 
-const getUnassigned = () => screen.getByRole("region", { name: "미배정 멤버" });
+const getUnassigned = () =>
+  screen.getByLabelText("미배정 멤버", { selector: "section" });
 const getTeam = (name) => screen.getByRole("article", { name });
 const getAssignedFrontend = () =>
   screen
@@ -586,4 +589,73 @@ test("초기 조회가 실패하면 수정을 막고 새로고침으로 재시�
   await settle();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(6);
+});
+
+test.each(["click", "Enter", " ", "drag"])(
+  "배치한 지원자를 미배정 섹션으로 돌리고 다시 배치할 수 있다 (%s)",
+  async (method) => {
+    savedBoard.unassigned = [{ ...savedBoard.unassigned[0], name: "김다은" }];
+    const page = render(<ManageThirdTeamBuildPage />);
+    await settle();
+    fireEvent.click(
+      within(getUnassigned()).getByRole("button", { name: "김다은(FRONTEND)" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "오늘의 기록" }));
+    await settle();
+    expect(
+      within(getUnassigned()).getByText("모든 멤버의 배정이 완료되었습니다."),
+    ).toBeInTheDocument();
+    const source = within(getTeam("오늘의 기록")).getByRole("button", {
+      name: "김다은(FRONTEND)",
+    });
+    if (method === "drag") {
+      fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+      document.elementFromPoint = jest.fn(() =>
+        getUnassigned().querySelector("h2"),
+      );
+      fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+      fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+    } else {
+      fireEvent.click(source);
+      const target = screen.getByRole("button", { name: "미배정 멤버" });
+      if (method === "click") fireEvent.click(target);
+      else fireEvent.keyDown(target, { key: method });
+    }
+    await settle();
+    expect(thirdRoundApi.move).toHaveBeenLastCalledWith(
+      savedBoard.unassigned[0].id,
+      null,
+      1,
+    );
+    expect(
+      within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "김다은(FRONTEND)을 미배정 목록으로 옮겼습니다.",
+    );
+    page.unmount();
+    render(<ManageThirdTeamBuildPage />);
+    await settle();
+    fireEvent.click(
+      within(getUnassigned()).getByRole("button", { name: "김다은(FRONTEND)" }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
+    await settle();
+    expect(
+      within(getTeam("WAPs")).getByText("김다은(FRONTEND)"),
+    ).toBeInTheDocument();
+  },
+);
+
+test("미배정 복귀 저장이 실패하면 원래 팀에 남는다", async () => {
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  await placeFrontend();
+  thirdRoundApi.move.mockRejectedValueOnce(new Error("network"));
+  fireEvent.click(getAssignedFrontend()[0]);
+  fireEvent.click(screen.getByRole("button", { name: "미배정 멤버" }));
+  await settle();
+  expect(getAssignedFrontend()).toHaveLength(1);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
+  expect(screen.getByRole("alert")).toHaveTextContent("저장하지 못했습니다");
 });

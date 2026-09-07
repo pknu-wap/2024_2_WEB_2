@@ -111,6 +111,11 @@ const ManageThirdTeamBuildPage = () => {
   ].find(
     (member) => member.id === selectedId && member.type === "POSITION_SLOT",
   );
+  const canUnassign =
+    selectedMember &&
+    teams.some((team) =>
+      team.members.some((member) => member.id === selectedMember.id),
+    );
   const assignedMemberCount = teams.reduce(
     (total, team) => total + team.members.length,
     0,
@@ -156,8 +161,8 @@ const ManageThirdTeamBuildPage = () => {
     if (
       !member ||
       member.type !== "POSITION_SLOT" ||
-      !target ||
-      source === target
+      (teamId !== null && !target) ||
+      (teamId === null ? !source : source === target)
     ) {
       setSelectedId(null);
       clearDrag();
@@ -165,16 +170,22 @@ const ManageThirdTeamBuildPage = () => {
     }
     mutate(
       () => thirdRoundApi.move(memberId, teamId, revision),
-      source
-        ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
-        : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
+      teamId === null
+        ? `${memberLabel(member)}을 미배정 목록으로 옮겼습니다.`
+        : source
+          ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
+          : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
     );
   };
 
-  const teamAtPoint = (x, y) => {
-    const card = document.elementFromPoint(x, y)?.closest("[data-team-id]");
+  const destinationAtPoint = (x, y) => {
+    const card = document
+      .elementFromPoint(x, y)
+      ?.closest("[data-team-id], [data-unassigned]");
     return card && containerRef.current?.contains(card)
-      ? Number(card.dataset.teamId)
+      ? card.hasAttribute("data-unassigned")
+        ? "unassigned"
+        : Number(card.dataset.teamId)
       : null;
   };
 
@@ -190,7 +201,7 @@ const ManageThirdTeamBuildPage = () => {
         const speed =
           drag.y > bounds.bottom - 60 ? 12 : drag.y < bounds.top + 60 ? -12 : 0;
         container.scrollTop += speed;
-        setDropTarget(teamAtPoint(drag.x, drag.y));
+        setDropTarget(destinationAtPoint(drag.x, drag.y));
       }
       frame = requestAnimationFrame(scroll);
     };
@@ -201,8 +212,11 @@ const ManageThirdTeamBuildPage = () => {
   const finishPointerDrag = (event, cancelled = false) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const target = cancelled ? null : teamAtPoint(event.clientX, event.clientY);
-    if (drag.active && target !== null) assignMember(drag.member.id, target);
+    const target = cancelled
+      ? null
+      : destinationAtPoint(event.clientX, event.clientY);
+    if (drag.active && target !== null)
+      assignMember(drag.member.id, target === "unassigned" ? null : target);
     else clearDrag();
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -261,7 +275,7 @@ const ManageThirdTeamBuildPage = () => {
         suppressClick.current = true;
         setSelectedId(null);
         setDragPreview({ member: drag.member, x: drag.x, y: drag.y });
-        setDropTarget(teamAtPoint(drag.x, drag.y));
+        setDropTarget(destinationAtPoint(drag.x, drag.y));
       }}
       onPointerUp={finishPointerDrag}
       onPointerCancel={(event) => finishPointerDrag(event, true)}
@@ -350,14 +364,32 @@ const ManageThirdTeamBuildPage = () => {
         </p>
       </div>
 
-      <section className={styles.unassigned} aria-labelledby="unassigned-title">
+      <section
+        className={`${styles.unassigned} ${canUnassign ? styles.assignable : ""} ${dropTarget === "unassigned" ? styles.dropTarget : ""}`}
+        aria-labelledby="unassigned-title"
+        data-unassigned="true"
+        role={canUnassign ? "button" : undefined}
+        tabIndex={canUnassign ? 0 : undefined}
+        aria-describedby={canUnassign ? "assignment-help" : undefined}
+        onClick={() => {
+          if (canUnassign) assignMember(selectedMember.id, null);
+        }}
+        onKeyDown={(event) => {
+          if (!canUnassign) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            assignMember(selectedMember.id, null);
+          }
+          if (event.key === "Escape") setSelectedId(null);
+        }}
+      >
         <h2 id="unassigned-title" className={styles.teamName}>
           미배정 멤버
         </h2>
         <p id="assignment-help" className={styles.description}>
           지원자를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각
           항목은 지원자의 이름과 주요 직무를 나타냅니다. 배치한 지원자도 같은
-          방법으로 다른 팀으로 이동할 수 있습니다.
+          방법으로 다른 팀이나 미배정 멤버 섹션으로 이동할 수 있습니다.
         </p>
         <div className={styles.unassignedList}>
           {unassigned.map((member) => renderPositionSlot(member))}

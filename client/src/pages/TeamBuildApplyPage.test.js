@@ -147,3 +147,92 @@ test.each([1, 2])(
     );
   },
 );
+
+test.each([1, 2])(
+  "%i차 지원서 검증, 수정, 닫기와 취소 상태를 유지한다",
+  async (round) => {
+    const alertSpy = jest.spyOn(window, "alert").mockImplementation(() => {});
+    try {
+      render(
+        <MemoryRouter>
+          <TeamBuildApplyPage round={round} />
+        </MemoryRouter>,
+      );
+      await screen.findAllByRole("button", { name: "지원서 작성하기" });
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "지원서 작성하기" })[0],
+      );
+      fireEvent.click(screen.getByRole("button", { name: "지원서 저장하기" }));
+      expect(alertSpy).toHaveBeenLastCalledWith("지원 직무를 선택해주세요.");
+      fireEvent.change(screen.getByLabelText("지원 직무"), {
+        target: { value: "BACKEND" },
+      });
+      fireEvent.change(screen.getByLabelText("간단 자기소개 및 PR 메시지"), {
+        target: { value: "  " },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "지원서 저장하기" }));
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        "자기소개 및 PR 메시지를 작성해주세요.",
+      );
+      fireEvent.change(screen.getByLabelText("간단 자기소개 및 PR 메시지"), {
+        target: { value: " 첫 지원 " },
+      });
+      fireEvent.change(screen.getByLabelText("경력"), {
+        target: { value: " 저장한 경력 " },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "지원서 저장하기" }));
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "+ 지원서 추가 작성하기" }),
+      );
+      fireEvent.change(screen.getByLabelText("지원 직무"), {
+        target: { value: "BACKEND" },
+      });
+      fireEvent.change(screen.getByLabelText("간단 자기소개 및 PR 메시지"), {
+        target: { value: "중복 지원" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "지원서 저장하기" }));
+      expect(alertSpy).toHaveBeenLastCalledWith(
+        "이미 이 프로젝트의 같은 직무에 지원했습니다.",
+      );
+      expect(screen.getByLabelText("현재 지원서 1개")).toBeTruthy();
+      fireEvent.change(screen.getByLabelText("경력"), {
+        target: { value: "저장하지 않은 경력" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "지원서 닫기" }));
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "지원서 수정하기 (백엔드)" }),
+      );
+      expect(screen.getByLabelText("경력").value).toBe("저장한 경력");
+      expect(screen.getByLabelText("간단 자기소개 및 PR 메시지").value).toBe(
+        "첫 지원",
+      );
+      fireEvent.change(screen.getByLabelText("경력"), {
+        target: { value: " 수정한 경력 " },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "지원서 저장하기" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(screen.getByLabelText("현재 지원서 1개")).toBeTruthy();
+      fireEvent.click(
+        screen.getAllByRole("button", { name: "지원서 작성하기" })[0],
+      );
+      expect(screen.getByLabelText("경력").value).toBe("수정한 경력");
+      expect(screen.getByLabelText("지원 직무").value).toBe("");
+      expect(screen.getByLabelText("간단 자기소개 및 PR 메시지").value).toBe(
+        "",
+      );
+      fireEvent.click(screen.getByRole("button", { name: "지원서 닫기" }));
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "웹 프로젝트 지원 취소" }),
+      );
+      expect(screen.getByLabelText("현재 지원서 1개")).toBeTruthy();
+      fireEvent.click(screen.getByRole("button", { name: "지원 취소하기" }));
+      expect(screen.getByLabelText("현재 지원서 0개")).toBeTruthy();
+      expect(screen.queryByRole("alertdialog")).toBeNull();
+    } finally {
+      alertSpy.mockRestore();
+    }
+  },
+);

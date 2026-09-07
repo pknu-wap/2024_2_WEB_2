@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { projectApi } from "../../api/project";
-import Cookies from "js-cookie";
+import Cookies from "../../utils/authStorage";
 import styles from "../../assets/ProjectDetail/ProjectDetailForm.module.css";
 import dogImage from "../../assets/img/dog.png";
 import EditButton from "./EditButton";

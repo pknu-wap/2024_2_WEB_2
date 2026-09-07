@@ -15,7 +15,10 @@ public class WebMvcConfig implements WebMvcConfigurer {
         "https://www.waps.store",
         "https://wapst.netlify.app",
         "https://waps.im",
+        "https://dev.waps.im",
         "https://waps-deploy.netlify.app",
+        "https://waps-web.netlify.app",
+        "https://waps-develop.netlify.app",
         "http://localhost:3000",
         "http://localhost:8080"
     };

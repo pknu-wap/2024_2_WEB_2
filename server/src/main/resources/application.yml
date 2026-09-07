@@ -30,7 +30,7 @@ spring:
         registration:
           kakao:
             client-id: ${KAKAO_REST_API_KEY}
-            client-secret: 1aad561b8ca76979450e2a05adaf8b35
+            client-secret: ${KAKAO_CLIENT_SECRET}
             scope: profile_nickname,account_email
             client-name: kakao-login
             authorization-grant-type: authorization_code
@@ -56,16 +56,14 @@ app:
     tokenSecret: ${JWT_SECRET_KEY}
     tokenExpirationMsec: 86400000
     refreshTokenExpirationMsec: 1209600000
-  #  cors:
-  #    allowedOrigins:
-  #      - https://wap-projects.netlify.app
-  #      - http://localhost:3000
-  #      - http://localhost:8080
   oauth2:
     authorizedRedirectUris:
       - https://waps.im/oauth2/redirect
+      - https://dev.waps.im/oauth2/redirect
       - https://wapst.netlify.app/oauth2/redirect
       - https://waps-deploy.netlify.app/oauth2/redirect
+      - https://waps-web.netlify.app/oauth2/redirect
+      - https://waps-develop.netlify.app/oauth2/redirect
       - http://localhost:3000/oauth2/redirect
       - myandroidapp://oauth2/redirect
       - myiosapp://oauth2/redirect

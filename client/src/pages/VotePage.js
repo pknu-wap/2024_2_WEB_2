@@ -6,7 +6,7 @@ import Header from "../components/Header";
 import Menu from "../components/Menu";
 import VoteForm from "../components/Vote/VoteForm";
 import FloatingButton from "../components/FloatingButton";
-import Cookies from "js-cookie";
+import Cookies from "../utils/authStorage";
 
 // 분기를 결정함.
 // 현재 투표 기간인지에 따라 분기 구별함.

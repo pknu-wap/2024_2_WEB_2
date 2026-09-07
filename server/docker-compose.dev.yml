@@ -1,3 +1,7 @@
+include:
+  - path: ./cloudflare/config.yml
+    project_directory: .
+
 services:
   app:
     platform: linux/arm64
@@ -17,7 +21,7 @@ services:
       # OAuth2
       KAKAO_REST_API_KEY: ${KAKAO_REST_API_KEY}
       KAKAO_CLIENT_SECRET: ${KAKAO_CLIENT_SECRET}
-      SERVER_URL: ${SERVER_URL:-http://localhost}
+      SERVER_URL: ${DEV_SERVER_URL:-http://localhost}
       # Azure Blob Storage
       AZURE_STORAGE_CONNECTION_STRING: ${AZURE_STORAGE_CONNECTION_STRING}
       # AWS S3
@@ -65,20 +69,16 @@ services:
       - waps-network
     restart: unless-stopped
 
-  caddy:
-    image: caddy:2.11.4
-    container_name: caddy
-    environment:
-      CADDY_DOMAIN: ${CADDY_DOMAIN}
+  cloudflared:
+    image: cloudflare/cloudflared:2026.8.3
+    container_name: cloudflared
     restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-      - "443:443/udp"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
+    secrets:
+      - cloudflared_credentials
+    configs:
+      - source: cloudflared_config
+        target: /etc/cloudflared/config.yml
+    command: tunnel --config /etc/cloudflared/config.yml run waps
     networks:
       - waps-network
     depends_on:
@@ -91,5 +91,3 @@ networks:
 
 volumes:
   mysql-data:
-  caddy_data:
-  caddy_config:

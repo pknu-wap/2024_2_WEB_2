@@ -3,7 +3,7 @@ import axios from "axios";
 import Cookies from "js-cookie";
 
 const apiClient = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "https://waps-api.duckdns.org",
+  baseURL: process.env.REACT_APP_API_BASE_URL || "http://localhost:8080",
   timeout: 5000,
   headers: {
     "Content-Type": "application/json",

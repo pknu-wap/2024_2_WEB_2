@@ -347,7 +347,7 @@ function TeamBuildApplyPage({ round = 1 }) {
         <div className={styles.topBar}>
           <div className={styles.brand}>
             <img src={wapsLogo} alt="WAPs" className={styles.brandLogo} />
-            <span className={styles.brandText}>WAPs</span>
+            {isSecondRound && <span className={styles.brandText}>WAPs</span>}
           </div>
           <button
             type="button"

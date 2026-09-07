@@ -184,6 +184,7 @@ function TeamBuildPage({ round = 1 }) {
 
   useEffect(() => {
     if (!Cookies.get("authToken")) return;
+    const requestRef = loadRequestRef;
     let active = true;
     setProjectsLoading(true);
     setProjectsError("");
@@ -205,7 +206,7 @@ function TeamBuildPage({ round = 1 }) {
     loadProjects();
     return () => {
       active = false;
-      loadRequestRef.current++;
+      requestRef.current++;
     };
   }, [handleLoad, retryCount]);
 

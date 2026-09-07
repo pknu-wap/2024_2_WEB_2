@@ -64,6 +64,7 @@ const ManageThirdTeamBuildPage = () => {
               Math.max(0, ...current.teams.map((team) => team.projectId)) + 1,
             teamName,
             members: [],
+            isCreated: true,
           },
           ...current.teams,
         ],
@@ -71,6 +72,23 @@ const ManageThirdTeamBuildPage = () => {
       };
     });
     setSelectedId(null);
+  };
+
+  const deleteTeam = (projectId) => {
+    setRoster((current) => {
+      const team = current.teams.find((item) => item.projectId === projectId);
+      if (!team?.isCreated) return current;
+
+      return {
+        teams: current.teams.filter((item) => item.projectId !== projectId),
+        unassigned: [...current.unassigned, ...team.members],
+        message: team.members.length
+          ? `${team.teamName}을 삭제하고 직무 인원 ${team.members.length}명을 미배정 목록으로 옮겼습니다.`
+          : `${team.teamName}을 삭제했습니다.`,
+      };
+    });
+    setSelectedId(null);
+    clearDrag();
   };
 
   const assignMember = (memberId, projectId) => {
@@ -311,6 +329,20 @@ const ManageThirdTeamBuildPage = () => {
               <span className={styles.badge}>
                 배정 완료 {team.members.length}명
               </span>
+              {team.isCreated && (
+                <button
+                  type="button"
+                  className={styles.deleteTeamButton}
+                  aria-label={`${team.teamName} 삭제`}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    deleteTeam(team.projectId);
+                  }}
+                  onKeyDown={(event) => event.stopPropagation()}
+                >
+                  삭제
+                </button>
+              )}
             </div>
             {team.members.length > 0 ? (
               <table

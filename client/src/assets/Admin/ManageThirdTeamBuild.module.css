@@ -60,6 +60,27 @@
   outline-offset: 3px;
 }
 
+.deleteTeamButton {
+  margin-left: auto;
+  padding: 6px 10px;
+  border: 1px solid #c98080;
+  border-radius: 8px;
+  background: transparent;
+  color: #ffc1c1;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.deleteTeamButton:hover {
+  background: #633737;
+}
+
+.deleteTeamButton:focus-visible {
+  outline: 2px solid #ffc1c1;
+  outline-offset: 3px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));

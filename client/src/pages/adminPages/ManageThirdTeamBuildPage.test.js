@@ -236,3 +236,53 @@ test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수
   ).toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(8);
 });
+
+test("생성한 빈 팀만 삭제할 수 있다", () => {
+  render(<ManageThirdTeamBuildPage />);
+  expect(
+    screen.queryByRole("button", { name: /삭제/ }),
+  ).not.toBeInTheDocument();
+  createTeam();
+  createTeam();
+  fireEvent.click(screen.getByRole("button", { name: "팀 A 삭제" }));
+  expect(
+    screen.queryByRole("article", { name: "팀 A" }),
+  ).not.toBeInTheDocument();
+  expect(getTeam("팀 B")).toBeInTheDocument();
+  expect(getTeam("WAPs")).toBeInTheDocument();
+  expect(screen.getAllByRole("article")).toHaveLength(7);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
+});
+
+test("직무 인원이 있는 생성 팀을 삭제하면 모두 미배정으로 돌아가고 다시 배치할 수 있다", () => {
+  render(<ManageThirdTeamBuildPage />);
+  createTeam();
+  for (let index = 0; index < 2; index += 1) {
+    fireEvent.click(
+      within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
+    );
+    fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  }
+  fireEvent.click(
+    within(getTeam("팀 A")).getAllByRole("button", { name: "FRONTEND" })[0],
+  );
+  fireEvent.click(screen.getByRole("button", { name: "팀 A 삭제" }));
+  expect(
+    screen.queryByRole("article", { name: "팀 A" }),
+  ).not.toBeInTheDocument();
+  expect(
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
+  ).toHaveLength(3);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "직무 인원 2명을 미배정 목록으로 옮겼습니다.",
+  );
+  createTeam();
+  fireEvent.click(
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[1],
+  );
+  fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  expect(
+    within(getTeam("팀 A")).getByText("배정 완료 1명"),
+  ).toBeInTheDocument();
+});

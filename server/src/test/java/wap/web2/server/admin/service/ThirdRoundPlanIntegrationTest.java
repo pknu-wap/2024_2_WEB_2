@@ -45,7 +45,8 @@ class ThirdRoundPlanIntegrationTest {
         var jdbc = new JdbcTemplate(dataSource);
         for (String table : List.of("third_round_position_slot", "third_round_plan_team", "third_round_plan", "team_building_meta"))
             jdbc.execute("DROP TABLE IF EXISTS " + table);
-        new ResourceDatabasePopulator(new ClassPathResource("db/migration/V9__create_third_round_plan.sql")).execute(dataSource);
+        new ResourceDatabasePopulator(new ClassPathResource("db/migration/V9__create_third_round_plan.sql"),
+            new ClassPathResource("db/migration/V10__identify_third_round_applicants.sql")).execute(dataSource);
         jdbc.execute("CREATE TABLE team_building_meta (id BIGINT AUTO_INCREMENT PRIMARY KEY, semester VARCHAR(7) NOT NULL UNIQUE, "
             + "round INT NOT NULL, completed_round INT NOT NULL, status ENUM('OPEN','APPLY','RECRUIT','CLOSED') NOT NULL)");
         factory = new LocalContainerEntityManagerFactoryBean();

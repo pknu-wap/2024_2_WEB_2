@@ -19,7 +19,7 @@ import wap.web2.server.teambuild.entity.*;
 import wap.web2.server.teambuild.repository.*;
 import wap.web2.server.teambuild.service.FieldClusterer;
 
-/** A persisted staffing plan. Slots never identify or allocate actual applicants. */
+/** A persisted applicant staffing plan, separate from finalized team allocation. */
 @Service
 @RequiredArgsConstructor
 @Transactional
@@ -54,8 +54,12 @@ public class ThirdRoundPlanService {
             clusters.findAllBySemesterOrderByUserId(semester).forEach(c -> {
                 if (candidates.containsKey(c.getUserId())) candidates.put(c.getUserId(), c.getPosition());
             });
-            slots.saveAll(candidates.values().stream().sorted()
-                .map(position -> new ThirdRoundPositionSlot(semester, position)).toList());
+            slots.saveAll(candidates.entrySet().stream().sorted(Map.Entry.comparingByKey())
+                .map(entry -> {
+                    ThirdRoundPositionSlot slot = new ThirdRoundPositionSlot(semester, entry.getValue());
+                    slot.identify(entry.getKey());
+                    return slot;
+                }).toList());
         }
         return board(plan);
     }
@@ -131,7 +135,10 @@ public class ThirdRoundPlanService {
         List<ThirdRoundPlanTeam> cards = planTeams.findAllBySemesterOrderById(semester);
         List<ThirdRoundPositionSlot> positions = slots.findAllBySemesterOrderById(semester);
         List<Team> existing = teams.findAllBySemester(semester);
-        Map<Long, User> members = users.findAllById(existing.stream().map(Team::getMemberId).toList())
+        identifyLegacySlots(semester, positions, existing);
+        Set<Long> userIds = existing.stream().map(Team::getMemberId).collect(Collectors.toSet());
+        positions.stream().map(ThirdRoundPositionSlot::getUserId).filter(Objects::nonNull).forEach(userIds::add);
+        Map<Long, User> members = users.findAllById(new ArrayList<>(userIds))
             .stream().collect(Collectors.toMap(User::getId, u -> u));
         List<TeamCard> result = new ArrayList<>();
         for (ThirdRoundPlanTeam card : cards) {
@@ -144,14 +151,35 @@ public class ThirdRoundPlanService {
                 });
             }
             positions.stream().filter(s -> Objects.equals(s.getTeamId(), card.getId()))
-                .map(this::slotView).forEach(roster::add);
+                .map(s -> slotView(s, members)).forEach(roster::add);
             result.add(new TeamCard(card.getId(), card.getProjectId(), card.getName(), card.isCreated(), roster));
         }
         return new ThirdRoundBoardResponse(semester, plan.getRevision(), result,
-            positions.stream().filter(s -> s.getTeamId() == null).map(this::slotView).toList());
+            positions.stream().filter(s -> s.getTeamId() == null).map(s -> slotView(s, members)).toList());
     }
 
-    private Member slotView(ThirdRoundPositionSlot slot) {
-        return new Member("slot-" + slot.getId(), "POSITION_SLOT", null, slot.getPosition());
+    private void identifyLegacySlots(String semester, List<ThirdRoundPositionSlot> positions, List<Team> existing) {
+        if (positions.stream().noneMatch(s -> s.getUserId() == null)) return;
+        Set<Long> excluded = existing.stream().map(Team::getMemberId).collect(Collectors.toSet());
+        projects.findProjectsBySemester(semester).forEach(p -> excluded.add(p.getUser().getId()));
+        Map<Long, Position> candidates = clusterer.cluster(applies.findAllBySemester(semester), excluded);
+        clusters.findAllBySemesterOrderByUserId(semester).forEach(c -> {
+            if (candidates.containsKey(c.getUserId())) candidates.put(c.getUserId(), c.getPosition());
+        });
+        positions.forEach(s -> candidates.remove(s.getUserId()));
+        for (ThirdRoundPositionSlot slot : positions) {
+            if (slot.getUserId() != null) continue;
+            candidates.entrySet().stream().filter(e -> e.getValue() == slot.getPosition())
+                .map(Map.Entry::getKey).min(Long::compareTo).ifPresent(id -> {
+                    slot.identify(id);
+                    candidates.remove(id);
+                });
+        }
+    }
+
+    private Member slotView(ThirdRoundPositionSlot slot, Map<Long, User> members) {
+        User user = members.get(slot.getUserId());
+        return new Member("slot-" + slot.getId(), "POSITION_SLOT",
+            user == null ? null : user.getName(), slot.getPosition());
     }
 }

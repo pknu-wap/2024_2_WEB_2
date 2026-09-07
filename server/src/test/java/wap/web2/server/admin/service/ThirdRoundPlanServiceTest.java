@@ -56,7 +56,7 @@ class ThirdRoundPlanServiceTest {
         User user = new User(); user.setId(id); user.setName("기존 멤버"); return user;
     }
 
-    @Test void initializationCreatesNamelessSlotsFromLatestEligibleApplicantsAndCorrections() {
+    @Test void initializationLinksLatestEligibleApplicantsAndCorrections() {
         ready(); when(plans.findById(semester)).thenReturn(Optional.empty());
         when(plans.save(any())).thenAnswer(c -> c.getArgument(0));
         User leader = user(10), assigned = user(11), candidate = user(12);
@@ -76,10 +76,36 @@ class ThirdRoundPlanServiceTest {
         assertThat(saved.getValue()).singleElement().satisfies(s -> {
             assertThat(s.getPosition()).isEqualTo(Position.FRONTEND);
             assertThat(s.getTeamId()).isNull();
+            assertThat(s.getUserId()).isEqualTo(12L);
         });
     }
     private ProjectApply apply(User user, Project project, Position position, int round) {
         return ProjectApply.builder().user(user).project(project).position(position).round(round).priority(1).build();
+    }
+
+    @Test void legacySlotsKeepApplicantNamesAfterMovingAndReloading() {
+        ready();
+        ThirdRoundPositionSlot first = slot(1, semester), second = slot(2, semester);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(first, second));
+        User firstUser = user(12), secondUser = user(13);
+        firstUser.setName("김다은"); secondUser.setName("이준호");
+        when(applies.findAllBySemester(semester)).thenReturn(List.of(
+            apply(secondUser, null, Position.FRONTEND, 2),
+            apply(firstUser, null, Position.FRONTEND, 2)));
+        when(users.findAllById(any())).thenReturn(List.of(firstUser, secondUser));
+        var board = service.get();
+        assertThat(board.unassigned()).extracting(m -> m.name()).containsExactly("김다은", "이준호");
+        assertThat(first.getUserId()).isEqualTo(12L);
+        assertThat(second.getUserId()).isEqualTo(13L);
+        when(slots.findById(1L)).thenReturn(Optional.of(first));
+        ThirdRoundPlanTeam target = card(20, null, semester);
+        when(planTeams.findById(20L)).thenReturn(Optional.of(target));
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(target));
+        service.move(1, 20L, 0);
+        var reloaded = service.get();
+        assertThat(reloaded.teams().get(0).members().get(0).name()).isEqualTo("김다은");
+        assertThat(reloaded.unassigned().get(0).name()).isEqualTo("이준호");
+        verify(applies, times(1)).findAllBySemester(semester);
     }
 
     @Test void openingExistingPlanDoesNotRecreateSlots() {

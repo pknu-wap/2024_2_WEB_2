@@ -31,6 +31,7 @@ import wap.web2.server.project.entity.Project;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.storage.ObjectStorageService;
 import wap.web2.server.teambuild.dto.response.ProjectTemplate;
+import wap.web2.server.teambuild.dto.response.RecruitProjectResponse;
 
 @Slf4j
 @Service
@@ -233,6 +234,15 @@ public class ProjectService {
             throw new ForbiddenException("프로젝트 삭제 권한이 없습니다.");
         }
         projectRepository.delete(project);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecruitProjectResponse> getMyRecruitProjects(Long userId) {
+        return projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(userId, generateSemester())
+            .stream()
+            .map(project -> new RecruitProjectResponse(
+                project.getProjectId(), project.getTitle()))
+            .toList();
     }
 
     public boolean isLeader(Long userId) {

@@ -21,6 +21,7 @@ import wap.web2.server.teambuild.dto.response.ApplyStatusResponse;
 import wap.web2.server.teambuild.dto.response.ProjectAppliesResponse;
 import wap.web2.server.teambuild.dto.response.ProjectTemplate;
 import wap.web2.server.teambuild.dto.response.RoleResponse;
+import wap.web2.server.teambuild.dto.response.RecruitProjectResponse;
 import wap.web2.server.teambuild.dto.response.TeamBuildingResults;
 import wap.web2.server.teambuild.dto.response.TeamResultsResponse;
 import wap.web2.server.teambuild.service.ApplyService;
@@ -55,6 +56,13 @@ public class TeamBuildingControllerV3 {
     ) {
         List<ProjectTemplate> projects = projectService.getCurrentProjectRecruits();
         return ResponseEntity.ok(projects);
+    }
+
+    @GetMapping("/recruit/projects")
+    public ResponseEntity<List<RecruitProjectResponse>> getMyRecruitProjects(
+        @CurrentUser UserPrincipal userPrincipal
+    ) {
+        return ResponseEntity.ok(projectService.getMyRecruitProjects(userPrincipal.getId()));
     }
 
     @PostMapping("/apply/submit")

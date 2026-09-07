@@ -56,6 +56,19 @@ class ProjectServiceTest {
     }
 
     @Test
+    void recruitProjectsUsesCurrentSemesterAndAuthenticatedOwner() {
+        String semester = wap.web2.server.util.SemesterGenerator.generateSemester();
+        when(projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(7L, semester))
+            .thenReturn(List.of(Project.builder().projectId(42L).title("내 프로젝트").build()));
+
+        assertThat(projectService.getMyRecruitProjects(7L)).singleElement().satisfies(project -> {
+            assertThat(project.projectId()).isEqualTo(42L);
+            assertThat(project.title()).isEqualTo("내 프로젝트");
+        });
+        verify(projectRepository).findAllByUser_IdAndSemesterOrderByProjectIdDesc(7L, semester);
+    }
+
+    @Test
     void removal이_없어도_프로젝트_수정은_성공한다() throws Exception {
         // given
         User owner = owner();

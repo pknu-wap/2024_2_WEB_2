@@ -211,6 +211,8 @@ public class ThirdRoundPlanService {
         positions.stream().map(ThirdRoundPositionSlot::getUserId).filter(Objects::nonNull).forEach(userIds::add);
         Map<Long, User> members = users.findAllById(new ArrayList<>(userIds))
             .stream().collect(Collectors.toMap(User::getId, u -> u));
+        Map<Long, Project> currentProjects = projects.findProjectsBySemester(semester).stream()
+            .collect(Collectors.toMap(Project::getProjectId, p -> p));
         List<TeamCard> result = new ArrayList<>();
         for (ThirdRoundPlanTeam card : cards) {
             List<Member> roster = new ArrayList<>();
@@ -224,7 +226,10 @@ public class ThirdRoundPlanService {
             }
             positions.stream().filter(s -> Objects.equals(s.getTeamId(), card.getId()))
                 .map(s -> slotView(s, members)).forEach(roster::add);
-            result.add(new TeamCard(card.getId(), card.getProjectId(), card.getName(), card.isCreated(), roster));
+            Project project = currentProjects.get(card.getProjectId());
+            User owner = project == null ? null : project.getUser();
+            Leader leader = owner == null ? null : new Leader(owner.getId(), owner.getName());
+            result.add(new TeamCard(card.getId(), card.getProjectId(), card.getName(), card.isCreated(), roster, leader));
         }
         return new ThirdRoundBoardResponse(semester, plan.getRevision(), result,
             positions.stream().filter(s -> s.getTeamId() == null).map(s -> slotView(s, members)).toList(), plan.isCompleted());

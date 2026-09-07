@@ -190,22 +190,22 @@ test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 
   createTeam();
   expect(screen.getAllByRole("article")).toHaveLength(7);
   expect(
-    within(getTeam("WEB 1팀")).getByText("배정 완료 0명"),
+    within(getTeam("팀 A")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
   expect(
-    within(getTeam("WEB 1팀")).getByText("아직 배정된 멤버가 없습니다."),
+    within(getTeam("팀 A")).getByText("아직 배정된 멤버가 없습니다."),
   ).toBeInTheDocument();
   expect(within(getTeam("WAPs")).getByText("김민준")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 });
 
-test("버튼을 누를 때마다 WEB 팀 번호가 순서대로 증가한다", () => {
+test("버튼을 누를 때마다 팀 이름이 알파벳 순서대로 증가한다", () => {
   render(<ManageThirdTeamBuildPage />);
   createTeam();
   createTeam();
   createTeam();
-  for (const name of ["WEB 1팀", "WEB 2팀", "WEB 3팀"]) {
+  for (const name of ["팀 A", "팀 B", "팀 C"]) {
     expect(
       within(getTeam(name)).getByText("배정 완료 0명"),
     ).toBeInTheDocument();
@@ -220,19 +220,19 @@ test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수
   fireEvent.click(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
   );
-  fireEvent.click(screen.getByRole("button", { name: "WEB 1팀" }));
-  const source = within(getTeam("WEB 1팀")).getByRole("button", {
+  fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  const source = within(getTeam("팀 A")).getByRole("button", {
     name: "FRONTEND",
   });
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
-  document.elementFromPoint = jest.fn(() => getTeam("WEB 2팀"));
+  document.elementFromPoint = jest.fn(() => getTeam("팀 B"));
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   expect(
-    within(getTeam("WEB 1팀")).getByText("배정 완료 0명"),
+    within(getTeam("팀 A")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
   expect(
-    within(getTeam("WEB 2팀")).getByRole("button", { name: "FRONTEND" }),
+    within(getTeam("팀 B")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(8);
 });

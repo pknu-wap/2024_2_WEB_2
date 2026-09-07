@@ -36,15 +36,26 @@ const ManageThirdTeamBuildPage = () => {
 
   const createTeam = () => {
     setRoster((current) => {
-      const nextNumber =
+      let nextNumber =
         Math.max(
           0,
           ...current.teams.map((team) => {
-            const match = /^WEB (\d+)팀$/.exec(team.teamName);
-            return match ? Number(match[1]) : 0;
+            const match = /^팀 ([A-Z]+)$/.exec(team.teamName);
+            return match
+              ? [...match[1]].reduce(
+                  (number, letter) => number * 26 + letter.charCodeAt(0) - 64,
+                  0,
+                )
+              : 0;
           }),
         ) + 1;
-      const teamName = `WEB ${nextNumber}팀`;
+      let suffix = "";
+      while (nextNumber > 0) {
+        nextNumber -= 1;
+        suffix = String.fromCharCode(65 + (nextNumber % 26)) + suffix;
+        nextNumber = Math.floor(nextNumber / 26);
+      }
+      const teamName = `팀 ${suffix}`;
       return {
         ...current,
         teams: [
@@ -56,7 +67,7 @@ const ManageThirdTeamBuildPage = () => {
           },
           ...current.teams,
         ],
-        message: `${teamName} 팀을 생성했습니다. 직무 인원을 배치해 주세요.`,
+        message: `${teamName}을 생성했습니다. 직무 인원을 배치해 주세요.`,
       };
     });
     setSelectedId(null);

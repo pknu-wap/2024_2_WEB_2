@@ -360,11 +360,13 @@ function TeamBuildApplyPage({ round = 1 }) {
 
         <div className={styles.hero}>
           <div className={styles.heroTitle}>
-            TEAM BUILDING_{isSecondRound ? "2ND" : "1ST"}
+            {isSecondRound ? "TEAM BUILDING_2ND" : "1차 팀빌딩"}
           </div>
-          <div className={styles.heroSubtitle}>
-            함께할 팀을 찾고, 원하는 프로젝트에 도전해보세요
-          </div>
+          {isSecondRound && (
+            <div className={styles.heroSubtitle}>
+              함께할 팀을 찾고, 원하는 프로젝트에 도전해보세요
+            </div>
+          )}
         </div>
 
         <div

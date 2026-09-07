@@ -4,6 +4,12 @@ import ManageThirdTeamBuildPage from "./ManageThirdTeamBuildPage";
 
 const getUnassigned = () => screen.getByRole("region", { name: "미배정 멤버" });
 const getTeam = (name) => screen.getByRole("article", { name });
+const getAssignedFrontend = () =>
+  screen
+    .getAllByRole("article")
+    .flatMap((team) =>
+      within(team).queryAllByRole("button", { name: "FRONTEND" }),
+    );
 const originalPointerEvent = window.PointerEvent;
 const originalElementFromPoint = document.elementFromPoint;
 beforeAll(() => {
@@ -33,7 +39,7 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   const source = startDrag();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   const team = within(getTeam("오늘의 기록"));
-  expect(team.getByRole("row", { name: "FRONTEND · 1명" })).toBeInTheDocument();
+  expect(team.getByRole("row", { name: "FRONTEND" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
   expect(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
@@ -53,7 +59,7 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
   fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
 
   const team = within(getTeam("WAPs"));
-  expect(team.getByRole("row", { name: "BACKEND · 1명" })).toBeInTheDocument();
+  expect(team.getByRole("row", { name: "BACKEND" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 5명")).toBeInTheDocument();
   expect(team.getByText("김민준")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
@@ -87,7 +93,7 @@ test.each(["Enter", " "])(
     });
     expect(
       within(getTeam("오늘의 기록")).getByRole("row", {
-        name: "BACKEND · 1명",
+        name: "BACKEND",
       }),
     ).toBeInTheDocument();
   },
@@ -120,14 +126,12 @@ test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다"
   render(<ManageThirdTeamBuildPage />);
   placeFrontend();
   for (const target of ["WAPs", "캠퍼스 메이트", "오늘의 기록"]) {
-    fireEvent.click(screen.getByRole("button", { name: "FRONTEND · 1명" }));
+    fireEvent.click(getAssignedFrontend()[0]);
     fireEvent.click(screen.getByRole("button", { name: target }));
     expect(
-      within(getTeam(target)).getByRole("button", { name: "FRONTEND · 1명" }),
+      within(getTeam(target)).getByRole("button", { name: "FRONTEND" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: "FRONTEND · 1명" }),
-    ).toHaveLength(1);
+    expect(getAssignedFrontend()).toHaveLength(1);
   }
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
   expect(
@@ -141,13 +145,13 @@ test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다"
 test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 새 팀에 추가한다", () => {
   render(<ManageThirdTeamBuildPage />);
   placeFrontend();
-  const source = screen.getByRole("button", { name: "FRONTEND · 1명" });
+  const source = getAssignedFrontend()[0];
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
   document.elementFromPoint = jest.fn(() => getTeam("WAPs"));
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   expect(
-    within(getTeam("WAPs")).getByRole("button", { name: "FRONTEND · 1명" }),
+    within(getTeam("WAPs")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
   expect(
     within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
@@ -163,7 +167,7 @@ test.each(["same", "cancel", "outside"])(
   (mode) => {
     render(<ManageThirdTeamBuildPage />);
     placeFrontend();
-    const source = screen.getByRole("button", { name: "FRONTEND · 1명" });
+    const source = getAssignedFrontend()[0];
     fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
     document.elementFromPoint = jest.fn(() =>
       mode === "outside" ? null : getTeam("오늘의 기록"),
@@ -174,8 +178,6 @@ test.each(["same", "cancel", "outside"])(
     expect(
       within(getTeam("오늘의 기록")).getByText("배정 완료 1명"),
     ).toBeInTheDocument();
-    expect(
-      screen.getAllByRole("button", { name: "FRONTEND · 1명" }),
-    ).toHaveLength(1);
+    expect(getAssignedFrontend()).toHaveLength(1);
   },
 );

@@ -110,7 +110,7 @@ const ManageThirdTeamBuildPage = () => {
     }
   };
 
-  const renderPositionSlot = (member, assigned = false) => (
+  const renderPositionSlot = (member) => (
     <button
       key={member.id}
       type="button"
@@ -167,10 +167,7 @@ const ManageThirdTeamBuildPage = () => {
           suppressClick.current = false;
       }}
     >
-      <span className={styles.position}>
-        {member.position}
-        {assigned ? " · 1명" : ""}
-      </span>
+      <span className={styles.position}>{member.position}</span>
     </button>
   );
 
@@ -281,7 +278,7 @@ const ManageThirdTeamBuildPage = () => {
                   {team.members.map((member) => (
                     <tr key={member.id}>
                       {member.type === "POSITION_SLOT" ? (
-                        <td colSpan={2}>{renderPositionSlot(member, true)}</td>
+                        <td colSpan={2}>{renderPositionSlot(member)}</td>
                       ) : (
                         <>
                           <td>

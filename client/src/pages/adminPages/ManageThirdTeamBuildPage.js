@@ -456,9 +456,9 @@ const ManageThirdTeamBuildPage = () => {
               <h2 id={`team-${team.id}`} className={styles.teamName}>
                 {team.teamName}
               </h2>
-              <span className={styles.badge}>
-                배정 완료 {team.members.length}명
-              </span>
+              {team.projectType && (
+                <span className={styles.badge}>{team.projectType}</span>
+              )}
               {team.isCreated && (
                 <button
                   type="button"

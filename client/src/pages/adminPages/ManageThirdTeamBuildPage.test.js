@@ -211,7 +211,7 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   await settle();
   const team = within(getTeam("오늘의 기록"));
   expect(team.getByRole("row", { name: "FRONTEND" })).toBeInTheDocument();
-  expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
+  expect(team.queryAllByRole("row").slice(1)).toHaveLength(1);
   expect(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
   ).toHaveLength(2);
@@ -234,7 +234,7 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", async () => 
 
   const team = within(getTeam("WAPs"));
   expect(team.getByRole("row", { name: "BACKEND" })).toBeInTheDocument();
-  expect(team.getByText("배정 완료 5명")).toBeInTheDocument();
+  expect(team.queryAllByRole("row").slice(1)).toHaveLength(5);
   expect(team.getByText("김민준")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
 });
@@ -296,9 +296,9 @@ test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정�
   fireEvent.click(getTeam("WAPs"));
   await settle();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
-  expect(
-    within(getTeam("WAPs")).getByText("배정 완료 4명"),
-  ).toBeInTheDocument();
+  expect(within(getTeam("WAPs")).queryAllByRole("row").slice(1)).toHaveLength(
+    4,
+  );
 });
 
 const placeFrontend = async () => {
@@ -325,12 +325,12 @@ test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다"
     expect(getAssignedFrontend()).toHaveLength(1);
   }
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
+  expect(within(getTeam("WAPs")).queryAllByRole("row").slice(1)).toHaveLength(
+    4,
+  );
   expect(
-    within(getTeam("WAPs")).getByText("배정 완료 4명"),
-  ).toBeInTheDocument();
-  expect(
-    within(getTeam("캠퍼스 메이트")).getByText("배정 완료 3명"),
-  ).toBeInTheDocument();
+    within(getTeam("캠퍼스 메이트")).queryAllByRole("row").slice(1),
+  ).toHaveLength(3);
 });
 
 test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 새 팀에 추가한다", async () => {
@@ -349,8 +349,8 @@ test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 �
     within(getTeam("WAPs")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
   expect(
-    within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
-  ).toBeInTheDocument();
+    within(getTeam("오늘의 기록")).queryAllByRole("row").slice(1),
+  ).toHaveLength(0);
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
   expect(screen.getByRole("status")).toHaveTextContent(
     "오늘의 기록 팀에서 WAPs 팀으로 이동했습니다.",
@@ -376,8 +376,8 @@ test.each(["same", "cancel", "outside"])(
     fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
     await settle();
     expect(
-      within(getTeam("오늘의 기록")).getByText("배정 완료 1명"),
-    ).toBeInTheDocument();
+      within(getTeam("오늘의 기록")).queryAllByRole("row").slice(1),
+    ).toHaveLength(1);
     expect(getAssignedFrontend()).toHaveLength(1);
   },
 );
@@ -393,9 +393,9 @@ test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 
   await settle();
   await createTeam();
   expect(screen.getAllByRole("article")).toHaveLength(7);
-  expect(
-    within(getTeam("팀 A")).getByText("배정 완료 0명"),
-  ).toBeInTheDocument();
+  expect(within(getTeam("팀 A")).queryAllByRole("row").slice(1)).toHaveLength(
+    0,
+  );
   expect(
     within(getTeam("팀 A")).getByText("아직 배정된 멤버가 없습니다."),
   ).toBeInTheDocument();
@@ -411,9 +411,9 @@ test("버튼을 누를 때마다 팀 이름이 알파벳 순서대로 증가한�
   await createTeam();
   await createTeam();
   for (const name of ["팀 A", "팀 B", "팀 C"]) {
-    expect(
-      within(getTeam(name)).getByText("배정 완료 0명"),
-    ).toBeInTheDocument();
+    expect(within(getTeam(name)).queryAllByRole("row").slice(1)).toHaveLength(
+      0,
+    );
   }
   expect(screen.getAllByRole("article")).toHaveLength(9);
 });
@@ -439,9 +439,9 @@ test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수
   await settle();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   await settle();
-  expect(
-    within(getTeam("팀 A")).getByText("배정 완료 0명"),
-  ).toBeInTheDocument();
+  expect(within(getTeam("팀 A")).queryAllByRole("row").slice(1)).toHaveLength(
+    0,
+  );
   expect(
     within(getTeam("팀 B")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
@@ -502,9 +502,9 @@ test("직무 인원이 있는 생성 팀을 삭제하면 모두 미배정으로 
   await settle();
   fireEvent.click(screen.getByRole("button", { name: "팀 B" }));
   await settle();
-  expect(
-    within(getTeam("팀 B")).getByText("배정 완료 1명"),
-  ).toBeInTheDocument();
+  expect(within(getTeam("팀 B")).queryAllByRole("row").slice(1)).toHaveLength(
+    1,
+  );
 });
 
 test("다시 방문하면 서버에 저장한 팀과 배치안을 복원한다", async () => {
@@ -553,8 +553,8 @@ test("저장이 실패하면 기존 배치안을 유지하고 오류를 표시�
   await settle();
   await placeFrontend();
   expect(
-    within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
-  ).toBeInTheDocument();
+    within(getTeam("오늘의 기록")).queryAllByRole("row").slice(1),
+  ).toHaveLength(0);
   expect(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
   ).toHaveLength(3);
@@ -629,8 +629,8 @@ test.each(["click", "Enter", " ", "drag"])(
       1,
     );
     expect(
-      within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
-    ).toBeInTheDocument();
+      within(getTeam("오늘의 기록")).queryAllByRole("row").slice(1),
+    ).toHaveLength(0);
     expect(screen.getByRole("status")).toHaveTextContent(
       "김다은(FRONTEND)을 미배정 목록으로 옮겼습니다.",
     );
@@ -723,15 +723,29 @@ test("완료 실패 시 편집 가능한 배치안을 유지하고 충돌 후 �
   expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
 });
 
-
 test("팀장은 배치 인원과 별도로 표시하고 팀장이 없으면 문구를 숨긴다", async () => {
   savedBoard.teams[0].leader = { id: 1000, name: "박팀장" };
   render(<ManageThirdTeamBuildPage />);
   await settle();
   const team = within(getTeam(savedBoard.teams[0].teamName));
   expect(team.getByText("팀장: 박팀장")).toBeInTheDocument();
-  expect(team.queryByRole("button", { name: /박팀장/ })).not.toBeInTheDocument();
-  expect(team.getByText("배정 완료 4명")).toBeInTheDocument();
+  expect(
+    team.queryByRole("button", { name: /박팀장/ }),
+  ).not.toBeInTheDocument();
+  expect(team.queryAllByRole("row").slice(1)).toHaveLength(4);
   await createTeam();
   expect(within(getTeam("팀 A")).queryByText(/팀장:/)).not.toBeInTheDocument();
+});
+
+test("팀 카드에 배정 완료 인원 대신 프로젝트 분야를 표시한다", async () => {
+  savedBoard.teams[0].projectType = "WEB";
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  const team = within(getTeam(savedBoard.teams[0].teamName));
+  expect(team.getByText("WEB")).toBeInTheDocument();
+  expect(team.queryByText(/배정 완료/)).not.toBeInTheDocument();
+  await createTeam();
+  expect(
+    within(getTeam("팀 A")).queryByText(/WEB|배정 완료/),
+  ).not.toBeInTheDocument();
 });

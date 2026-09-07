@@ -182,55 +182,57 @@ test.each(["same", "cancel", "outside"])(
   },
 );
 
-const createTeam = (name) => {
-  fireEvent.change(screen.getByRole("textbox", { name: "새 팀 이름" }), {
-    target: { value: name },
-  });
-  fireEvent.submit(screen.getByRole("form", { name: "팀 생성" }));
-};
+const createTeam = () =>
+  fireEvent.click(screen.getByRole("button", { name: "팀 생성" }));
 
 test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 인원은 유지된다", () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam("  새로운 팀  ");
+  createTeam();
   expect(screen.getAllByRole("article")).toHaveLength(7);
   expect(
-    within(getTeam("새로운 팀")).getByText("배정 완료 0명"),
+    within(getTeam("WEB 1팀")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
   expect(
-    within(getTeam("새로운 팀")).getByText("아직 배정된 멤버가 없습니다."),
+    within(getTeam("WEB 1팀")).getByText("아직 배정된 멤버가 없습니다."),
   ).toBeInTheDocument();
   expect(within(getTeam("WAPs")).getByText("김민준")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
-  expect(screen.getByRole("textbox", { name: "새 팀 이름" })).toHaveValue("");
+  expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 });
 
-test("빈 이름이나 공백만으로 팀을 생성하지 않는다", () => {
+test("버튼을 누를 때마다 WEB 팀 번호가 순서대로 증가한다", () => {
   render(<ManageThirdTeamBuildPage />);
-  expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
-  createTeam("   ");
-  expect(screen.getAllByRole("article")).toHaveLength(6);
+  createTeam();
+  createTeam();
+  createTeam();
+  for (const name of ["WEB 1팀", "WEB 2팀", "WEB 3팀"]) {
+    expect(
+      within(getTeam(name)).getByText("배정 완료 0명"),
+    ).toBeInTheDocument();
+  }
+  expect(screen.getAllByRole("article")).toHaveLength(9);
 });
 
 test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수 있다", () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam("신규 A");
-  createTeam("신규 B");
+  createTeam();
+  createTeam();
   fireEvent.click(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
   );
-  fireEvent.click(screen.getByRole("button", { name: "신규 A" }));
-  const source = within(getTeam("신규 A")).getByRole("button", {
+  fireEvent.click(screen.getByRole("button", { name: "WEB 1팀" }));
+  const source = within(getTeam("WEB 1팀")).getByRole("button", {
     name: "FRONTEND",
   });
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
-  document.elementFromPoint = jest.fn(() => getTeam("신규 B"));
+  document.elementFromPoint = jest.fn(() => getTeam("WEB 2팀"));
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   expect(
-    within(getTeam("신규 A")).getByText("배정 완료 0명"),
+    within(getTeam("WEB 1팀")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
   expect(
-    within(getTeam("신규 B")).getByRole("button", { name: "FRONTEND" }),
+    within(getTeam("WEB 2팀")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
   expect(screen.getAllByRole("article")).toHaveLength(8);
 });

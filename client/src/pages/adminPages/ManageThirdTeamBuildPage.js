@@ -12,7 +12,6 @@ const ManageThirdTeamBuildPage = () => {
     message: "",
   }));
   const [selectedId, setSelectedId] = useState(null);
-  const [newTeamName, setNewTeamName] = useState("");
   const dragRef = useRef(null);
   const containerRef = useRef(null);
   const suppressClick = useRef(false);
@@ -35,25 +34,31 @@ const ManageThirdTeamBuildPage = () => {
     setDropTarget(null);
   };
 
-  const createTeam = (event) => {
-    event.preventDefault();
-    const teamName = newTeamName.trim();
-    if (!teamName) return;
-
-    setRoster((current) => ({
-      ...current,
-      teams: [
-        {
-          projectId:
-            Math.max(0, ...current.teams.map((team) => team.projectId)) + 1,
-          teamName,
-          members: [],
-        },
-        ...current.teams,
-      ],
-      message: `${teamName} 팀을 생성했습니다. 직무 인원을 배치해 주세요.`,
-    }));
-    setNewTeamName("");
+  const createTeam = () => {
+    setRoster((current) => {
+      const nextNumber =
+        Math.max(
+          0,
+          ...current.teams.map((team) => {
+            const match = /^WEB (\d+)팀$/.exec(team.teamName);
+            return match ? Number(match[1]) : 0;
+          }),
+        ) + 1;
+      const teamName = `WEB ${nextNumber}팀`;
+      return {
+        ...current,
+        teams: [
+          {
+            projectId:
+              Math.max(0, ...current.teams.map((team) => team.projectId)) + 1,
+            teamName,
+            members: [],
+          },
+          ...current.teams,
+        ],
+        message: `${teamName} 팀을 생성했습니다. 직무 인원을 배치해 주세요.`,
+      };
+    });
     setSelectedId(null);
   };
 
@@ -224,31 +229,15 @@ const ManageThirdTeamBuildPage = () => {
         </span>
       </div>
 
-      <form
-        className={styles.createTeamForm}
-        onSubmit={createTeam}
-        aria-label="팀 생성"
-      >
-        <label htmlFor="new-team-name">새 팀 이름</label>
-        <div className={styles.createTeamControls}>
-          <input
-            id="new-team-name"
-            className={styles.teamNameInput}
-            value={newTeamName}
-            onChange={(event) => setNewTeamName(event.target.value)}
-            placeholder="팀 이름을 입력하세요"
-            maxLength={50}
-            required
-          />
-          <button
-            type="submit"
-            className={styles.createTeamButton}
-            disabled={!newTeamName.trim()}
-          >
-            팀 생성
-          </button>
-        </div>
-      </form>
+      <div className={styles.createTeamControls}>
+        <button
+          type="button"
+          className={styles.createTeamButton}
+          onClick={createTeam}
+        >
+          팀 생성
+        </button>
+      </div>
 
       <section className={styles.unassigned} aria-labelledby="unassigned-title">
         <h2 id="unassigned-title" className={styles.teamName}>

@@ -37,7 +37,7 @@
 }
 
 /* 테이블 관련 */
-table {
+.container table {
   min-width: 386px;
   width: 100%;
   border-collapse: collapse;
@@ -47,12 +47,12 @@ table {
   border-bottom: 1px solid var(--tableLine);
 }
 
-thead {
+.container thead {
   position: sticky;
   top: 0;
   z-index: 10;
 }
-th {
+.container th {
   border: 2px solid var(--tableLine);
   background-color: var(--primary);
   color: black;
@@ -62,19 +62,19 @@ th {
   padding: 10px 13px;
 }
 
-td {
+.container td {
   border: 2px solid var(--tableLine);
   font-size: 15px;
   padding: 10px 5px 10px 10px;
 }
 
-th:first-child,
-td:first-child {
+.container th:first-child,
+.container td:first-child {
   border-left: none;
 }
 
-th:last-child,
-td:last-child {
+.container th:last-child,
+.container td:last-child {
   border-right: none;
 }
 

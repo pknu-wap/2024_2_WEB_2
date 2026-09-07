@@ -95,13 +95,13 @@
 
 .hero {
   text-align: center;
-  margin-bottom: 22px;
+  margin-bottom: 42px;
 }
 
 .heroTitle {
   font-size: 34px;
   font-weight: 800;
-  letter-spacing: 0.14em;
+  letter-spacing: -1px;
 }
 
 .heroSubtitle {
@@ -196,43 +196,103 @@
   margin-top: 120px;
 }
 
+.emptyApply {
+  min-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyFolder {
+  width: 120px;
+  height: auto;
+  object-fit: contain;
+  opacity: 0.3;
+  margin-top: 20px;
+}
+
+.emptyApply p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
+  margin-bottom: 30px;
+  text-align: center;
+}
+
 .myApplyHeader {
   display: block;
 }
 
 .primaryPositionCard {
-  margin-top: 24px;
-  padding: 20px 24px;
-  border-radius: 28px;
-  background: #252a2e;
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  margin-top: 20px;
+  padding: 18px 16px;
+  border-radius: 26px;
+  background: rgba(255, 255, 255, 0.059);
+  backdrop-filter: blur(8px);
 }
 
 .primaryPositionHeader h2 {
-  margin: 0 0 4px;
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 18px;
-  font-weight: 700;
-}
-
-.primaryPositionHeader p {
-  margin: 0 0 14px;
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.formGroup.primaryPositionSelect {
-  margin-bottom: 0;
-}
-
-.formGroup.primaryPositionSelect select {
-  border-radius: 999px;
-  background-color: rgba(255, 255, 255, 0.15);
+  margin: 0 0 0 8px;
+  color: #f7f7f7ac;
+  font-size: 17px;
   font-weight: 600;
 }
 
-.primaryPositionSelect select option {
-  background: #252a2e;
+.primaryPositionHeader p {
+  margin: 4px 0 0 8px;
+  color: rgba(255, 255, 255, 0.205);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.formGroup.primaryPositionSelect {
+  position: relative;
+  margin: 10px 8px 0;
+}
+
+.formGroup.primaryPositionSelect::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  right: 16px;
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid #d9e2f1;
+  border-bottom: 1.5px solid #d9e2f1;
+  pointer-events: none;
+  transform: rotate(45deg);
+}
+
+.formGroup.primaryPositionSelect select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  -moz-appearance: none !important;
+  padding-top: 9px;
+  padding-bottom: 9px;
+  border-color: rgba(255, 255, 255, 0.22);
+  background-color: rgba(255, 255, 255, 0.14);
+  background-image: none !important;
+  color-scheme: dark;
+}
+
+.formGroup.primaryPositionSelect select::-ms-expand {
+  display: none;
+}
+
+.formGroup.primaryPositionSelect select:focus,
+.formGroup.primaryPositionSelect select:focus-visible {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.22);
+  box-shadow: none;
+}
+
+.formGroup.primaryPositionSelect option {
+  background-color: #292a2e;
   color: #f8f8f8;
 }
 
@@ -241,26 +301,24 @@
 }
 
 .myApplyTitleRow {
-  display: flex;
-  flex-wrap: wrap;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: 6px;
 }
 
 .myApplyCount {
-  position: relative;
+  width: 24px;
+  height: 24px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  padding: 5px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 16px;
-  font-weight: 600;
-  line-height: 1.5;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 12px;
+  font-weight: 800;
+  margin-top: 0;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .applicationCountHint {
@@ -1131,7 +1189,10 @@
 }
 
 .modalSubmit {
-  display: block;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   max-width: 100%;
   box-sizing: border-box;
@@ -1575,6 +1636,10 @@
 .recruitBlock {
   margin: 17px 0;
 }
+.secondRoundRecruitBlock {
+  margin-bottom: 10px;
+}
+
 .recruitPositions {
   display: flex;
   flex-wrap: wrap;
@@ -1748,8 +1813,8 @@
   font-size: 22px;
 }
 .applicationModalDescription {
-  margin: 0 0 10px;
-  color: rgba(255, 255, 255, 0.244);
+  margin: 0 0 22px;
+  color: rgba(255, 255, 255, 0.62);
   font-size: 13px;
 }
 .applicationModalClose {
@@ -1982,4 +2047,35 @@
   min-height: 80px;
   height: 80px;
   resize: vertical;
+}
+
+.myApplyHeader h2 {
+  margin: 2px 0 2px 13px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #f7f7f7;
+}
+
+.myApplyTitle p {
+  margin: 9px 0 0 13px;
+  color: rgba(255, 255, 255, 0.379);
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+
+.myApplyTitle p + p {
+  margin-top: 3px;
+}
+
+.myApplyCountActive {
+  background: #9ed0ff;
+  color: #000000;
+}
+
+.formGroup select:focus,
+.formGroup select:focus-visible {
+  outline: none;
+  border-color: #9ed0ff;
+  box-shadow: 0 0 0 3px rgba(158, 208, 255, 0.16);
 }

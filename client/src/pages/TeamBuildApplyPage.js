@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Cookies from "../utils/authStorage";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import { POSITIONS } from "../constants/positions";
 import {
@@ -57,6 +57,9 @@ const reorderProjectIds = (
 };
 
 function TeamBuildApplyPage({ round = 1 }) {
+  const [searchParams] = useSearchParams();
+  const isPreview =
+    process.env.NODE_ENV === "development" && searchParams.get("preview") === "1";
   const isSecondRound = round === 2;
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -77,17 +80,28 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [primaryPosition, setPrimaryPosition] = useState("");
 
   useEffect(() => {
+    if (isPreview) return;
     const token = Cookies.get("authToken") || "";
     if (!token) {
       alert("로그인이 필요합니다.");
       navigate("/login");
     }
-  }, [navigate]);
+  }, [navigate, isPreview]);
 
   useEffect(() => {
     let active = true;
 
     const fetchData = async () => {
+      if (isPreview) {
+        setProjects([
+          { projectId: 1, title: "캠퍼스 모임 찾기", projectType: "WEB", summary: "관심사가 같은 학우들과 모임을 만드는 웹 서비스", recruitPositions: [...POSITIONS], recruitCount: 4, requirements: "함께 배우며 꾸준히 참여할 팀원을 찾습니다." },
+          { projectId: 2, title: "나의 하루 기록", projectType: "APP", summary: "일상과 목표를 기록하는 모바일 앱", recruitPositions: [...POSITIONS], recruitCount: 3, requirements: "앱 개발에 관심 있는 분을 환영합니다." },
+          { projectId: 3, title: "작은 숲의 모험", projectType: "GAME", summary: "숲을 탐험하며 퍼즐을 해결하는 게임", recruitPositions: [...POSITIONS], recruitCount: 4, requirements: "게임 제작을 함께 경험할 팀원을 찾습니다." },
+        ]);
+        setHasApplied(false);
+        setIsLoading(false);
+        return;
+      }
       const token = Cookies.get("authToken") || "";
       if (!token) {
         setIsLoading(false);
@@ -130,7 +144,7 @@ function TeamBuildApplyPage({ round = 1 }) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isPreview]);
 
   const projectTeamLabels = useMemo(
     () => getProjectTeamLabels(projects),
@@ -266,7 +280,7 @@ function TeamBuildApplyPage({ round = 1 }) {
 
     setIsSubmitting(true);
     try {
-      await teamBuildApi.submitApply({ applies }, round);
+      if (!isPreview) await teamBuildApi.submitApply({ applies }, round);
       setIsSubmitConfirmOpen(false);
       setHasApplied(true);
     } catch (err) {
@@ -425,18 +439,18 @@ function TeamBuildApplyPage({ round = 1 }) {
                       : undefined
                   }
                 >
-                  {projectApplications.length}개
+                  {projectApplications.length}
                 </div>
                 {projectApplications.length < MIN_APPLICATIONS && (
                   <span
                     id="application-count-hint"
                     className={styles.applicationCountHint}
                   >
-                    최소 {MIN_APPLICATIONS}개의 지원서를 작성해야합니다.
                   </span>
                 )}
               </div>
               <p>지원한 프로젝트를 확인하고, 드래그로 우선순위를 조정하세요</p>
+              <p>최소 3개의 지원서를 작성해야합니다.</p>
             </div>
           </div>
 

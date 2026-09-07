@@ -1,11 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import styles from "../../assets/Admin/ManageThirdTeamBuild.module.css";
 import {
   thirdRoundTeams,
   thirdRoundUnassignedMembers,
 } from "../../mocks/thirdRoundTeams";
-
-const MEMBER_DRAG_TYPE = "application/x-waps-unassigned-member";
 
 const ManageThirdTeamBuildPage = () => {
   const [{ teams, unassigned, message }, setRoster] = useState(() => ({
@@ -14,7 +12,10 @@ const ManageThirdTeamBuildPage = () => {
     message: "",
   }));
   const [selectedId, setSelectedId] = useState(null);
-  const [draggedId, setDraggedId] = useState(null);
+  const dragRef = useRef(null);
+  const containerRef = useRef(null);
+  const suppressClick = useRef(false);
+  const [dragPreview, setDragPreview] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
   const selectedMember = unassigned.find((member) => member.id === selectedId);
   const assignedMemberCount = teams.reduce(
@@ -23,7 +24,8 @@ const ManageThirdTeamBuildPage = () => {
   );
 
   const clearDrag = () => {
-    setDraggedId(null);
+    dragRef.current = null;
+    setDragPreview(null);
     setDropTarget(null);
   };
 
@@ -47,8 +49,47 @@ const ManageThirdTeamBuildPage = () => {
     clearDrag();
   };
 
+  const teamAtPoint = (x, y) => {
+    const card = document.elementFromPoint(x, y)?.closest("[data-team-id]");
+    return card && containerRef.current?.contains(card)
+      ? Number(card.dataset.teamId)
+      : null;
+  };
+
+  useEffect(() => {
+    if (!dragPreview) return;
+    let frame;
+    const scroll = () => {
+      const drag = dragRef.current;
+      const container = containerRef.current;
+      if (!drag?.active || !container) return;
+      const bounds = container.getBoundingClientRect();
+      if (drag.x >= bounds.left && drag.x <= bounds.right) {
+        const speed =
+          drag.y > bounds.bottom - 60 ? 12 : drag.y < bounds.top + 60 ? -12 : 0;
+        container.scrollTop += speed;
+        setDropTarget(teamAtPoint(drag.x, drag.y));
+      }
+      frame = requestAnimationFrame(scroll);
+    };
+    frame = requestAnimationFrame(scroll);
+    return () => cancelAnimationFrame(frame);
+  }, [dragPreview]);
+
+  const finishPointerDrag = (event, cancelled = false) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+    const target = cancelled ? null : teamAtPoint(event.clientX, event.clientY);
+    if (drag.active && target !== null) assignMember(drag.member.id, target);
+    else clearDrag();
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
+
   return (
     <section
+      ref={containerRef}
       className={styles.container}
       aria-labelledby="third-team-build-title"
     >
@@ -89,20 +130,56 @@ const ManageThirdTeamBuildPage = () => {
             <button
               key={member.id}
               type="button"
-              draggable
+              draggable={false}
               aria-pressed={selectedId === member.id}
               aria-describedby="assignment-help"
               className={`${styles.memberChip} ${selectedId === member.id ? styles.selected : ""}`}
-              onClick={() =>
-                setSelectedId(selectedId === member.id ? null : member.id)
-              }
-              onDragStart={(event) => {
-                event.dataTransfer.setData(MEMBER_DRAG_TYPE, String(member.id));
-                event.dataTransfer.effectAllowed = "move";
-                setDraggedId(member.id);
-                setSelectedId(null);
+              onClick={() => {
+                if (suppressClick.current) {
+                  suppressClick.current = false;
+                  return;
+                }
+                setSelectedId(selectedId === member.id ? null : member.id);
               }}
-              onDragEnd={clearDrag}
+              onDragStart={(event) => event.preventDefault()}
+              onPointerDown={(event) => {
+                if (event.button !== 0 || event.isPrimary === false) return;
+                suppressClick.current = false;
+                dragRef.current = {
+                  member,
+                  pointerId: event.pointerId,
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  x: event.clientX,
+                  y: event.clientY,
+                  active: false,
+                };
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerMove={(event) => {
+                const drag = dragRef.current;
+                if (!drag || drag.pointerId !== event.pointerId) return;
+                drag.x = event.clientX;
+                drag.y = event.clientY;
+                if (
+                  !drag.active &&
+                  Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 6
+                )
+                  return;
+                drag.active = true;
+                suppressClick.current = true;
+                setSelectedId(null);
+                setDragPreview({ member: drag.member, x: drag.x, y: drag.y });
+                setDropTarget(teamAtPoint(drag.x, drag.y));
+              }}
+              onPointerUp={finishPointerDrag}
+              onPointerCancel={(event) => finishPointerDrag(event, true)}
+              onLostPointerCapture={clearDrag}
+              onKeyDown={(event) => {
+                if (event.key === "Escape") clearDrag();
+                if (event.key === "Enter" || event.key === " ")
+                  suppressClick.current = false;
+              }}
             >
               <span>{member.name}</span>
               <span className={styles.position}>
@@ -121,33 +198,22 @@ const ManageThirdTeamBuildPage = () => {
         {message}
       </p>
 
+      {dragPreview && (
+        <div
+          className={styles.dragPreview}
+          aria-hidden="true"
+          style={{ left: dragPreview.x + 12, top: dragPreview.y + 12 }}
+        >
+          {dragPreview.member.name} · {dragPreview.member.position}
+        </div>
+      )}
       <div className={styles.grid}>
         {teams.map((team) => (
           <article
             key={team.projectId}
             className={`${styles.card} ${dropTarget === team.projectId ? styles.dropTarget : ""}`}
             aria-labelledby={`team-${team.projectId}`}
-            onDragOver={(event) => {
-              if (draggedId === null) return;
-              event.preventDefault();
-              event.dataTransfer.dropEffect = "move";
-              setDropTarget(team.projectId);
-            }}
-            onDragLeave={(event) => {
-              if (!event.currentTarget.contains(event.relatedTarget))
-                setDropTarget(null);
-            }}
-            onDrop={(event) => {
-              event.preventDefault();
-              const memberId = Number(
-                event.dataTransfer.getData(MEMBER_DRAG_TYPE),
-              );
-              if (draggedId !== null && memberId === draggedId) {
-                assignMember(memberId, team.projectId);
-              } else {
-                clearDrag();
-              }
-            }}
+            data-team-id={team.projectId}
           >
             <div className={styles.cardHeader}>
               <h2 id={`team-${team.projectId}`} className={styles.teamName}>

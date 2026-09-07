@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import styles from "../../assets/Admin/ManageTeamBuild.module.css";
 import { adminTeamBuildApi } from "../../api/admin";
 import { FiDownload, FiPlay } from "react-icons/fi";
-import { getTeamBuildStep, getPreviousTeamBuildStatus } from "../../utils/teamBuildProgress";
+import { getTeamBuildStep, getPreviousTeamBuildStatus, getNextTeamBuildStatus, getTeamBuildAllocationState } from "../../utils/teamBuildProgress";
 import useSemester from "../../hooks/useSemester";
 import { IconCheck } from "../../components/Admin/icons";
 
@@ -59,23 +59,16 @@ const ManageTeamBuildPage = () => {
     setStatusChanging(false);
   };
 
+  const nextStatus = getNextTeamBuildStatus({ status, round, completedRound });
+  const allocationState = getTeamBuildAllocationState({ status, round, completedRound });
+
   // 상태 변경 (다음 단계로)
   const handleChangeStatus = async () => {
-    if (currentStep === "THIRD" || currentStep === "RESULT") return;
+    if (!nextStatus || statusChanging || statusLoading || loading) return;
     setStatusChanging(true);
     try {
-      const nextStatus = status === "OPEN" ? "APPLY"
-        : status === "APPLY" ? "RECRUIT"
-        : status === "RECRUIT" ? "CLOSED"
-        : status === "CLOSED" && completedRound === 1 ? "APPLY" : null;
-
-      if (!nextStatus) {
-        alert("더 이상 변경할 상태가 없습니다.");
-        return;
-      }
-
       await adminTeamBuildApi.updateTeamBuildStatus(semester, nextStatus); // 상태 변경
-      setStatus(nextStatus); // 성공 시 상태 업데이트
+      // Refresh status and round together; APPLY may have opened round 2.
       await fetchStatus();
     } catch (e) {
       console.error(e);
@@ -101,7 +94,7 @@ const ManageTeamBuildPage = () => {
   };
 
   // 모집 마감 후 아직 배정하지 않은 차수만 실행 가능
-  const canRunAlgorithm = status === "CLOSED" && completedRound < round;
+  const canRunAlgorithm = allocationState === "PENDING";
 
   // 팀 빌딩 알고리즘 실행 (CLOSED 상태에서만)
   const handleRunTeamBuilding = async () => {
@@ -173,7 +166,10 @@ const ManageTeamBuildPage = () => {
                 <div className={styles.circle} aria-hidden="true">
                   {idx < currentIdx ? <IconCheck color="#000" size="1" /> : idx + 1}
                 </div>
-                <small>{idx < currentIdx ? "완료" : idx === currentIdx ? "진행 중" : "대기"}</small>
+                <small>{idx < currentIdx ? "완료" : idx !== currentIdx ? "대기"
+                  : step.key === `RECRUIT_${round}` && allocationState === "PENDING" ? "배정 대기"
+                  : step.key === `RECRUIT_${round}` && allocationState === "COMPLETED" ? "배정 완료"
+                  : "진행 중"}</small>
               </li>
             ))}
           </ol>
@@ -192,11 +188,12 @@ const ManageTeamBuildPage = () => {
           </button>
           <button className={styles.nextBtn}
             onClick={currentStep === "unavailable" ? handleOpenTeamBuild : handleChangeStatus}
-            disabled={statusChanging || statusLoading || loading || currentStep === "RESULT" ||
-              ((currentStep === "THIRD" || canRunAlgorithm))}>
+            disabled={statusChanging || statusLoading || loading ||
+              (currentStep !== "unavailable" && !nextStatus)}>
             {currentStep === "unavailable" ? "팀빌딩 시작하기"
               : currentStep === "RESULT" ? "진행 완료"
               : canRunAlgorithm ? `${round}차 배정 대기`
+              : status === "CLOSED" && nextStatus === "APPLY" ? "2차 지원 시작 →"
               : status === "RECRUIT" ? `${round}차 모집 마감`
               : "다음 단계 →"}
           </button>

@@ -421,8 +421,27 @@ function TeamBuildApplyPage({ round = 1 }) {
                       : ""
                   }`}
                   aria-label={`현재 지원서 ${projectApplications.length}개`}
+                  tabIndex={
+                    projectApplications.length < MIN_APPLICATIONS
+                      ? 0
+                      : undefined
+                  }
+                  aria-describedby={
+                    projectApplications.length < MIN_APPLICATIONS
+                      ? "application-count-tooltip"
+                      : undefined
+                  }
                 >
-                  {projectApplications.length}
+                  {projectApplications.length}개
+                  {projectApplications.length < MIN_APPLICATIONS && (
+                    <span
+                      id="application-count-tooltip"
+                      role="tooltip"
+                      className={styles.applicationCountTooltip}
+                    >
+                      최소 {MIN_APPLICATIONS}개의 지원서를 작성해야합니다.
+                    </span>
+                  )}
                 </div>
               </div>
               <p>지원한 프로젝트를 한눈에 확인하고, 우선순위를 조정하세요</p>

@@ -204,6 +204,58 @@
   display: block;
 }
 
+.myApplyTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.myApplyCount {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.myApplyCount:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.applicationCountTooltip {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 2;
+  width: 180px;
+  max-width: calc(100vw - 80px);
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: #202530;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  visibility: hidden;
+}
+
+.myApplyCount:hover .applicationCountTooltip,
+.myApplyCount:focus .applicationCountTooltip {
+  visibility: visible;
+}
+
 .backRow {
   margin-bottom: 18px;
 }

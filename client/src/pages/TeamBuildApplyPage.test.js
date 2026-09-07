@@ -90,6 +90,15 @@ test.each([1, 2])(
       message: "함께하고 싶습니다",
     });
     saveApplication();
+    const countBadge = screen.getByLabelText("현재 지원서 2개");
+    expect(within(countBadge).getByText("2개")).toBeTruthy();
+    expect(countBadge.getAttribute("aria-describedby")).toBe(
+      "application-count-tooltip",
+    );
+    expect(countBadge.tabIndex).toBe(0);
+    expect(screen.getByRole("tooltip").textContent).toBe(
+      "최소 3개의 지원서를 작성해야합니다.",
+    );
     fireEvent.click(
       screen.getByRole("button", { name: "지원서 수정하기 (백엔드)" }),
     );
@@ -121,6 +130,11 @@ test.each([1, 2])(
       });
       saveApplication();
     }
+
+    const countBadge = screen.getByLabelText("현재 지원서 3개");
+    expect(countBadge.textContent).toBe("3개");
+    expect(countBadge.hasAttribute("aria-describedby")).toBe(false);
+    expect(screen.queryByRole("tooltip")).toBeNull();
 
     expect(Boolean(screen.queryByRole("combobox", { name: "주요 직무" }))).toBe(
       round === 1,

@@ -47,12 +47,13 @@ export const thirdRoundTeams = [
   { projectId: 6, teamName: "오늘의 기록", members: [] },
 ];
 
-export const thirdRoundUnassignedMembers = [
-  { id: 15, name: "김다은", position: "FRONTEND" },
-  { id: 16, name: "이준호", position: "BACKEND" },
-  { id: 17, name: "박소율", position: "DESIGN" },
-  { id: 18, name: "최지안", position: "AI" },
-  { id: 19, name: "정시윤", position: "APP" },
-  { id: 20, name: "강태오", position: "GAME" },
-  { id: 21, name: "윤채원", position: "EMBEDDED" },
+// 실제 사용자와 연결되지 않은 직무별 인원 자리입니다.
+export const thirdRoundPositionSlots = [
+  { id: "slot-frontend-1", type: "POSITION_SLOT", position: "FRONTEND" },
+  { id: "slot-backend-1", type: "POSITION_SLOT", position: "BACKEND" },
+  { id: "slot-design-1", type: "POSITION_SLOT", position: "DESIGN" },
+  { id: "slot-ai-1", type: "POSITION_SLOT", position: "AI" },
+  { id: "slot-app-1", type: "POSITION_SLOT", position: "APP" },
+  { id: "slot-game-1", type: "POSITION_SLOT", position: "GAME" },
+  { id: "slot-embedded-1", type: "POSITION_SLOT", position: "EMBEDDED" },
 ];

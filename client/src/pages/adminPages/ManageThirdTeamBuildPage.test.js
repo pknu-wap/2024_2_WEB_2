@@ -33,17 +33,15 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   const source = startDrag();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
   const team = within(getTeam("오늘의 기록"));
-  expect(
-    team.getByRole("row", { name: "FRONTEND 김다은" }),
-  ).toBeInTheDocument();
+  expect(team.getByRole("row", { name: "FRONTEND · 1명" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
   expect(
     within(getUnassigned()).queryByRole("button", { name: "FRONTEND" }),
   ).not.toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
-    "김다은 님을 오늘의 기록 팀에 FRONTEND 직무로 배정했습니다.",
+    "오늘의 기록 팀에 FRONTEND 인원 1명을 배치했습니다.",
   );
-  expect(within(getTeam("WAPs")).queryByText("김다은")).not.toBeInTheDocument();
+  expect(screen.queryByText(/김다은/)).not.toBeInTheDocument();
 });
 
 test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
@@ -51,11 +49,11 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
   fireEvent.click(
     within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
   );
-  expect(screen.queryByText("이준호 님을 WAPs에 배정")).not.toBeInTheDocument();
+  expect(screen.queryByText(/이준호/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
 
   const team = within(getTeam("WAPs"));
-  expect(team.getByRole("row", { name: "BACKEND 이준호" })).toBeInTheDocument();
+  expect(team.getByRole("row", { name: "BACKEND · 1명" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 5명")).toBeInTheDocument();
   expect(team.getByText("김민준")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
@@ -89,7 +87,7 @@ test.each(["Enter", " "])(
     });
     expect(
       within(getTeam("오늘의 기록")).getByRole("row", {
-        name: "BACKEND 이준호",
+        name: "BACKEND · 1명",
       }),
     ).toBeInTheDocument();
   },

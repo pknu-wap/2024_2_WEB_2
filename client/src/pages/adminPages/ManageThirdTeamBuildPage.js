@@ -2,13 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import styles from "../../assets/Admin/ManageThirdTeamBuild.module.css";
 import {
   thirdRoundTeams,
-  thirdRoundUnassignedMembers,
+  thirdRoundPositionSlots,
 } from "../../mocks/thirdRoundTeams";
 
 const ManageThirdTeamBuildPage = () => {
   const [{ teams, unassigned, message }, setRoster] = useState(() => ({
     teams: thirdRoundTeams,
-    unassigned: thirdRoundUnassignedMembers,
+    unassigned: thirdRoundPositionSlots,
     message: "",
   }));
   const [selectedId, setSelectedId] = useState(null);
@@ -42,7 +42,7 @@ const ManageThirdTeamBuildPage = () => {
             : team,
         ),
         unassigned: current.unassigned.filter((item) => item.id !== memberId),
-        message: `${member.name} 님을 ${target.teamName} 팀에 ${member.position} 직무로 배정했습니다.`,
+        message: `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
       };
     });
     setSelectedId(null);
@@ -122,8 +122,8 @@ const ManageThirdTeamBuildPage = () => {
           미배정 멤버
         </h2>
         <p id="assignment-help" className={styles.description}>
-          멤버를 팀 카드로 드래그하면 주요 직무로 배정됩니다. 클릭으로 멤버를
-          선택한 뒤 팀 카드를 클릭해도 됩니다.
+          직무를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각 항목은
+          해당 직무의 인원 1명을 나타내며, 실제 멤버를 지정하지 않습니다.
         </p>
         <div className={styles.unassignedList}>
           {unassigned.map((member) => (
@@ -249,12 +249,22 @@ const ManageThirdTeamBuildPage = () => {
                 <tbody>
                   {team.members.map((member) => (
                     <tr key={member.id}>
-                      <td>
-                        <span className={styles.position}>
-                          {member.position}
-                        </span>
-                      </td>
-                      <td>{member.name}</td>
+                      {member.type === "POSITION_SLOT" ? (
+                        <td colSpan={2}>
+                          <span className={styles.position}>
+                            {member.position} · 1명
+                          </span>
+                        </td>
+                      ) : (
+                        <>
+                          <td>
+                            <span className={styles.position}>
+                              {member.position}
+                            </span>
+                          </td>
+                          <td>{member.name}</td>
+                        </>
+                      )}
                     </tr>
                   ))}
                 </tbody>

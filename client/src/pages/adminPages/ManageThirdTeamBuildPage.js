@@ -181,10 +181,7 @@ const ManageThirdTeamBuildPage = () => {
                   suppressClick.current = false;
               }}
             >
-              <span>{member.name}</span>
-              <span className={styles.position}>
-                주요 직무 · {member.position}
-              </span>
+              <span className={styles.position}>{member.position}</span>
             </button>
           ))}
         </div>
@@ -204,7 +201,7 @@ const ManageThirdTeamBuildPage = () => {
           aria-hidden="true"
           style={{ left: dragPreview.x + 12, top: dragPreview.y + 12 }}
         >
-          {dragPreview.member.name} · {dragPreview.member.position}
+          {dragPreview.member.position}
         </div>
       )}
       <div className={styles.grid}>

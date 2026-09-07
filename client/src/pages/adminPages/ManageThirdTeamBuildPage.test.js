@@ -18,7 +18,7 @@ afterAll(() => {
 
 const startDrag = () => {
   const source = within(getUnassigned()).getByRole("button", {
-    name: /김다은/,
+    name: "FRONTEND",
   });
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
   document.elementFromPoint = jest.fn(() =>
@@ -38,7 +38,7 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   ).toBeInTheDocument();
   expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
   expect(
-    within(getUnassigned()).queryByRole("button", { name: /김다은/ }),
+    within(getUnassigned()).queryByRole("button", { name: "FRONTEND" }),
   ).not.toBeInTheDocument();
   expect(screen.getByRole("status")).toHaveTextContent(
     "김다은 님을 오늘의 기록 팀에 FRONTEND 직무로 배정했습니다.",
@@ -49,7 +49,7 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
 test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
   render(<ManageThirdTeamBuildPage />);
   fireEvent.click(
-    within(getUnassigned()).getByRole("button", { name: /이준호/ }),
+    within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
   );
   expect(screen.queryByText("이준호 님을 WAPs에 배정")).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
@@ -82,7 +82,7 @@ test.each(["Enter", " "])(
   (key) => {
     render(<ManageThirdTeamBuildPage />);
     fireEvent.click(
-      within(getUnassigned()).getByRole("button", { name: /이준호/ }),
+      within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
     );
     fireEvent.keyDown(screen.getByRole("button", { name: "오늘의 기록" }), {
       key,
@@ -99,7 +99,7 @@ test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정�
   render(<ManageThirdTeamBuildPage />);
   fireEvent.click(getTeam("WAPs"));
   fireEvent.click(
-    within(getUnassigned()).getByRole("button", { name: /이준호/ }),
+    within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
   );
   fireEvent.keyDown(screen.getByRole("button", { name: "WAPs" }), {
     key: "Escape",

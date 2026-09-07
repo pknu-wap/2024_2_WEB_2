@@ -35,7 +35,7 @@
 
 - `teams[].id`: 배치안 팀 ID. 이동·삭제 API에 사용한다.
 - `teams[].projectId`: 기존 프로젝트 ID. 생성 팀은 `null`이다.
-- `teams[].leader`: 기존 프로젝트 팀장의 `{ id, name }`. 생성 팀은 `null`이며 화면에는 미지정으로 표시한다. 팀장은 배치 인원과 별도로 표시한다.
+- `teams[].leader`: 기존 프로젝트 팀장의 `{ id, name }`. 생성 팀은 `null`이며 3차 팀빌딩 화면에는 팀장 문구를 표시하지 않는다. 팀장은 배치 인원과 별도로 표시한다.
 - `teams[].isCreated`: 삭제 가능한 생성 팀인지 나타낸다.
 - `members[]`, `unassigned[]`: `{ id, type, position, name? }`.
 - 직무 자리는 `type = POSITION_SLOT`, `id = slot-7` 형태이며 지원자의 `name`을 함께 응답한다. 이동 URL에는 숫자 부분 `7`을 사용한다.

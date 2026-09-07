@@ -475,9 +475,9 @@ const ManageThirdTeamBuildPage = () => {
                 </button>
               )}
             </div>
-            <p className={styles.description}>
-              팀장: {team.leader?.name || "미지정"}
-            </p>
+            {team.leader?.name && (
+              <p className={styles.description}>팀장: {team.leader.name}</p>
+            )}
             {team.members.length > 0 ? (
               <table
                 className={styles.members}

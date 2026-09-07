@@ -46,3 +46,13 @@ export const thirdRoundTeams = [
   },
   { projectId: 6, teamName: "오늘의 기록", members: [] },
 ];
+
+export const thirdRoundUnassignedMembers = [
+  { id: 15, name: "김다은", position: "FRONTEND" },
+  { id: 16, name: "이준호", position: "BACKEND" },
+  { id: 17, name: "박소율", position: "DESIGN" },
+  { id: 18, name: "최지안", position: "AI" },
+  { id: 19, name: "정시윤", position: "APP" },
+  { id: 20, name: "강태오", position: "GAME" },
+  { id: 21, name: "윤채원", position: "EMBEDDED" },
+];

@@ -16,6 +16,11 @@ const SideBar = () => {
     { text: "투표 관리", path: "/admin/vote", icon: IconVote },
     { text: "팀빌딩 관리", path: "/admin/teambuild", icon: IconTeamBuild },
     {
+      text: "3차 팀빌딩",
+      path: "/admin/teambuild/3rd",
+      icon: IconTeamBuild,
+    },
+    {
       text: "사용자 권한 관리",
       path: "/admin/permission",
       icon: IconPermission,

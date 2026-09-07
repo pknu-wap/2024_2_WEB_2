@@ -28,6 +28,7 @@ import AdminRoute from "./components/Login/PrivateRoute";
 import ManagePermissionPage from "./pages/adminPages/ManagePermissionPage";
 import ManagePlanPage from "./pages/adminPages/ManagePlanPage";
 import ManageTeamBuildPage from "./pages/adminPages/ManageTeamBuildPage";
+import ManageThirdTeamBuildPage from "./pages/adminPages/ManageThirdTeamBuildPage";
 import ManageVotePage from "./pages/adminPages/ManageVotePage";
 import MainLayout from "./components/MainLayout";
 
@@ -110,6 +111,10 @@ function App() {
               <Route index element={<Navigate to="vote" replace />}></Route>
               <Route path="vote" element={<ManageVotePage />} />
               <Route path="teambuild" element={<ManageTeamBuildPage />} />
+              <Route
+                path="teambuild/3rd"
+                element={<ManageThirdTeamBuildPage />}
+              />
               <Route path="permission" element={<ManagePermissionPage />} />
               <Route path="plan" element={<ManagePlanPage />} />
             </Route>

@@ -248,11 +248,6 @@
   font-weight: 400;
   line-height: 1.5;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  visibility: hidden;
-}
-
-.myApplyCount:hover .applicationCountTooltip,
-.myApplyCount:focus .applicationCountTooltip {
   visibility: visible;
 }
 

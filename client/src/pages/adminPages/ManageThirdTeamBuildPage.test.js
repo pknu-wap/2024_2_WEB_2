@@ -17,9 +17,9 @@ afterAll(() => {
 });
 
 const startDrag = () => {
-  const source = within(getUnassigned()).getByRole("button", {
+  const source = within(getUnassigned()).getAllByRole("button", {
     name: "FRONTEND",
-  });
+  })[0];
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
   document.elementFromPoint = jest.fn(() =>
     getTeam("오늘의 기록").querySelector("h2"),
@@ -36,8 +36,8 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   expect(team.getByRole("row", { name: "FRONTEND · 1명" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
   expect(
-    within(getUnassigned()).queryByRole("button", { name: "FRONTEND" }),
-  ).not.toBeInTheDocument();
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
+  ).toHaveLength(2);
   expect(screen.getByRole("status")).toHaveTextContent(
     "오늘의 기록 팀에 FRONTEND 인원 1명을 배치했습니다.",
   );
@@ -56,7 +56,7 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
   expect(team.getByRole("row", { name: "BACKEND · 1명" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 5명")).toBeInTheDocument();
   expect(team.getByText("김민준")).toBeInTheDocument();
-  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
 });
 
 test.each(["cancel", "outside", "escape"])(
@@ -68,7 +68,7 @@ test.each(["cancel", "outside", "escape"])(
     if (mode === "escape") fireEvent.keyDown(source, { key: "Escape" });
     if (mode === "outside") document.elementFromPoint = jest.fn(() => null);
     fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
-    expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(7);
+    expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
     expect(
       within(getTeam("오늘의 기록")).getByText("아직 배정된 멤버가 없습니다."),
     ).toBeInTheDocument();
@@ -103,7 +103,7 @@ test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정�
     key: "Escape",
   });
   fireEvent.click(getTeam("WAPs"));
-  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(7);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
   expect(
     within(getTeam("WAPs")).getByText("배정 완료 4명"),
   ).toBeInTheDocument();
@@ -111,7 +111,7 @@ test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정�
 
 const placeFrontend = () => {
   fireEvent.click(
-    within(getUnassigned()).getByRole("button", { name: "FRONTEND" }),
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
   );
   fireEvent.click(screen.getByRole("button", { name: "오늘의 기록" }));
 };
@@ -129,7 +129,7 @@ test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다"
       screen.getAllByRole("button", { name: "FRONTEND · 1명" }),
     ).toHaveLength(1);
   }
-  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
   expect(
     within(getTeam("WAPs")).getByText("배정 완료 4명"),
   ).toBeInTheDocument();
@@ -152,7 +152,7 @@ test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 �
   expect(
     within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
-  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
   expect(screen.getByRole("status")).toHaveTextContent(
     "오늘의 기록 팀에서 WAPs 팀으로 이동했습니다.",
   );

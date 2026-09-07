@@ -50,6 +50,8 @@ export const thirdRoundTeams = [
 // 실제 사용자와 연결되지 않은 직무별 인원 자리입니다.
 export const thirdRoundPositionSlots = [
   { id: "slot-frontend-1", type: "POSITION_SLOT", position: "FRONTEND" },
+  { id: "slot-frontend-2", type: "POSITION_SLOT", position: "FRONTEND" },
+  { id: "slot-frontend-3", type: "POSITION_SLOT", position: "FRONTEND" },
   { id: "slot-backend-1", type: "POSITION_SLOT", position: "BACKEND" },
   { id: "slot-design-1", type: "POSITION_SLOT", position: "DESIGN" },
   { id: "slot-ai-1", type: "POSITION_SLOT", position: "AI" },

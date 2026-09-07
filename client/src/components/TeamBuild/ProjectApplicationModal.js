@@ -96,7 +96,7 @@ export default function ProjectApplicationModal({
             className={styles.applicationModalDescription}
           >
             저장한 경력은 새 지원서에 자동 입력되며, 지원서마다 수정할 수
-            있습니다.<br></br>
+            있습니다.<br />
             없다면 '없음'이라고 작성해주세요
           </p>
         </div>

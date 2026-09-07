@@ -522,7 +522,6 @@ function TeamBuildApplyPage({ round = 1 }) {
           <div className={styles.availableHeader}>
             <div>
               <h2>지원가능한 프로젝트</h2>
-              <p></p>
             </div>
           </div>
 

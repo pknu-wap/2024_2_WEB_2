@@ -6,6 +6,40 @@
   box-sizing: border-box;
 }
 
+.syncControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  color: #c5c5c5;
+}
+
+.refreshButton {
+  padding: 8px 12px;
+  border: 1px solid #626262;
+  border-radius: 8px;
+  background: #353535;
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.error {
+  color: #ffc1c1;
+  line-height: 1.6;
+}
+
+.container button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.refreshButton:focus-visible {
+  outline: 2px solid #abd4fd;
+  outline-offset: 3px;
+}
+
 .header {
   margin-bottom: 28px;
 }

@@ -1,16 +1,101 @@
 import { useEffect, useRef, useState } from "react";
 import styles from "../../assets/Admin/ManageThirdTeamBuild.module.css";
-import {
-  thirdRoundTeams,
-  thirdRoundPositionSlots,
-} from "../../mocks/thirdRoundTeams";
+import { thirdRoundApi } from "../../api/third-round";
 
 const ManageThirdTeamBuildPage = () => {
-  const [{ teams, unassigned, message }, setRoster] = useState(() => ({
-    teams: thirdRoundTeams,
-    unassigned: thirdRoundPositionSlots,
-    message: "",
-  }));
+  const [{ teams, unassigned, revision }, setRoster] = useState({
+    teams: [],
+    unassigned: [],
+    revision: null,
+  });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const requestInFlight = useRef(false);
+  const mounted = useRef(false);
+  const busy = loading || saving;
+
+  useEffect(() => {
+    let cancelled = false;
+    mounted.current = true;
+    thirdRoundApi
+      .open()
+      .then((board) => {
+        if (!cancelled) setRoster(board);
+      })
+      .catch((failure) => {
+        if (!cancelled)
+          setError(
+            failure.response?.data?.message || "배치안을 불러오지 못했습니다.",
+          );
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      mounted.current = false;
+    };
+  }, []);
+
+  const reload = async () => {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setLoading(true);
+    setError("");
+    setSelectedId(null);
+    clearDrag();
+    try {
+      const board = await thirdRoundApi.open();
+      if (mounted.current) setRoster(board);
+    } catch (failure) {
+      if (mounted.current)
+        setError(
+          failure.response?.data?.message || "배치안을 불러오지 못했습니다.",
+        );
+    } finally {
+      requestInFlight.current = false;
+      if (mounted.current) setLoading(false);
+    }
+  };
+
+  const mutate = async (request, successMessage) => {
+    if (busy || requestInFlight.current || revision === null) return;
+    requestInFlight.current = true;
+    setSaving(true);
+    setError("");
+    setSelectedId(null);
+    clearDrag();
+    try {
+      const board = await request();
+      if (mounted.current) {
+        setRoster(board);
+        setMessage(successMessage);
+      }
+    } catch (failure) {
+      if (mounted.current) {
+        setMessage("");
+        setError(
+          failure.response?.data?.message ||
+            "변경 내용을 저장하지 못했습니다. 새로고침으로 저장 상태를 확인해 주세요.",
+        );
+      }
+      // A stale revision must not overwrite a different administrator's update.
+      if (failure.response?.status === 409) {
+        try {
+          const board = await thirdRoundApi.get();
+          if (mounted.current) setRoster(board);
+        } catch {
+          /* Keep the last confirmed board and offer reload. */
+        }
+      }
+    } finally {
+      requestInFlight.current = false;
+      if (mounted.current) setSaving(false);
+    }
+  };
+
   const [selectedId, setSelectedId] = useState(null);
   const dragRef = useRef(null);
   const containerRef = useRef(null);
@@ -34,99 +119,47 @@ const ManageThirdTeamBuildPage = () => {
     setDropTarget(null);
   };
 
-  const createTeam = () => {
-    setRoster((current) => {
-      let nextNumber =
-        Math.max(
-          0,
-          ...current.teams.map((team) => {
-            const match = /^팀 ([A-Z]+)$/.exec(team.teamName);
-            return match
-              ? [...match[1]].reduce(
-                  (number, letter) => number * 26 + letter.charCodeAt(0) - 64,
-                  0,
-                )
-              : 0;
-          }),
-        ) + 1;
-      let suffix = "";
-      while (nextNumber > 0) {
-        nextNumber -= 1;
-        suffix = String.fromCharCode(65 + (nextNumber % 26)) + suffix;
-        nextNumber = Math.floor(nextNumber / 26);
-      }
-      const teamName = `팀 ${suffix}`;
-      return {
-        ...current,
-        teams: [
-          {
-            projectId:
-              Math.max(0, ...current.teams.map((team) => team.projectId)) + 1,
-            teamName,
-            members: [],
-            isCreated: true,
-          },
-          ...current.teams,
-        ],
-        message: `${teamName}을 생성했습니다. 직무 인원을 배치해 주세요.`,
-      };
-    });
-    setSelectedId(null);
+  const createTeam = () =>
+    mutate(
+      () => thirdRoundApi.create(revision),
+      "빈 팀을 생성했습니다. 직무 인원을 배치해 주세요.",
+    );
+
+  const deleteTeam = (teamId) => {
+    const team = teams.find((item) => item.id === teamId);
+    if (!team?.isCreated) return;
+    mutate(
+      () => thirdRoundApi.delete(teamId, revision),
+      team.members.length
+        ? `${team.teamName}을 삭제하고 직무 인원 ${team.members.length}명을 미배정 목록으로 옮겼습니다.`
+        : `${team.teamName}을 삭제했습니다.`,
+    );
   };
 
-  const deleteTeam = (projectId) => {
-    setRoster((current) => {
-      const team = current.teams.find((item) => item.projectId === projectId);
-      if (!team?.isCreated) return current;
-
-      return {
-        teams: current.teams.filter((item) => item.projectId !== projectId),
-        unassigned: [...current.unassigned, ...team.members],
-        message: team.members.length
-          ? `${team.teamName}을 삭제하고 직무 인원 ${team.members.length}명을 미배정 목록으로 옮겼습니다.`
-          : `${team.teamName}을 삭제했습니다.`,
-      };
-    });
-    setSelectedId(null);
-    clearDrag();
-  };
-
-  const assignMember = (memberId, projectId) => {
-    setRoster((current) => {
-      const source = current.teams.find((team) =>
-        team.members.some((item) => item.id === memberId),
-      );
-      const member =
-        current.unassigned.find((item) => item.id === memberId) ||
-        source?.members.find((item) => item.id === memberId);
-      const target = current.teams.find((team) => team.projectId === projectId);
-      if (
-        !member ||
-        member.type !== "POSITION_SLOT" ||
-        !target ||
-        source === target
-      )
-        return current;
-
-      return {
-        teams: current.teams.map((team) =>
-          team.projectId === projectId
-            ? { ...team, members: [...team.members, member] }
-            : team === source
-              ? {
-                  ...team,
-                  members: team.members.filter((item) => item.id !== memberId),
-                }
-              : team,
-        ),
-        unassigned: current.unassigned.filter((item) => item.id !== memberId),
-        message: source
-          ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
-          : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
-      };
-    });
-    setSelectedId(null);
-    clearDrag();
+  const assignMember = (memberId, teamId) => {
+    const source = teams.find((team) =>
+      team.members.some((member) => member.id === memberId),
+    );
+    const member =
+      unassigned.find((item) => item.id === memberId) ||
+      source?.members.find((item) => item.id === memberId);
+    const target = teams.find((team) => team.id === teamId);
+    if (
+      !member ||
+      member.type !== "POSITION_SLOT" ||
+      !target ||
+      source === target
+    ) {
+      setSelectedId(null);
+      clearDrag();
+      return;
+    }
+    mutate(
+      () => thirdRoundApi.move(memberId, teamId, revision),
+      source
+        ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
+        : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
+    );
   };
 
   const teamAtPoint = (x, y) => {
@@ -171,6 +204,7 @@ const ManageThirdTeamBuildPage = () => {
     <button
       key={member.id}
       type="button"
+      disabled={busy}
       draggable={false}
       aria-pressed={selectedId === member.id}
       aria-describedby="assignment-help"
@@ -185,7 +219,13 @@ const ManageThirdTeamBuildPage = () => {
       }}
       onDragStart={(event) => event.preventDefault()}
       onPointerDown={(event) => {
-        if (event.button !== 0 || event.isPrimary === false) return;
+        if (
+          busy ||
+          requestInFlight.current ||
+          event.button !== 0 ||
+          event.isPrimary === false
+        )
+          return;
         suppressClick.current = false;
         dragRef.current = {
           member,
@@ -242,9 +282,28 @@ const ManageThirdTeamBuildPage = () => {
           팀별 배정이 완료된 멤버와 담당 직무를 확인하세요.
         </p>
         <p className={styles.notice}>
-          예시 데이터입니다. 생성한 팀과 배정 내용은 새로고침하면 초기화됩니다.
+          생성한 팀과 직무 배치안은 자동 저장됩니다. 실제 멤버 배정은 별도로
+          진행됩니다.
         </p>
       </header>
+
+      <div className={styles.syncControls}>
+        <button
+          type="button"
+          className={styles.refreshButton}
+          onClick={reload}
+          disabled={busy}
+        >
+          새로고침
+        </button>
+        {loading && <span>배치안을 불러오는 중입니다.</span>}
+        {saving && <span>저장 중입니다.</span>}
+      </div>
+      {error && (
+        <p role="alert" className={styles.error}>
+          {error}
+        </p>
+      )}
 
       <div className={styles.summary}>
         <span>
@@ -263,6 +322,7 @@ const ManageThirdTeamBuildPage = () => {
           type="button"
           className={styles.createTeamButton}
           onClick={createTeam}
+          disabled={busy || revision === null}
         >
           팀 생성
         </button>
@@ -280,7 +340,7 @@ const ManageThirdTeamBuildPage = () => {
         <div className={styles.unassignedList}>
           {unassigned.map((member) => renderPositionSlot(member))}
         </div>
-        {unassigned.length === 0 && (
+        {!loading && revision !== null && unassigned.length === 0 && (
           <p className={styles.description}>
             모든 멤버의 배정이 완료되었습니다.
           </p>
@@ -302,28 +362,27 @@ const ManageThirdTeamBuildPage = () => {
       <div className={styles.grid}>
         {teams.map((team) => (
           <article
-            key={team.projectId}
-            className={`${styles.card} ${selectedMember ? styles.assignable : ""} ${dropTarget === team.projectId ? styles.dropTarget : ""}`}
-            aria-labelledby={`team-${team.projectId}`}
-            data-team-id={team.projectId}
+            key={team.id}
+            className={`${styles.card} ${selectedMember ? styles.assignable : ""} ${dropTarget === team.id ? styles.dropTarget : ""}`}
+            aria-labelledby={`team-${team.id}`}
+            data-team-id={team.id}
             role={selectedMember ? "button" : undefined}
             tabIndex={selectedMember ? 0 : undefined}
             aria-describedby={selectedMember ? "assignment-help" : undefined}
             onClick={() => {
-              if (selectedMember)
-                assignMember(selectedMember.id, team.projectId);
+              if (selectedMember) assignMember(selectedMember.id, team.id);
             }}
             onKeyDown={(event) => {
               if (!selectedMember) return;
               if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault();
-                assignMember(selectedMember.id, team.projectId);
+                assignMember(selectedMember.id, team.id);
               }
               if (event.key === "Escape") setSelectedId(null);
             }}
           >
             <div className={styles.cardHeader}>
-              <h2 id={`team-${team.projectId}`} className={styles.teamName}>
+              <h2 id={`team-${team.id}`} className={styles.teamName}>
                 {team.teamName}
               </h2>
               <span className={styles.badge}>
@@ -333,10 +392,11 @@ const ManageThirdTeamBuildPage = () => {
                 <button
                   type="button"
                   className={styles.deleteTeamButton}
+                  disabled={busy}
                   aria-label={`${team.teamName} 삭제`}
                   onClick={(event) => {
                     event.stopPropagation();
-                    deleteTeam(team.projectId);
+                    deleteTeam(team.id);
                   }}
                   onKeyDown={(event) => event.stopPropagation()}
                 >

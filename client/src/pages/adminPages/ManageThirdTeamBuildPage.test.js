@@ -1,6 +1,77 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import ManageThirdTeamBuildPage from "./ManageThirdTeamBuildPage";
+import { thirdRoundApi } from "../../api/third-round";
+import {
+  thirdRoundTeams,
+  thirdRoundPositionSlots,
+} from "../../mocks/thirdRoundTeams";
+
+jest.mock("../../api/third-round", () => ({
+  thirdRoundApi: {
+    open: jest.fn(),
+    get: jest.fn(),
+    create: jest.fn(),
+    move: jest.fn(),
+    delete: jest.fn(),
+  },
+}));
+let savedBoard;
+let nextTeamNumber;
+const snapshot = () => JSON.parse(JSON.stringify(savedBoard));
+const settle = async () => {
+  await act(async () => {});
+};
+
+beforeEach(() => {
+  jest.resetAllMocks();
+  nextTeamNumber = 0;
+  savedBoard = {
+    semester: "2026-2",
+    revision: 0,
+    teams: thirdRoundTeams.map((team) => ({
+      ...team,
+      id: team.projectId,
+      isCreated: false,
+      members: [...team.members],
+    })),
+    unassigned: [...thirdRoundPositionSlots],
+  };
+  thirdRoundApi.open.mockImplementation(async () => snapshot());
+  thirdRoundApi.get.mockImplementation(async () => snapshot());
+  thirdRoundApi.create.mockImplementation(async () => {
+    savedBoard.teams.push({
+      id: 100 + nextTeamNumber,
+      projectId: null,
+      teamName: `팀 ${String.fromCharCode(65 + nextTeamNumber++)}`,
+      isCreated: true,
+      members: [],
+    });
+    savedBoard.revision++;
+    return snapshot();
+  });
+  thirdRoundApi.move.mockImplementation(async (id, teamId) => {
+    const member = [
+      ...savedBoard.unassigned,
+      ...savedBoard.teams.flatMap((team) => team.members),
+    ].find((m) => m.id === id);
+    savedBoard.unassigned = savedBoard.unassigned.filter((m) => m.id !== id);
+    savedBoard.teams.forEach((team) => {
+      team.members = team.members.filter((m) => m.id !== id);
+    });
+    savedBoard.teams.find((team) => team.id === teamId).members.push(member);
+    savedBoard.revision++;
+    return snapshot();
+  });
+  thirdRoundApi.delete.mockImplementation(async (id) => {
+    savedBoard.unassigned.push(
+      ...savedBoard.teams.find((team) => team.id === id).members,
+    );
+    savedBoard.teams = savedBoard.teams.filter((team) => team.id !== id);
+    savedBoard.revision++;
+    return snapshot();
+  });
+});
 
 const getUnassigned = () => screen.getByRole("region", { name: "미배정 멤버" });
 const getTeam = (name) => screen.getByRole("article", { name });
@@ -22,22 +93,26 @@ afterAll(() => {
   delete HTMLElement.prototype.setPointerCapture;
 });
 
-const startDrag = () => {
+const startDrag = async () => {
   const source = within(getUnassigned()).getAllByRole("button", {
     name: "FRONTEND",
   })[0];
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+  await settle();
   document.elementFromPoint = jest.fn(() =>
     getTeam("오늘의 기록").querySelector("h2"),
   );
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+  await settle();
   return source;
 };
 
-test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번만 배정한다", () => {
+test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번만 배정한다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  const source = startDrag();
+  await settle();
+  const source = await startDrag();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+  await settle();
   const team = within(getTeam("오늘의 기록"));
   expect(team.getByRole("row", { name: "FRONTEND" })).toBeInTheDocument();
   expect(team.getByText("배정 완료 1명")).toBeInTheDocument();
@@ -50,13 +125,16 @@ test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번
   expect(screen.queryByText(/김다은/)).not.toBeInTheDocument();
 });
 
-test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
+test("클릭으로 선택한 멤버를 기존 팀에 추가한다", async () => {
   render(<ManageThirdTeamBuildPage />);
+  await settle();
   fireEvent.click(
     within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
   );
+  await settle();
   expect(screen.queryByText(/이준호/)).not.toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
+  await settle();
 
   const team = within(getTeam("WAPs"));
   expect(team.getByRole("row", { name: "BACKEND" })).toBeInTheDocument();
@@ -67,13 +145,17 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
 
 test.each(["cancel", "outside", "escape"])(
   "드래그 취소(%s)는 배정하지 않는다",
-  (mode) => {
+  async (mode) => {
     render(<ManageThirdTeamBuildPage />);
-    const source = startDrag();
+    await settle();
+    const source = await startDrag();
     if (mode === "cancel") fireEvent.pointerCancel(source);
+    await settle();
     if (mode === "escape") fireEvent.keyDown(source, { key: "Escape" });
+    await settle();
     if (mode === "outside") document.elementFromPoint = jest.fn(() => null);
     fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+    await settle();
     expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
     expect(
       within(getTeam("오늘의 기록")).getByText("아직 배정된 멤버가 없습니다."),
@@ -83,14 +165,17 @@ test.each(["cancel", "outside", "escape"])(
 
 test.each(["Enter", " "])(
   "선택한 멤버를 팀 카드에서 %s 키로 배정한다",
-  (key) => {
+  async (key) => {
     render(<ManageThirdTeamBuildPage />);
+    await settle();
     fireEvent.click(
       within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
     );
+    await settle();
     fireEvent.keyDown(screen.getByRole("button", { name: "오늘의 기록" }), {
       key,
     });
+    await settle();
     expect(
       within(getTeam("오늘의 기록")).getByRole("row", {
         name: "BACKEND",
@@ -99,35 +184,45 @@ test.each(["Enter", " "])(
   },
 );
 
-test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정하지 않는다", () => {
+test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정하지 않는다", async () => {
   render(<ManageThirdTeamBuildPage />);
+  await settle();
   fireEvent.click(getTeam("WAPs"));
+  await settle();
   fireEvent.click(
     within(getUnassigned()).getByRole("button", { name: "BACKEND" }),
   );
+  await settle();
   fireEvent.keyDown(screen.getByRole("button", { name: "WAPs" }), {
     key: "Escape",
   });
+  await settle();
   fireEvent.click(getTeam("WAPs"));
+  await settle();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
   expect(
     within(getTeam("WAPs")).getByText("배정 완료 4명"),
   ).toBeInTheDocument();
 });
 
-const placeFrontend = () => {
+const placeFrontend = async () => {
   fireEvent.click(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
   );
+  await settle();
   fireEvent.click(screen.getByRole("button", { name: "오늘의 기록" }));
+  await settle();
 };
 
-test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다", () => {
+test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  placeFrontend();
+  await settle();
+  await placeFrontend();
   for (const target of ["WAPs", "캠퍼스 메이트", "오늘의 기록"]) {
     fireEvent.click(getAssignedFrontend()[0]);
+    await settle();
     fireEvent.click(screen.getByRole("button", { name: target }));
+    await settle();
     expect(
       within(getTeam(target)).getByRole("button", { name: "FRONTEND" }),
     ).toBeInTheDocument();
@@ -142,14 +237,18 @@ test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다"
   ).toBeInTheDocument();
 });
 
-test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 새 팀에 추가한다", () => {
+test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 새 팀에 추가한다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  placeFrontend();
+  await settle();
+  await placeFrontend();
   const source = getAssignedFrontend()[0];
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+  await settle();
   document.elementFromPoint = jest.fn(() => getTeam("WAPs"));
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+  await settle();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+  await settle();
   expect(
     within(getTeam("WAPs")).getByRole("button", { name: "FRONTEND" }),
   ).toBeInTheDocument();
@@ -164,17 +263,22 @@ test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 �
 
 test.each(["same", "cancel", "outside"])(
   "같은 팀 또는 취소된 이동(%s)은 원래 배치를 유지한다",
-  (mode) => {
+  async (mode) => {
     render(<ManageThirdTeamBuildPage />);
-    placeFrontend();
+    await settle();
+    await placeFrontend();
     const source = getAssignedFrontend()[0];
     fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+    await settle();
     document.elementFromPoint = jest.fn(() =>
       mode === "outside" ? null : getTeam("오늘의 기록"),
     );
     fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+    await settle();
     if (mode === "cancel") fireEvent.pointerCancel(source);
+    await settle();
     fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+    await settle();
     expect(
       within(getTeam("오늘의 기록")).getByText("배정 완료 1명"),
     ).toBeInTheDocument();
@@ -182,12 +286,16 @@ test.each(["same", "cancel", "outside"])(
   },
 );
 
-const createTeam = () =>
+const createTeam = async () => {
   fireEvent.click(screen.getByRole("button", { name: "팀 생성" }));
+  await settle();
+  await settle();
+};
 
-test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 인원은 유지된다", () => {
+test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 인원은 유지된다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam();
+  await settle();
+  await createTeam();
   expect(screen.getAllByRole("article")).toHaveLength(7);
   expect(
     within(getTeam("팀 A")).getByText("배정 완료 0명"),
@@ -200,11 +308,12 @@ test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 });
 
-test("버튼을 누를 때마다 팀 이름이 알파벳 순서대로 증가한다", () => {
+test("버튼을 누를 때마다 팀 이름이 알파벳 순서대로 증가한다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam();
-  createTeam();
-  createTeam();
+  await settle();
+  await createTeam();
+  await createTeam();
+  await createTeam();
   for (const name of ["팀 A", "팀 B", "팀 C"]) {
     expect(
       within(getTeam(name)).getByText("배정 완료 0명"),
@@ -213,21 +322,27 @@ test("버튼을 누를 때마다 팀 이름이 알파벳 순서대로 증가한�
   expect(screen.getAllByRole("article")).toHaveLength(9);
 });
 
-test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수 있다", () => {
+test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수 있다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam();
-  createTeam();
+  await settle();
+  await createTeam();
+  await createTeam();
   fireEvent.click(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
   );
+  await settle();
   fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  await settle();
   const source = within(getTeam("팀 A")).getByRole("button", {
     name: "FRONTEND",
   });
   fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+  await settle();
   document.elementFromPoint = jest.fn(() => getTeam("팀 B"));
   fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+  await settle();
   fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+  await settle();
   expect(
     within(getTeam("팀 A")).getByText("배정 완료 0명"),
   ).toBeInTheDocument();
@@ -237,14 +352,16 @@ test("연속 생성한 팀에 직무를 배치하고 새 팀끼리 이동할 수
   expect(screen.getAllByRole("article")).toHaveLength(8);
 });
 
-test("생성한 빈 팀만 삭제할 수 있다", () => {
+test("생성한 빈 팀만 삭제할 수 있다", async () => {
   render(<ManageThirdTeamBuildPage />);
+  await settle();
   expect(
     screen.queryByRole("button", { name: /삭제/ }),
   ).not.toBeInTheDocument();
-  createTeam();
-  createTeam();
+  await createTeam();
+  await createTeam();
   fireEvent.click(screen.getByRole("button", { name: "팀 A 삭제" }));
+  await settle();
   expect(
     screen.queryByRole("article", { name: "팀 A" }),
   ).not.toBeInTheDocument();
@@ -254,19 +371,24 @@ test("생성한 빈 팀만 삭제할 수 있다", () => {
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
 });
 
-test("직무 인원이 있는 생성 팀을 삭제하면 모두 미배정으로 돌아가고 다시 배치할 수 있다", () => {
+test("직무 인원이 있는 생성 팀을 삭제하면 모두 미배정으로 돌아가고 다시 배치할 수 있다", async () => {
   render(<ManageThirdTeamBuildPage />);
-  createTeam();
+  await settle();
+  await createTeam();
   for (let index = 0; index < 2; index += 1) {
     fireEvent.click(
       within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
     );
+    await settle();
     fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+    await settle();
   }
   fireEvent.click(
     within(getTeam("팀 A")).getAllByRole("button", { name: "FRONTEND" })[0],
   );
+  await settle();
   fireEvent.click(screen.getByRole("button", { name: "팀 A 삭제" }));
+  await settle();
   expect(
     screen.queryByRole("article", { name: "팀 A" }),
   ).not.toBeInTheDocument();
@@ -277,12 +399,97 @@ test("직무 인원이 있는 생성 팀을 삭제하면 모두 미배정으로 
   expect(screen.getByRole("status")).toHaveTextContent(
     "직무 인원 2명을 미배정 목록으로 옮겼습니다.",
   );
-  createTeam();
+  await createTeam();
   fireEvent.click(
     within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[1],
   );
-  fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "팀 B" }));
+  await settle();
   expect(
-    within(getTeam("팀 A")).getByText("배정 완료 1명"),
+    within(getTeam("팀 B")).getByText("배정 완료 1명"),
   ).toBeInTheDocument();
+});
+
+test("다시 방문하면 서버에 저장한 팀과 배치안을 복원한다", async () => {
+  const page = render(<ManageThirdTeamBuildPage />);
+  await settle();
+  await createTeam();
+  fireEvent.click(
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" })[0],
+  );
+  fireEvent.click(screen.getByRole("button", { name: "팀 A" }));
+  await settle();
+  page.unmount();
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  expect(
+    within(getTeam("팀 A")).getByRole("button", { name: "FRONTEND" }),
+  ).toBeInTheDocument();
+  expect(
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
+  ).toHaveLength(2);
+});
+
+test("저장 중에는 중복 요청을 보내지 않고 응답이 온 뒤에만 화면을 변경한다", async () => {
+  let resolve;
+  thirdRoundApi.create.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "팀 생성" }));
+  fireEvent.click(screen.getByRole("button", { name: "팀 생성" }));
+  expect(thirdRoundApi.create).toHaveBeenCalledTimes(1);
+  expect(screen.getAllByRole("article")).toHaveLength(6);
+  expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
+  await act(async () => resolve(snapshot()));
+  expect(screen.getByRole("button", { name: "팀 생성" })).toBeEnabled();
+});
+
+test("저장이 실패하면 기존 배치안을 유지하고 오류를 표시한다", async () => {
+  thirdRoundApi.move.mockRejectedValueOnce(new Error("network"));
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  await placeFrontend();
+  expect(
+    within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
+  ).toBeInTheDocument();
+  expect(
+    within(getUnassigned()).getAllByRole("button", { name: "FRONTEND" }),
+  ).toHaveLength(3);
+  expect(screen.getByRole("alert")).toHaveTextContent("저장하지 못했습니다");
+});
+
+test("동시 수정 충돌은 최신 배치안을 조회하고 재시도에 최신 버전을 사용한다", async () => {
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  savedBoard.revision = 4;
+  thirdRoundApi.create.mockRejectedValueOnce({
+    response: { status: 409, data: { message: "다른 관리자가 변경했습니다." } },
+  });
+  await createTeam();
+  expect(thirdRoundApi.get).toHaveBeenCalledTimes(1);
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "다른 관리자가 변경했습니다.",
+  );
+  await createTeam();
+  expect(thirdRoundApi.create).toHaveBeenLastCalledWith(4);
+});
+
+test("초기 조회가 실패하면 수정을 막고 새로고침으로 재시도한다", async () => {
+  thirdRoundApi.open.mockRejectedValueOnce(new Error("network"));
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "배치안을 불러오지 못했습니다.",
+  );
+  expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
+  fireEvent.click(screen.getByRole("button", { name: "새로고침" }));
+  await settle();
+  expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  expect(screen.getAllByRole("article")).toHaveLength(6);
 });

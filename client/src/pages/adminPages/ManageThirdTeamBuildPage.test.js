@@ -108,3 +108,74 @@ test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정�
     within(getTeam("WAPs")).getByText("배정 완료 4명"),
   ).toBeInTheDocument();
 });
+
+const placeFrontend = () => {
+  fireEvent.click(
+    within(getUnassigned()).getByRole("button", { name: "FRONTEND" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "오늘의 기록" }));
+};
+
+test("배치한 직무 인원을 클릭으로 여러 팀 사이에 이동한다", () => {
+  render(<ManageThirdTeamBuildPage />);
+  placeFrontend();
+  for (const target of ["WAPs", "캠퍼스 메이트", "오늘의 기록"]) {
+    fireEvent.click(screen.getByRole("button", { name: "FRONTEND · 1명" }));
+    fireEvent.click(screen.getByRole("button", { name: target }));
+    expect(
+      within(getTeam(target)).getByRole("button", { name: "FRONTEND · 1명" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "FRONTEND · 1명" }),
+    ).toHaveLength(1);
+  }
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
+  expect(
+    within(getTeam("WAPs")).getByText("배정 완료 4명"),
+  ).toBeInTheDocument();
+  expect(
+    within(getTeam("캠퍼스 메이트")).getByText("배정 완료 3명"),
+  ).toBeInTheDocument();
+});
+
+test("배치한 직무 인원을 드래그하면 원래 팀에서 제거하고 새 팀에 추가한다", () => {
+  render(<ManageThirdTeamBuildPage />);
+  placeFrontend();
+  const source = screen.getByRole("button", { name: "FRONTEND · 1명" });
+  fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+  document.elementFromPoint = jest.fn(() => getTeam("WAPs"));
+  fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+  fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+  expect(
+    within(getTeam("WAPs")).getByRole("button", { name: "FRONTEND · 1명" }),
+  ).toBeInTheDocument();
+  expect(
+    within(getTeam("오늘의 기록")).getByText("배정 완료 0명"),
+  ).toBeInTheDocument();
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(6);
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "오늘의 기록 팀에서 WAPs 팀으로 이동했습니다.",
+  );
+});
+
+test.each(["same", "cancel", "outside"])(
+  "같은 팀 또는 취소된 이동(%s)은 원래 배치를 유지한다",
+  (mode) => {
+    render(<ManageThirdTeamBuildPage />);
+    placeFrontend();
+    const source = screen.getByRole("button", { name: "FRONTEND · 1명" });
+    fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+    document.elementFromPoint = jest.fn(() =>
+      mode === "outside" ? null : getTeam("오늘의 기록"),
+    );
+    fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+    if (mode === "cancel") fireEvent.pointerCancel(source);
+    fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+    expect(
+      within(getTeam("오늘의 기록")).getByText("배정 완료 1명"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: "FRONTEND · 1명" }),
+    ).toHaveLength(1);
+  },
+);

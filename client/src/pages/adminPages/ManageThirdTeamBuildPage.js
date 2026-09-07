@@ -17,7 +17,12 @@ const ManageThirdTeamBuildPage = () => {
   const suppressClick = useRef(false);
   const [dragPreview, setDragPreview] = useState(null);
   const [dropTarget, setDropTarget] = useState(null);
-  const selectedMember = unassigned.find((member) => member.id === selectedId);
+  const selectedMember = [
+    ...unassigned,
+    ...teams.flatMap((team) => team.members),
+  ].find(
+    (member) => member.id === selectedId && member.type === "POSITION_SLOT",
+  );
   const assignedMemberCount = teams.reduce(
     (total, team) => total + team.members.length,
     0,
@@ -31,18 +36,36 @@ const ManageThirdTeamBuildPage = () => {
 
   const assignMember = (memberId, projectId) => {
     setRoster((current) => {
-      const member = current.unassigned.find((item) => item.id === memberId);
+      const source = current.teams.find((team) =>
+        team.members.some((item) => item.id === memberId),
+      );
+      const member =
+        current.unassigned.find((item) => item.id === memberId) ||
+        source?.members.find((item) => item.id === memberId);
       const target = current.teams.find((team) => team.projectId === projectId);
-      if (!member || !target) return current;
+      if (
+        !member ||
+        member.type !== "POSITION_SLOT" ||
+        !target ||
+        source === target
+      )
+        return current;
 
       return {
         teams: current.teams.map((team) =>
           team.projectId === projectId
             ? { ...team, members: [...team.members, member] }
-            : team,
+            : team === source
+              ? {
+                  ...team,
+                  members: team.members.filter((item) => item.id !== memberId),
+                }
+              : team,
         ),
         unassigned: current.unassigned.filter((item) => item.id !== memberId),
-        message: `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
+        message: source
+          ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
+          : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
       };
     });
     setSelectedId(null);
@@ -87,6 +110,70 @@ const ManageThirdTeamBuildPage = () => {
     }
   };
 
+  const renderPositionSlot = (member, assigned = false) => (
+    <button
+      key={member.id}
+      type="button"
+      draggable={false}
+      aria-pressed={selectedId === member.id}
+      aria-describedby="assignment-help"
+      className={`${styles.memberChip} ${selectedId === member.id ? styles.selected : ""}`}
+      onClick={(event) => {
+        event.stopPropagation();
+        if (suppressClick.current) {
+          suppressClick.current = false;
+          return;
+        }
+        setSelectedId(selectedId === member.id ? null : member.id);
+      }}
+      onDragStart={(event) => event.preventDefault()}
+      onPointerDown={(event) => {
+        if (event.button !== 0 || event.isPrimary === false) return;
+        suppressClick.current = false;
+        dragRef.current = {
+          member,
+          pointerId: event.pointerId,
+          startX: event.clientX,
+          startY: event.clientY,
+          x: event.clientX,
+          y: event.clientY,
+          active: false,
+        };
+        event.currentTarget.setPointerCapture(event.pointerId);
+      }}
+      onPointerMove={(event) => {
+        const drag = dragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        drag.x = event.clientX;
+        drag.y = event.clientY;
+        if (
+          !drag.active &&
+          Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 6
+        )
+          return;
+        drag.active = true;
+        suppressClick.current = true;
+        setSelectedId(null);
+        setDragPreview({ member: drag.member, x: drag.x, y: drag.y });
+        setDropTarget(teamAtPoint(drag.x, drag.y));
+      }}
+      onPointerUp={finishPointerDrag}
+      onPointerCancel={(event) => finishPointerDrag(event, true)}
+      onLostPointerCapture={clearDrag}
+      onKeyDown={(event) => {
+        event.stopPropagation();
+        if (event.key === "Escape") clearDrag();
+        if (event.key === "Enter" || event.key === " ")
+          suppressClick.current = false;
+      }}
+    >
+      <span className={styles.position}>
+        {member.position}
+        {assigned ? " · 1명" : ""}
+      </span>
+    </button>
+  );
+
   return (
     <section
       ref={containerRef}
@@ -123,67 +210,11 @@ const ManageThirdTeamBuildPage = () => {
         </h2>
         <p id="assignment-help" className={styles.description}>
           직무를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각 항목은
-          해당 직무의 인원 1명을 나타내며, 실제 멤버를 지정하지 않습니다.
+          해당 직무의 인원 1명을 나타내며, 실제 멤버를 지정하지 않습니다. 배치한
+          직무 인원도 같은 방법으로 다른 팀으로 이동할 수 있습니다.
         </p>
         <div className={styles.unassignedList}>
-          {unassigned.map((member) => (
-            <button
-              key={member.id}
-              type="button"
-              draggable={false}
-              aria-pressed={selectedId === member.id}
-              aria-describedby="assignment-help"
-              className={`${styles.memberChip} ${selectedId === member.id ? styles.selected : ""}`}
-              onClick={() => {
-                if (suppressClick.current) {
-                  suppressClick.current = false;
-                  return;
-                }
-                setSelectedId(selectedId === member.id ? null : member.id);
-              }}
-              onDragStart={(event) => event.preventDefault()}
-              onPointerDown={(event) => {
-                if (event.button !== 0 || event.isPrimary === false) return;
-                suppressClick.current = false;
-                dragRef.current = {
-                  member,
-                  pointerId: event.pointerId,
-                  startX: event.clientX,
-                  startY: event.clientY,
-                  x: event.clientX,
-                  y: event.clientY,
-                  active: false,
-                };
-                event.currentTarget.setPointerCapture(event.pointerId);
-              }}
-              onPointerMove={(event) => {
-                const drag = dragRef.current;
-                if (!drag || drag.pointerId !== event.pointerId) return;
-                drag.x = event.clientX;
-                drag.y = event.clientY;
-                if (
-                  !drag.active &&
-                  Math.hypot(drag.x - drag.startX, drag.y - drag.startY) < 6
-                )
-                  return;
-                drag.active = true;
-                suppressClick.current = true;
-                setSelectedId(null);
-                setDragPreview({ member: drag.member, x: drag.x, y: drag.y });
-                setDropTarget(teamAtPoint(drag.x, drag.y));
-              }}
-              onPointerUp={finishPointerDrag}
-              onPointerCancel={(event) => finishPointerDrag(event, true)}
-              onLostPointerCapture={clearDrag}
-              onKeyDown={(event) => {
-                if (event.key === "Escape") clearDrag();
-                if (event.key === "Enter" || event.key === " ")
-                  suppressClick.current = false;
-              }}
-            >
-              <span className={styles.position}>{member.position}</span>
-            </button>
-          ))}
+          {unassigned.map((member) => renderPositionSlot(member))}
         </div>
         {unassigned.length === 0 && (
           <p className={styles.description}>
@@ -250,11 +281,7 @@ const ManageThirdTeamBuildPage = () => {
                   {team.members.map((member) => (
                     <tr key={member.id}>
                       {member.type === "POSITION_SLOT" ? (
-                        <td colSpan={2}>
-                          <span className={styles.position}>
-                            {member.position} · 1명
-                          </span>
-                        </td>
+                        <td colSpan={2}>{renderPositionSlot(member, true)}</td>
                       ) : (
                         <>
                           <td>

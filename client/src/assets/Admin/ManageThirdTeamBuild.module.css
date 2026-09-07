@@ -40,6 +40,55 @@
   color: #abd4fd;
 }
 
+.createTeamForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.createTeamControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.teamNameInput {
+  flex: 1 1 180px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border: 1px solid #626262;
+  border-radius: 12px;
+  background: #353535;
+  color: #fff;
+  font: inherit;
+}
+
+.createTeamButton {
+  padding: 12px 20px;
+  border: 0;
+  border-radius: 12px;
+  background: #abd4fd;
+  color: #202020;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.createTeamButton:disabled {
+  background: #494949;
+  color: #c5c5c5;
+  cursor: not-allowed;
+}
+
+.teamNameInput:focus-visible,
+.createTeamButton:focus-visible {
+  outline: 2px solid #abd4fd;
+  outline-offset: 3px;
+}
+
 .grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));

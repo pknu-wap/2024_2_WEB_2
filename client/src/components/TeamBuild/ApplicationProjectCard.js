@@ -42,7 +42,11 @@ export default function ApplicationProjectCard({
           <span className={styles.appliedMark}></span>
         )}
       </div>
-      <div className={styles.recruitBlock}>
+      <div
+        className={`${styles.recruitBlock} ${
+          isSecondRound ? styles.secondRoundRecruitBlock : ""
+        }`}
+      >
         <div className={styles.recruitPositions}>
           {project.recruitPositions.map((position) => (
             <span

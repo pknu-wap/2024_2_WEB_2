@@ -21,7 +21,6 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  /* 작은 화면에서 내용이 잘리지 않도록 스크롤 허용 */
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -30,363 +29,124 @@
 
 .upperBox {
   width: 100%;
-  flex: 6;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* 상하 여백을 조금 주어 화면이 작아져도 답답하지 않게 함 */
   padding: 20px 0;
 }
 
 .stepCard {
   width: 100%;
-  /* 최대 너비 제한을 두어 너무 늘어지는 것 방지 (선택 사항, 원본 느낌 유지하려면 제거 가능) */
-  max-width: 1400px;
-  height: 442px;
-  background: #353535;
-  border-radius: 36px;
-  display: flex;
-  align-items: start;
-  /* 원본 유지: 패딩 160px */
-  padding: 0 160px;
+  background: #232830;
+  border: 1px solid #454e5c;
+  border-radius: 24px;
+  padding: 24px 24px 20px;
   position: relative;
-  transition: all 0.3s ease; /* 부드러운 리사이징 효과 */
+  box-shadow: 0 12px 32px #00000014;
 }
-
+.progressHeading { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.progressEyebrow { font-size: 10px; font-weight: 700; letter-spacing: 0.5px; color: #98b4d3; }
+.progressHeading h2 { margin: 9px 0; color: #f3f6fb; font-size: 23px; letter-spacing: -0.6px; }
 .stepper {
-  margin-top: 121px;
+  list-style: none;
+  padding: 0;
+  margin: 28px 0 24px;
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   width: 100%;
-  display: flex;
-  align-items: flex-end;
-  transition: margin-top 0.3s ease;
 }
-
 .step {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  color: var(--progress);
-  font-size: 18px;
-  position: relative;
+  gap: 10px;
+  color: #a2afc0;
 }
-
-.step span {
-  margin-bottom: 20px;
-  font-size: 30px;
-  font-weight: 700;
-  color: white;
-  white-space: nowrap; /* 글자 줄바꿈 방지 */
-  transition: font-size 0.3s ease;
+.step:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 26px;
+  left: calc(50% + 33px);
+  width: calc(100% - 66px);
+  height: 2px;
+  background: #4a5462;
 }
-
+.step.completed::after { background: #8daed1; }
+.step.current::after { background: linear-gradient(90deg, #aacef4, #4a5462); }
+.stepLabel { order: 1; font-size: 14px; font-weight: 600; line-height: 22px; white-space: nowrap; }
 .circle {
-  width: 93px;
-  height: 93px;
+  width: 54px;
+  height: 54px;
+  border: 1px solid #596577;
   border-radius: 50%;
-  background: var(--progress);
+  background: #343d49;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 22px;
-  transition: all 0.3s ease;
-  position: relative;
-  z-index: 2;
-  flex-shrink: 0; /* 화면이 줄어도 원이 찌그러지지 않게 함 */
-}
-
-.circle SVG {
-  width: 35px;
-  height: 26px;
-  transition: all 0.3s ease;
-}
-
-.active .circle {
-  background: var(--primary);
-  color: black;
-  transition-delay: 0.8s;
-}
-
-.active .circle svg {
-  animation: popIn 0.4s 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) backwards;
-}
-
-@keyframes popIn {
-  0% {
-    transform: scale(0);
-    opacity: 0;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-
-.line {
-  flex: 1;
-  height: 5px;
-  background: var(--progress);
-  margin-bottom: 46px;
-  position: relative;
-  z-index: 1;
-  min-width: 20px;
-  transition: margin-bottom 0.3s ease;
-}
-
-.line::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 0%;
-  background: var(--primary);
-  transition: width 0.8s ease-in-out;
-  z-index: 2;
-}
-
-.line::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  width: 100%;
-  background: linear-gradient(90deg, var(--primary) 0%, var(--progress) 100%);
-  opacity: 0;
-  transition: opacity 0.8s ease-in-out;
-  z-index: 1;
-}
-
-.completedLine {
-  background: var(--progress);
-}
-.completedLine::after {
-  width: 100%;
-}
-.gradientLine {
-  background: var(--progress);
-}
-.gradientLine::before {
-  opacity: 1;
-  transition-delay: 0.8s;
-}
-
-.nextBtn {
-  width: 168px;
-  height: 66px;
-  border: 1.5px solid #a2a2a2;
-  border-radius: 63px;
-  background: #535353;
-  color: white;
-  font-size: 22px;
+  font-size: 17px;
   font-weight: 600;
-  text-align: center;
+  color: #a8b5c7;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.circle svg { width: 20px; height: 20px; }
+.completed .circle { background: #98b8d9; border-color: #98b8d9; color: #172b40; }
+.completed .stepLabel { color: #c4d3e4; }
+.current .circle { background: #c5e2ff; border-color: #d5eaff; color: #1d3650; box-shadow: 0 0 0 5px #abd4fd14, 0 0 22px #abd4fd18; }
+.current .stepLabel { color: #dfedff; font-weight: 700; }
+.step small { order: 2; padding: 3px 9px; border-radius: 6px; font-size: 11px; line-height: 16px; color: #a0adbf; }
+.current small { background: #abd4fd1a; color: #b6d9ff; }
+.stageNotice { margin: 24px 0 0; color: #abd4fd; font-size: 13px; }
+.progressFooter { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px; border-top: 1px solid #ffffff12; padding-top: 20px; }
+.stageActions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; }
+.previousBtn, .nextBtn {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  position: absolute;
-  bottom: 36px;
-  right: 51px;
-  transition: all 0.3s ease;
+  transition: background 0.15s ease;
 }
+.previousBtn { border: 1px solid #626262; color: #eee; background: transparent; }
+.nextBtn { border: 1px solid #abd4fd; background: #abd4fd; color: #152334; }
+.previousBtn:hover:not(:disabled) { background: #454545; }
+.nextBtn:hover:not(:disabled) { background: #c9e4ff; }
+.container button:disabled { opacity: 0.4; cursor: not-allowed; }
+.container button:focus-visible, .container select:focus-visible { outline: 2px solid #abd4fd; outline-offset: 4px; }
 
-.nextBtn:hover,
-.nextBtn:active {
-  background: #3a3a3a;
-}
+.underBox { width: 100%; padding: 16px 0 32px; }
+.sectionHeading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 12px; }
+.sectionHeading h2 { margin: 0; font-size: 16px; color: #f5f5f5; }
+.semesterBadge { border: 1px solid #4b5361; color: #b9cde4; border-radius: 8px; padding: 6px 10px; font-size: 12px; white-space: nowrap; }
+.csvGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.csvCard { display: flex; align-items: center; justify-content: space-between; gap: 16px; border: 1px solid #454b55; background: #30343b; border-radius: 12px; padding: 12px 16px; }
+.csvCard h3 { margin: 0; font-size: 14px; font-weight: 600; color: #fff; }
+.exportBtn { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 34px; padding: 7px 12px; border: 1px solid #59697c; border-radius: 10px; background: #384453; color: #d8eaff; font-size: 14px; font-weight: 600; cursor: pointer; transition: background 0.15s ease; }
+.exportBtn:hover:not(:disabled) { background: #44576d; }
+.teamBuildBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: none; border-radius: 10px; background: #abd4fd; color: #172a40; font-size: 14px; font-weight: 600; cursor: pointer; }
+.teamBuildBtn:hover:not(:disabled) { background: #c9e4ff; }
 
-/* ================= 하단 ================= */
 
-.underBox {
-  flex: 4;
-  display: flex;
-  align-items: flex-start;
-}
-
-.btnArea {
-  margin-top: 25px;
-  display: flex;
-  flex-direction: column;
-  gap: 13px;
-  align-items: flex-start;
-  padding-left: 0;
-  width: 100%;
-}
-
-.csvRow {
-  padding-left: 14px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 30px;
-  color: white;
-  width: 355px;
-  max-width: 90%;
-}
-
-.exportBtn {
-  width: 160px;
-  height: 50px;
-  border-radius: 100px;
-  border: 2px solid white;
-  background: transparent;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition:
-    0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease;
-  font-size: 18px;
-}
-
-.exportBtn:hover,
-.exportBtn:active {
-  color: white;
-  border: 2px solid var(--primary);
-  background-color: var(--primary);
-}
-
-.teamBuildBtn {
-  margin-top: 25px;
-  width: 355px;
-  max-width: 90%;
-  height: 70px;
-  border-radius: 74px;
-  background: var(--primary);
-  font-size: 35px;
-  font-weight: 700;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: font-size 0.3s ease;
-}
-
-/* =========================================
-   반응형 미디어 쿼리
-   (데스크탑 기준에서 화면이 작아질 때만 적용)
-   ========================================= */
-
-/* 1. 노트북/태블릿 가로 (약 1200px 이하) */
-@media screen and (max-width: 1200px) {
-  .stepCard {
-    padding: 0 80px;
-  }
-}
-
-/* 2. 태블릿/작은 노트북 (약 992px 이하) */
-@media screen and (max-width: 992px) {
-  .stepCard {
-    /* 패딩 더 축소 */
-    padding: 0 40px;
-    height: 400px; /* 카드 높이 약간 축소 */
-  }
-
-  /* 원 크기 약간 축소: 93px -> 70px */
-  .circle {
-    width: 70px;
-    height: 70px;
-  }
-  .circle SVG {
-    width: 28px;
-    height: 21px;
-  }
-
-  /* 라인 위치 조정: (70/2) = 35px - 라인높이보정 */
-  .line {
-    margin-bottom: 35px;
-  }
-
-  /* 폰트 사이즈 조정 */
-  .step span {
-    font-size: 24px;
-  }
-
-  /* 다음 버튼 크기 조정 */
-  .nextBtn {
-    width: 140px;
-    height: 60px;
-    font-size: 20px;
-    right: 30px;
-    bottom: 30px;
-  }
-}
-
-/* 3. 모바일 (768px 이하) */
 @media screen and (max-width: 768px) {
-  .container {
-    padding: 0 20px; /* 전체 컨테이너 좌우 여백 */
-  }
+  .stepCard { padding: 24px 20px 20px; border-radius: 20px; }
+  .progressHeading { align-items: flex-start; gap: 12px; }
+  .progressHeading h2 { font-size: 20px; }
+      .stepper { grid-template-columns: 1fr; gap: 0; margin: 24px 0 16px; }
+  .step { min-height: 76px; display: grid; grid-template-columns: 42px 1fr auto; gap: 14px; align-items: center; }
+  .stepLabel { grid-column: 2; grid-row: 1; font-size: 14px; white-space: normal; }
+  .circle { grid-column: 1; grid-row: 1; width: 42px; height: 42px; font-size: 15px; }
+  .step small { grid-column: 3; grid-row: 1; white-space: nowrap; }
+  .step:not(:last-child)::after { left: 20px; top: 64px; width: 2px; height: 24px; }
+  .step.current::after { background: linear-gradient(180deg, #aacef4, #4a5462); }
+  .progressFooter { gap: 16px; }
+  .stageActions { width: 100%; }
+}
 
-  .stepCard {
-    padding: 20px;
-    height: auto; /* 고정 높이 해제하여 유연하게 */
-    min-height: 350px;
-    flex-direction: column; /* 필요시 세로 배치 고려, 지금은 유지 */
-    justify-content: center;
-  }
-
-  .stepper {
-    margin-top: 60px; /* 상단 여백 축소 */
-    margin-bottom: 80px; /* 버튼 공간 확보 */
-  }
-
-  /* 원 크기 대폭 축소: 70px -> 50px */
-  .circle {
-    width: 50px;
-    height: 50px;
-    font-size: 16px;
-  }
-  .circle SVG {
-    width: 20px;
-    height: 15px;
-  }
-
-  /* 라인 위치 조정: (50/2) = 25px */
-  .line {
-    margin-bottom: 25px;
-    height: 3px;
-  }
-
-  .step span {
-    font-size: 16px;
-    margin-bottom: 10px;
-  }
-
-  /* 다음 버튼: 위치 및 크기 최적화 */
-  .nextBtn {
-    width: 120px;
-    height: 50px;
-    font-size: 18px;
-    right: 20px;
-    bottom: 20px;
-  }
-
-  /* 하단 버튼 영역 */
-  .btnArea {
-    margin-top: 30px;
-    width: 100%;
-  }
-
-  .csvRow {
-    width: 100%;
-    max-width: 355px;
-    font-size: 20px; /* 글자 크기 축소 */
-  }
-
-  .exportBtn {
-    width: 120px;
-    height: 40px;
-    font-size: 16px;
-  }
-
-  .teamBuildBtn {
-    width: 100%;
-    max-width: 355px;
-    height: 60px;
-    font-size: 24px;
-    margin-top: 20px;
-  }
+@media screen and (max-width: 768px) {
+  .csvGrid { grid-template-columns: 1fr; }
+  .csvCard { padding: 12px 14px; }
+  .sectionHeading { align-items: flex-start; }
+  .stageActions { justify-content: space-between; }
+  .previousBtn, .nextBtn { padding: 10px 12px; }
 }

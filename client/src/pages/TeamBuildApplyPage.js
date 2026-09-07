@@ -1,67 +1,23 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
+import {
+  MAX_APPLICATIONS,
+  MIN_APPLICATIONS,
+  MAX_MESSAGE_LENGTH,
+  PRIMARY_POSITION_OPTIONS,
+  getPositionLabel,
+  getPrimaryPositionLabel,
+  getProjectTeamType,
+  getProjectTeamLabels,
+} from "../utils/teamBuildApplication";
 import LoadingPage from "../components/LoadingPage";
 import wapsLogo from "../assets/img/waps_logo.png";
 import styles from "../assets/TeamBuildApply.module.css";
 import noticeIcon from "../assets/img/noticeIcon.svg";
 import noticeArrow from "../assets/img/noticeArrow.svg";
 import emptyFolder from "../assets/img/folder.svg";
-
-const MAX_SELECTION = 5;
-const POSITION_OPTIONS = [
-  { value: "FRONTEND", label: "프론트엔드" },
-  { value: "BACKEND", label: "백엔드" },
-  { value: "AI", label: "AI" },
-  { value: "DESIGN", label: "디자이너" },
-  { value: "APP", label: "앱" },
-  { value: "GAME", label: "게임" },
-  { value: "EMBEDDED", label: "임베디드" },
-];
-
-const PRIMARY_POSITION_OPTIONS = [
-  { value: "BACKEND", label: "백엔드" },
-  { value: "FRONTEND", label: "프론트엔드" },
-  { value: "DESIGN", label: "디자이너" },
-  { value: "GAME", label: "게임" },
-  { value: "APP", label: "앱" },
-  { value: "EMBEDDED", label: "임베디드" },
-  { value: "AI", label: "AI" },
-  { value: "OTHER", label: "기타" },
-];
-
-const POSITION_LABELS = POSITION_OPTIONS.reduce((acc, item) => {
-  acc[item.value] = item.label;
-  return acc;
-}, {});
-
-const readProjectType = (project) => project?.projectType || "";
-
-const normalizeProjectType = (projectType) => {
-  const raw = String(projectType || "").trim();
-  const lower = raw.toLowerCase();
-
-  if (lower === "web") return "WEB";
-  if (lower === "app") return "APP";
-  if (lower === "game") return "GAME";
-  if (lower === "embedded" || lower === "etc" || lower === "기타")
-    return "EMBEDDED";
-  return raw.toUpperCase();
-};
-
-const getProjectTeamType = (projectType) => {
-  const raw = String(projectType || "").trim();
-  const lower = raw.toLowerCase();
-
-  if (lower === "기타" || lower === "etc") return "OTHER";
-  return normalizeProjectType(raw) || "OTHER";
-};
-
-const getProjectTeamTypeLabel = (projectType) => {
-  const type = getProjectTeamType(projectType);
-  return type === "OTHER" ? "기타" : type;
-};
 
 const formatApiError = (err, fallback) => {
   if (typeof err === "string") return err;
@@ -174,28 +130,14 @@ function TeamBuildApplyPage({ round = 1 }) {
     };
   }, []);
 
-  const getPositionLabel = (value) => POSITION_LABELS[value] || value;
-  const getPrimaryPositionLabel = (value) =>
-    PRIMARY_POSITION_OPTIONS.find((option) => option.value === value)?.label ||
-    "미선택";
-
-  const getProjectTeamLabel = (project) => {
-    const projectType = getProjectTeamType(readProjectType(project));
-    const teamNumber =
-      projects
-        .filter(
-          (item) => getProjectTeamType(readProjectType(item)) === projectType,
-        )
-        .findIndex(
-          (item) => String(item.projectId) === String(project.projectId),
-        ) + 1;
-
-    return `${getProjectTeamTypeLabel(readProjectType(project))} ${teamNumber || 1}`;
-  };
+  const projectTeamLabels = useMemo(
+    () => getProjectTeamLabels(projects),
+    [projects],
+  );
 
   const openProjectApplication = (project, application = null) => {
-    if (!application && projectApplications.length >= MAX_SELECTION) {
-      alert(`지원서는 최대 ${MAX_SELECTION}개까지 작성할 수 있습니다.`);
+    if (!application && projectApplications.length >= MAX_APPLICATIONS) {
+      alert(`지원서는 최대 ${MAX_APPLICATIONS}개까지 작성할 수 있습니다.`);
       return;
     }
     setApplicationModal({ project, application });
@@ -221,8 +163,10 @@ function TeamBuildApplyPage({ round = 1 }) {
       return;
     }
 
-    if (projectFormMessage.length > 60) {
-      alert("간단 자기소개 및 PR 메시지는 60자까지 작성할 수 있습니다.");
+    if (projectFormMessage.length > MAX_MESSAGE_LENGTH) {
+      alert(
+        `간단 자기소개 및 PR 메시지는 ${MAX_MESSAGE_LENGTH}자까지 작성할 수 있습니다.`,
+      );
       return;
     }
 
@@ -320,7 +264,7 @@ function TeamBuildApplyPage({ round = 1 }) {
   };
 
   const submitProjectApplications = async () => {
-    if (projectApplications.length < 3) return;
+    if (projectApplications.length < MIN_APPLICATIONS) return;
     if (!isSecondRound && !primaryPosition) {
       alert("주요 직무를 선택해주세요.");
       return;
@@ -331,7 +275,7 @@ function TeamBuildApplyPage({ round = 1 }) {
 
   const confirmProjectApplications = async () => {
     if (
-      projectApplications.length < 3 ||
+      projectApplications.length < MIN_APPLICATIONS ||
       (!isSecondRound && !primaryPosition) ||
       isSubmitting
     )
@@ -480,8 +424,8 @@ function TeamBuildApplyPage({ round = 1 }) {
               )}
               <p>
                 • {isSecondRound ? "2차 팀빌딩도 마찬가지로" : "지원서는"} 최소
-                3개 - 최대 5개까지 지원할 수 있으며, 동일 프로젝트에도 서로 다른
-                직무로 지원할 수 있습니다.
+                {MIN_APPLICATIONS}개 - 최대 {MAX_APPLICATIONS}개까지 지원할 수
+                있으며, 동일 프로젝트에도 서로 다른 직무로 지원할 수 있습니다.
               </p>
             </div>
           )}
@@ -494,7 +438,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                 <h2>내 지원서</h2>
                 <div
                   className={`${styles.myApplyCount} ${
-                    projectApplications.length >= 3
+                    projectApplications.length >= MIN_APPLICATIONS
                       ? styles.myApplyCountActive
                       : ""
                   }`}
@@ -595,7 +539,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                   );
                 })}
               </div>
-              {projectApplications.length >= 3 && (
+              {projectApplications.length >= MIN_APPLICATIONS && (
                 <button
                   type="button"
                   className={`${styles.modifyApplicationButton} ${styles.finalSubmitButton}`}
@@ -640,11 +584,11 @@ function TeamBuildApplyPage({ round = 1 }) {
                         <span
                           className={`${styles.projectTeamBadge} ${
                             styles[
-                              `projectTeamBadge${getProjectTeamType(readProjectType(project))}`
+                              `projectTeamBadge${getProjectTeamType(project.projectType)}`
                             ]
                           }`}
                         >
-                          {getProjectTeamLabel(project)}
+                          {projectTeamLabels.get(project)}
                         </span>
                         {isSecondRound && (
                           <span className={styles.recruitCount}>
@@ -708,7 +652,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                           : styles.writeApplicationButton
                       }
                       onClick={() => openProjectApplication(project)}
-                      disabled={projectApplications.length >= MAX_SELECTION}
+                      disabled={projectApplications.length >= MAX_APPLICATIONS}
                     >
                       {applications.length
                         ? "+ 지원서 추가 작성하기"
@@ -786,13 +730,15 @@ function TeamBuildApplyPage({ round = 1 }) {
                 id="projectMessage"
                 value={projectFormMessage}
                 onChange={(event) =>
-                  setProjectFormMessage(event.target.value.slice(0, 60))
+                  setProjectFormMessage(
+                    event.target.value.slice(0, MAX_MESSAGE_LENGTH),
+                  )
                 }
-                maxLength={60}
+                maxLength={MAX_MESSAGE_LENGTH}
                 placeholder="자신의 경험과 프로젝트에 기여할 수 있는 부분을 작성해주세요."
               />
               <div className={styles.characterCount}>
-                {projectFormMessage.length} / 60
+                {projectFormMessage.length} / {MAX_MESSAGE_LENGTH}
               </div>
             </div>
             <button

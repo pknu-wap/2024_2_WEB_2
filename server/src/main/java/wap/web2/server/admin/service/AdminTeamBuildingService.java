@@ -31,6 +31,12 @@ public class AdminTeamBuildingService {
             .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")).getStatus();
     }
 
+    @Transactional(readOnly = true)
+    public TeamBuildingMeta getMeta() {
+        return teamBuildingMetaRepository.findBySemester(generateSemester())
+            .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다."));
+    }
+
     @Transactional
     public void changeStatus(TeamBuildingStatusRequest request) {
         if (request.status() == null) throw new BadRequestException("팀빌딩 상태가 필요합니다.");

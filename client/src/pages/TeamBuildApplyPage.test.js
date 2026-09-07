@@ -79,6 +79,11 @@ test.each([1, 2])(
     fireEvent.click(screen.getByRole("button", { name: "지원서 닫기" }));
     open();
     expect(screen.getByLabelText("경력").value).toBe("앱 개발 경험");
+    fireEvent.click(
+      screen.getByRole("button", { name: "지원서 수정하기 (백엔드)" }),
+    );
+    expect(screen.getByLabelText("경력").value).toBe("웹 개발 경험");
+    expect(screen.getByLabelText("지원 직무").value).toBe("BACKEND");
   },
 );
 

@@ -12,6 +12,11 @@ test("서버 배치안 ID와 버전으로 생성·이동·삭제 요청을 전�
   expect(apiClient.post).toHaveBeenCalledWith(
     "/admin/team/building/third-round/open",
   );
+  thirdRoundApi.shuffle(1);
+  expect(apiClient.post).toHaveBeenCalledWith(
+    "/admin/team/building/third-round/shuffle",
+    { revision: 1 },
+  );
   thirdRoundApi.create(2);
   expect(apiClient.post).toHaveBeenCalledWith(
     "/admin/team/building/third-round/teams",

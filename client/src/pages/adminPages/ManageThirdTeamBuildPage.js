@@ -128,6 +128,12 @@ const ManageThirdTeamBuildPage = () => {
       "빈 팀을 생성했습니다. 직무 인원을 배치해 주세요.",
     );
 
+  const shuffleMembers = () =>
+    mutate(
+      () => thirdRoundApi.shuffle(revision),
+      "같은 직무 지원자를 셔플하고 저장했습니다.",
+    );
+
   const deleteTeam = (teamId) => {
     const team = teams.find((item) => item.id === teamId);
     if (!team?.isCreated) return;
@@ -329,6 +335,19 @@ const ManageThirdTeamBuildPage = () => {
         >
           팀 생성
         </button>
+        <button
+          type="button"
+          className={styles.createTeamButton}
+          onClick={shuffleMembers}
+          disabled={busy || revision === null}
+          aria-describedby="shuffle-help"
+        >
+          셔플
+        </button>
+        <p id="shuffle-help" className={styles.description}>
+          같은 직무 지원자를 미배정 목록과 팀 사이에서 무작위로 섞습니다. 팀별
+          직무 인원수는 유지되며, 결과가 기존 배치와 같을 수도 있습니다.
+        </p>
       </div>
 
       <section className={styles.unassigned} aria-labelledby="unassigned-title">

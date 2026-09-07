@@ -12,6 +12,7 @@ jest.mock("../../api/third-round", () => ({
     open: jest.fn(),
     get: jest.fn(),
     create: jest.fn(),
+    shuffle: jest.fn(),
     move: jest.fn(),
     delete: jest.fn(),
   },
@@ -106,6 +107,71 @@ const startDrag = async () => {
   await settle();
   return source;
 };
+
+test("셔플은 중복 요청을 막고 저장 응답의 이름 배치를 반영하며 재방문 시 유지한다", async () => {
+  const first = { ...savedBoard.unassigned.shift(), name: "김다은" };
+  const second = { ...savedBoard.unassigned.shift(), name: "이준호" };
+  savedBoard.teams[0].members.push(first);
+  savedBoard.teams[1].members.push(second);
+  const firstTeamName = savedBoard.teams[0].teamName;
+  const secondTeamName = savedBoard.teams[1].teamName;
+  let resolve;
+  thirdRoundApi.shuffle.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const page = render(<ManageThirdTeamBuildPage />);
+  await settle();
+  const button = screen.getByRole("button", { name: "셔플" });
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(thirdRoundApi.shuffle).toHaveBeenCalledTimes(1);
+  expect(thirdRoundApi.shuffle).toHaveBeenCalledWith(0);
+  expect(button).toBeDisabled();
+  expect(
+    within(getTeam(firstTeamName)).getByText("김다은(FRONTEND)"),
+  ).toBeInTheDocument();
+  savedBoard.teams[0].members.pop();
+  savedBoard.teams[1].members.pop();
+  savedBoard.teams[0].members.push(second);
+  savedBoard.teams[1].members.push(first);
+  savedBoard.revision++;
+  await act(async () => resolve(snapshot()));
+  expect(button).toBeEnabled();
+  expect(
+    within(getTeam(firstTeamName)).getByText("이준호(FRONTEND)"),
+  ).toBeInTheDocument();
+  expect(
+    within(getTeam(secondTeamName)).getByText("김다은(FRONTEND)"),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("status")).toHaveTextContent("셔플하고 저장했습니다");
+  page.unmount();
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  expect(
+    within(getTeam(firstTeamName)).getByText("이준호(FRONTEND)"),
+  ).toBeInTheDocument();
+  thirdRoundApi.shuffle.mockResolvedValueOnce(snapshot());
+  fireEvent.click(screen.getByRole("button", { name: "셔플" }));
+  await settle();
+  expect(thirdRoundApi.shuffle).toHaveBeenLastCalledWith(1);
+});
+
+test("셔플 저장 실패 시 기존 배치와 이름을 유지한다", async () => {
+  savedBoard.unassigned[0] = { ...savedBoard.unassigned[0], name: "김다은" };
+  thirdRoundApi.shuffle.mockRejectedValueOnce(new Error("network"));
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  fireEvent.click(screen.getByRole("button", { name: "셔플" }));
+  await settle();
+  expect(
+    within(getUnassigned()).getByText("김다은(FRONTEND)"),
+  ).toBeInTheDocument();
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
+  expect(screen.getByRole("alert")).toHaveTextContent("저장하지 못했습니다");
+});
 
 test("미배정 지원자의 이름과 직무를 표시하고 이동 및 재조회 후에도 유지한다", async () => {
   savedBoard.unassigned[0] = { ...savedBoard.unassigned[0], name: "김다은" };
@@ -472,6 +538,7 @@ test("저장 중에는 중복 요청을 보내지 않고 응답이 온 뒤에만
   expect(thirdRoundApi.create).toHaveBeenCalledTimes(1);
   expect(screen.getAllByRole("article")).toHaveLength(6);
   expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "셔플" })).toBeDisabled();
   await act(async () => resolve(snapshot()));
   expect(screen.getByRole("button", { name: "팀 생성" })).toBeEnabled();
 });
@@ -514,6 +581,7 @@ test("초기 조회가 실패하면 수정을 막고 새로고침으로 재시�
     "배치안을 불러오지 못했습니다.",
   );
   expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "셔플" })).toBeDisabled();
   fireEvent.click(screen.getByRole("button", { name: "새로고침" }));
   await settle();
   expect(screen.queryByRole("alert")).not.toBeInTheDocument();

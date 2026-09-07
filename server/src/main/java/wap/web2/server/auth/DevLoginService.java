@@ -27,14 +27,25 @@ public class DevLoginService {
 
     @Transactional
     public DevLoginResponse login(UUID sessionId) {
+        return login(sessionId, null);
+    }
+
+    @Transactional
+    public DevLoginResponse login(UUID sessionId, Integer accountNumber) {
         var pool = slots.findAllForUpdate();
         var now = Instant.now();
         String session = sessionId.toString();
-        var slot = pool.stream()
+        var slot = accountNumber == null ? pool.stream()
             .filter(s -> session.equals(s.getSessionId()) && !s.isAvailable(now))
             .findFirst()
             .orElseGet(() -> pool.stream().filter(s -> s.isAvailable(now)).findFirst()
-                .orElseThrow(() -> new ConflictException("테스트 계정 100개가 모두 사용 중입니다. 잠시 후 다시 시도해주세요.")));
+                .orElseThrow(() -> new ConflictException("테스트 계정 100개가 모두 사용 중입니다. 잠시 후 다시 시도해주세요.")))
+            : pool.stream().filter(s -> s.getSlotNumber().equals(accountNumber)).findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("테스트 계정 번호는 1~100이어야 합니다."));
+
+        if (!slot.isAvailable(now) && !session.equals(slot.getSessionId())) {
+            throw new ConflictException("테스트 계정 " + accountNumber + "번이 사용 중입니다. 다른 계정을 선택해주세요.");
+        }
 
         // Retrying the same request must not consume another account.
         if (slot.isAvailable(now)) {

@@ -107,6 +107,32 @@ const startDrag = async () => {
   return source;
 };
 
+test("미배정 지원자의 이름과 직무를 표시하고 이동 및 재조회 후에도 유지한다", async () => {
+  savedBoard.unassigned[0] = { ...savedBoard.unassigned[0], name: "김다은" };
+  const page = render(<ManageThirdTeamBuildPage />);
+  await settle();
+  const source = within(getUnassigned()).getByRole("button", {
+    name: "김다은(FRONTEND)",
+  });
+  fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+  document.elementFromPoint = jest.fn(() => getTeam("오늘의 기록"));
+  fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+  expect(screen.getAllByText("김다은(FRONTEND)")).toHaveLength(2);
+  fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+  await settle();
+  expect(
+    within(getUnassigned()).queryByText("김다은(FRONTEND)"),
+  ).not.toBeInTheDocument();
+  page.unmount();
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  expect(
+    within(getTeam("오늘의 기록")).getByRole("button", {
+      name: "김다은(FRONTEND)",
+    }),
+  ).toBeInTheDocument();
+});
+
 test("포인터를 움직여 카드 내부에 놓으면 주요 직무로 한 번만 배정한다", async () => {
   render(<ManageThirdTeamBuildPage />);
   await settle();

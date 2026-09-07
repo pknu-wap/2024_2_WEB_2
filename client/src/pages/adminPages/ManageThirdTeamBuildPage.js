@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import styles from "../../assets/Admin/ManageThirdTeamBuild.module.css";
 import { thirdRoundApi } from "../../api/third-round";
 
+const memberLabel = (member) =>
+  member.name ? `${member.name}(${member.position})` : member.position;
+
 const ManageThirdTeamBuildPage = () => {
   const [{ teams, unassigned, revision }, setRoster] = useState({
     teams: [],
@@ -264,7 +267,7 @@ const ManageThirdTeamBuildPage = () => {
           suppressClick.current = false;
       }}
     >
-      <span className={styles.position}>{member.position}</span>
+      <span className={styles.position}>{memberLabel(member)}</span>
     </button>
   );
 
@@ -333,9 +336,9 @@ const ManageThirdTeamBuildPage = () => {
           미배정 멤버
         </h2>
         <p id="assignment-help" className={styles.description}>
-          직무를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각 항목은
-          해당 직무의 인원 1명을 나타내며, 실제 멤버를 지정하지 않습니다. 배치한
-          직무 인원도 같은 방법으로 다른 팀으로 이동할 수 있습니다.
+          지원자를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각
+          항목은 지원자의 이름과 주요 직무를 나타냅니다. 배치한 지원자도 같은
+          방법으로 다른 팀으로 이동할 수 있습니다.
         </p>
         <div className={styles.unassignedList}>
           {unassigned.map((member) => renderPositionSlot(member))}
@@ -356,7 +359,7 @@ const ManageThirdTeamBuildPage = () => {
           aria-hidden="true"
           style={{ left: dragPreview.x + 12, top: dragPreview.y + 12 }}
         >
-          {dragPreview.member.position}
+          {memberLabel(dragPreview.member)}
         </div>
       )}
       <div className={styles.grid}>

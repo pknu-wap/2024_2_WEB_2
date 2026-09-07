@@ -151,6 +151,47 @@ class ThirdRoundPlanServiceTest {
         verify(slots, never()).save(any());
     }
 
+    @Test void shufflePreservesPositionsCountsAndIdentitiesIncludingUnassignedPlaces() {
+        ThirdRoundPlan plan = ready();
+        ThirdRoundPositionSlot first = slot(1, semester), second = slot(2, semester), third = slot(3, semester);
+        first.identify(12L); second.identify(13L); third.identify(14L);
+        first.moveTo(20L); second.moveTo(30L);
+        ThirdRoundPositionSlot app = new ThirdRoundPositionSlot(semester, Position.APP);
+        app.identify(15L); app.moveTo(20L);
+        ThirdRoundPositionSlot anonymous = slot(5, semester); anonymous.moveTo(40L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(first, second, third, app, anonymous));
+        Random random = mock(Random.class);
+        when(random.nextInt(anyInt())).thenReturn(0);
+        service.shuffle(0, random);
+        assertThat(List.of(first, second, third)).extracting(ThirdRoundPositionSlot::getTeamId)
+            .containsExactly(30L, null, 20L);
+        assertThat(List.of(first, second, third)).extracting(ThirdRoundPositionSlot::getUserId)
+            .containsExactly(12L, 13L, 14L);
+        assertThat(List.of(first, second, third)).allMatch(s -> s.getPosition() == Position.FRONTEND);
+        assertThat(app.getTeamId()).isEqualTo(20L);
+        assertThat(app.getUserId()).isEqualTo(15L);
+        assertThat(anonymous.getTeamId()).isEqualTo(40L);
+        assertThat(plan.getRevision()).isEqualTo(1);
+        verify(teams, never()).saveAll(any());
+        assertThatThrownBy(() -> service.shuffle(0)).isInstanceOf(ConflictException.class);
+    }
+
+    @Test void shuffleCanKeepTheSameArrangementAndHandlesEmptyPlans() {
+        ThirdRoundPlan plan = ready();
+        ThirdRoundPositionSlot first = slot(1, semester), second = slot(2, semester);
+        first.identify(12L); second.identify(13L);
+        first.moveTo(20L); second.moveTo(30L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(first, second));
+        Random random = mock(Random.class);
+        when(random.nextInt(2)).thenReturn(1);
+        service.shuffle(0, random);
+        assertThat(first.getTeamId()).isEqualTo(20L);
+        assertThat(second.getTeamId()).isEqualTo(30L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of());
+        assertThat(service.shuffle(1).unassigned()).isEmpty();
+        assertThat(plan.getRevision()).isEqualTo(2);
+    }
+
     @Test void preventsCrossSemesterSlotAndTeamAccess() {
         ready();
         when(slots.findById(1L)).thenReturn(Optional.of(slot(1, "2000-1")));
@@ -189,6 +230,7 @@ class ThirdRoundPlanServiceTest {
             when(metas.findBySemesterForUpdate(semester)).thenReturn(Optional.of(
                 new TeamBuildingMeta(round, round, 1L, semester, TeamBuildingStatus.CLOSED)));
             assertThatThrownBy(service::open).isInstanceOf(ConflictException.class);
+            assertThatThrownBy(() -> service.shuffle(0)).isInstanceOf(ConflictException.class);
         }
         verifyNoInteractions(plans, slots, planTeams);
     }

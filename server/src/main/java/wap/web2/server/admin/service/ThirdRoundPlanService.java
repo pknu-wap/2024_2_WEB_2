@@ -90,6 +90,28 @@ public class ThirdRoundPlanService {
         return board(plan);
     }
 
+    public ThirdRoundBoardResponse shuffle(long revision) {
+        return shuffle(revision, new Random());
+    }
+
+    ThirdRoundBoardResponse shuffle(long revision, Random random) {
+        ThirdRoundPlan plan = editable(revision);
+        List<ThirdRoundPositionSlot> positions = slots.findAllBySemesterOrderById(plan.getSemester());
+        identifyLegacySlots(plan.getSemester(), positions, teams.findAllBySemester(plan.getSemester()));
+        Map<Position, List<ThirdRoundPositionSlot>> groups = positions.stream()
+            .filter(slot -> slot.getUserId() != null)
+            .collect(Collectors.groupingBy(ThirdRoundPositionSlot::getPosition));
+        for (List<ThirdRoundPositionSlot> group : groups.values()) {
+            // Null destinations are unassigned places and participate in the same permutation.
+            List<Long> destinations = group.stream().map(ThirdRoundPositionSlot::getTeamId)
+                .collect(Collectors.toCollection(ArrayList::new));
+            Collections.shuffle(destinations, random);
+            for (int i = 0; i < group.size(); i++) group.get(i).moveTo(destinations.get(i));
+        }
+        plan.advanceRevision();
+        return board(plan);
+    }
+
     public ThirdRoundBoardResponse delete(long teamId, long revision) {
         ThirdRoundPlan plan = editable(revision);
         ThirdRoundPlanTeam team = requireTeam(teamId, plan.getSemester());

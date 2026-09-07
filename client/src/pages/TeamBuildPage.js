@@ -149,7 +149,7 @@ function TeamBuildPage({ round = 1 }) {
     setSubmitMsg("");
     setSubmitStatus("");
     try {
-      const response = await teamBuildApi.getRecruitApplies(projectId);
+      const response = await teamBuildApi.getRecruitApplies(projectId, round);
       if (response?.success === false) {
         throw new Error(response.message || "불러오기 실패");
       }
@@ -324,10 +324,13 @@ function TeamBuildPage({ round = 1 }) {
     setSubmitMsg("");
     setSubmitStatus("");
     try {
-      const response = await teamBuildApi.submitRecruitPreference({
-        projectId: currentProjectId,
-        roasters,
-      });
+      const response = await teamBuildApi.submitRecruitPreference(
+        {
+          projectId: currentProjectId,
+          roasters,
+        },
+        round,
+      );
       const message =
         typeof response === "string"
           ? response
@@ -380,7 +383,9 @@ function TeamBuildPage({ round = 1 }) {
         </div>
 
         <div className={styles.hero}>
-          <h1 className={styles.heroTitle}>RECRUITMENT PAGE_{round === 2 ? "2nd" : "1st"}</h1>
+          <h1 className={styles.heroTitle}>
+            RECRUITMENT PAGE_{round === 2 ? "2nd" : "1st"}
+          </h1>
           <div className={styles.heroSubtitle}>{round}차 모집하기 페이지</div>
         </div>
 
@@ -494,8 +499,12 @@ function TeamBuildPage({ round = 1 }) {
                           : ""
                       }
                     >
-                      <td className={styles.applicantNameCell}>{apply.applicantName || "-"}</td>
-                      <td className={styles.positionCell}>{renderPositionBadge(apply.position)}</td>
+                      <td className={styles.applicantNameCell}>
+                        {apply.applicantName || "-"}
+                      </td>
+                      <td className={styles.positionCell}>
+                        {renderPositionBadge(apply.position)}
+                      </td>
                       <td className={styles.careerCell}>
                         {apply.career || "작성된 경력이 없습니다."}
                       </td>
@@ -516,42 +525,52 @@ function TeamBuildPage({ round = 1 }) {
               filteredApplies.map((apply) => {
                 const isExpanded = expandedApplicantIds.has(apply.applicantId);
                 return (
-                <div
-                  key={apply.applicantId}
-                  className={`${styles.applicantCard} ${isExpanded ? styles.applicantCardExpanded : ""}`}
-                  onMouseEnter={() => setHighlightedApplicantId(apply.applicantId)}
-                  onMouseLeave={() => setHighlightedApplicantId(null)}
-                >
-                  <div className={styles.cardHeaderRow}>
-                    <span className={styles.cardName}>{apply.applicantName || "-"}</span>
-                    {renderPositionBadge(apply.position)}
-                    <button
-                      type="button"
-                      className={`${styles.applicationArrow} ${
-                        isExpanded ? styles.applicationArrowExpanded : ""
-                      }`}
-                      aria-label={`${apply.applicantName || "지원자"} 지원서 ${
-                        isExpanded ? "닫기" : "보기"
-                      }`}
-                      aria-expanded={isExpanded}
-                      onClick={() =>
-                        setExpandedApplicantIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(apply.applicantId)) next.delete(apply.applicantId);
-                          else next.add(apply.applicantId);
-                          return next;
-                        })
-                      }
-                    >
-                      &rsaquo;
-                    </button>
-                  </div>
-                  {isExpanded && (
-                    <div className={styles.applicationContent}>
-                      {apply.career && <>경력: {apply.career}<br /></>}
-                      {apply.comment || "작성된 지원서 내용이 없습니다."}
+                  <div
+                    key={apply.applicantId}
+                    className={`${styles.applicantCard} ${isExpanded ? styles.applicantCardExpanded : ""}`}
+                    onMouseEnter={() =>
+                      setHighlightedApplicantId(apply.applicantId)
+                    }
+                    onMouseLeave={() => setHighlightedApplicantId(null)}
+                  >
+                    <div className={styles.cardHeaderRow}>
+                      <span className={styles.cardName}>
+                        {apply.applicantName || "-"}
+                      </span>
+                      {renderPositionBadge(apply.position)}
+                      <button
+                        type="button"
+                        className={`${styles.applicationArrow} ${
+                          isExpanded ? styles.applicationArrowExpanded : ""
+                        }`}
+                        aria-label={`${apply.applicantName || "지원자"} 지원서 ${
+                          isExpanded ? "닫기" : "보기"
+                        }`}
+                        aria-expanded={isExpanded}
+                        onClick={() =>
+                          setExpandedApplicantIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(apply.applicantId))
+                              next.delete(apply.applicantId);
+                            else next.add(apply.applicantId);
+                            return next;
+                          })
+                        }
+                      >
+                        &rsaquo;
+                      </button>
                     </div>
-                  )}
+                    {isExpanded && (
+                      <div className={styles.applicationContent}>
+                        {apply.career && (
+                          <>
+                            경력: {apply.career}
+                            <br />
+                          </>
+                        )}
+                        {apply.comment || "작성된 지원서 내용이 없습니다."}
+                      </div>
+                    )}
                   </div>
                 );
               })

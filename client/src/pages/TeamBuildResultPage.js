@@ -155,7 +155,7 @@ const TeamBuildResultPage = () => {
                 </div>
 
                 <div className={styles.footer}>
-                  <div div className={styles.summary}>
+                  <div className={styles.summary}>
                     {team.summary && (
                       <div className={styles.muted}>{team.summary}</div>
                     )}

@@ -5,6 +5,7 @@ const base = "/admin/team/building/third-round";
 export const thirdRoundApi = {
   open: () => apiClient.post(`${base}/open`),
   get: () => apiClient.get(base),
+  complete: (revision) => apiClient.post(`${base}/complete`, { revision }),
   shuffle: (revision) => apiClient.post(`${base}/shuffle`, { revision }),
   create: (revision) => apiClient.post(`${base}/teams`, { revision }),
   move: (slotId, teamId, revision) =>

@@ -6,10 +6,11 @@ const memberLabel = (member) =>
   member.name ? `${member.name}(${member.position})` : member.position;
 
 const ManageThirdTeamBuildPage = () => {
-  const [{ teams, unassigned, revision }, setRoster] = useState({
+  const [{ teams, unassigned, revision, completed }, setRoster] = useState({
     teams: [],
     unassigned: [],
     revision: null,
+    completed: false,
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -17,7 +18,7 @@ const ManageThirdTeamBuildPage = () => {
   const [saving, setSaving] = useState(false);
   const requestInFlight = useRef(false);
   const mounted = useRef(false);
-  const busy = loading || saving;
+  const busy = loading || saving || completed;
 
   useEffect(() => {
     let cancelled = false;
@@ -131,6 +132,12 @@ const ManageThirdTeamBuildPage = () => {
     mutate(
       () => thirdRoundApi.create(revision),
       "빈 팀을 생성했습니다. 직무 인원을 배치해 주세요.",
+    );
+
+  const completeTeamBuild = () =>
+    mutate(
+      () => thirdRoundApi.complete(revision),
+      "팀 빌딩을 완료했습니다. 팀빌딩 결과에 반영되었습니다.",
     );
 
   const shuffleMembers = () =>
@@ -305,8 +312,10 @@ const ManageThirdTeamBuildPage = () => {
           팀별 배정이 완료된 멤버와 담당 직무를 확인하세요.
         </p>
         <p className={styles.notice}>
-          생성한 팀과 직무 배치안은 자동 저장됩니다. 실제 멤버 배정은 별도로
-          진행됩니다.
+          {completed
+            ? "팀 빌딩이 완료되었습니다."
+            : "배치안은 자동 저장됩니다. 팀 빌딩 완료를 누르면 현재 배치가 결과에 반영되며 이후 수정할 수 없습니다."}
+          {completed && <a href="/team-build/result">팀빌딩 결과 보기</a>}
         </p>
       </header>
 
@@ -357,6 +366,14 @@ const ManageThirdTeamBuildPage = () => {
           aria-describedby="shuffle-help"
         >
           셔플
+        </button>
+        <button
+          type="button"
+          className={styles.createTeamButton}
+          onClick={completeTeamBuild}
+          disabled={busy || revision === null}
+        >
+          팀 빌딩 완료
         </button>
         <p id="shuffle-help" className={styles.description}>
           같은 직무 지원자를 미배정 목록과 팀 사이에서 무작위로 섞습니다. 팀별

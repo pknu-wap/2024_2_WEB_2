@@ -13,6 +13,7 @@ jest.mock("../../api/third-round", () => ({
     get: jest.fn(),
     create: jest.fn(),
     shuffle: jest.fn(),
+    complete: jest.fn(),
     move: jest.fn(),
     delete: jest.fn(),
   },
@@ -658,4 +659,66 @@ test("미배정 복귀 저장이 실패하면 원래 팀에 남는다", async ()
   expect(getAssignedFrontend()).toHaveLength(1);
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
   expect(screen.getByRole("alert")).toHaveTextContent("저장하지 못했습니다");
+});
+
+test("완료 응답 후 편집을 잠그고 재방문해도 완료 상태를 유지한다", async () => {
+  let resolve;
+  thirdRoundApi.complete.mockImplementationOnce(
+    () =>
+      new Promise((done) => {
+        resolve = done;
+      }),
+  );
+  const page = render(<ManageThirdTeamBuildPage />);
+  await settle();
+  const button = screen.getByRole("button", { name: "팀 빌딩 완료" });
+  fireEvent.click(button);
+  fireEvent.click(button);
+  expect(thirdRoundApi.complete).toHaveBeenCalledTimes(1);
+  expect(thirdRoundApi.complete).toHaveBeenCalledWith(0);
+  expect(button).toBeDisabled();
+  expect(
+    screen.queryByRole("link", { name: "팀빌딩 결과 보기" }),
+  ).not.toBeInTheDocument();
+  savedBoard.completed = true;
+  savedBoard.revision++;
+  await act(async () => resolve(snapshot()));
+  expect(screen.getByRole("status")).toHaveTextContent(
+    "팀빌딩 결과에 반영되었습니다",
+  );
+  expect(
+    screen.getByRole("link", { name: "팀빌딩 결과 보기" }),
+  ).toHaveAttribute("href", "/team-build/result");
+  page.unmount();
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  for (const name of ["팀 빌딩 완료", "셔플", "팀 생성"]) {
+    expect(screen.getByRole("button", { name })).toBeDisabled();
+  }
+  for (const member of within(getUnassigned()).getAllByRole("button"))
+    expect(member).toBeDisabled();
+});
+
+test("완료 실패 시 편집 가능한 배치안을 유지하고 충돌 후 최신 버전으로 재시도한다", async () => {
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  savedBoard.revision = 4;
+  thirdRoundApi.complete.mockRejectedValueOnce({
+    response: { status: 409, data: { message: "다른 관리자가 변경했습니다." } },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "팀 빌딩 완료" }));
+  await settle();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "다른 관리자가 변경했습니다.",
+  );
+  expect(screen.getByRole("button", { name: "팀 생성" })).toBeEnabled();
+  thirdRoundApi.complete.mockResolvedValueOnce({
+    ...snapshot(),
+    completed: true,
+    revision: 5,
+  });
+  fireEvent.click(screen.getByRole("button", { name: "팀 빌딩 완료" }));
+  await settle();
+  expect(thirdRoundApi.complete).toHaveBeenLastCalledWith(4);
+  expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
 });

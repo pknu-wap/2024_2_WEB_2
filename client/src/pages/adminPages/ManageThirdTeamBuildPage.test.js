@@ -722,3 +722,16 @@ test("완료 실패 시 편집 가능한 배치안을 유지하고 충돌 후 �
   expect(thirdRoundApi.complete).toHaveBeenLastCalledWith(4);
   expect(screen.getByRole("button", { name: "팀 생성" })).toBeDisabled();
 });
+
+
+test("팀장은 배치 인원과 별도로 표시하고 생성 팀에는 미지정을 표시한다", async () => {
+  savedBoard.teams[0].leader = { id: 1000, name: "박팀장" };
+  render(<ManageThirdTeamBuildPage />);
+  await settle();
+  const team = within(getTeam(savedBoard.teams[0].teamName));
+  expect(team.getByText("팀장: 박팀장")).toBeInTheDocument();
+  expect(team.queryByRole("button", { name: /박팀장/ })).not.toBeInTheDocument();
+  expect(team.getByText("배정 완료 4명")).toBeInTheDocument();
+  await createTeam();
+  expect(within(getTeam("팀 A")).getByText("팀장: 미지정")).toBeInTheDocument();
+});

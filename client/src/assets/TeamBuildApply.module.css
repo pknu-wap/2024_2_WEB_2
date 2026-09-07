@@ -206,6 +206,7 @@
 
 .myApplyTitleRow {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
 }
@@ -226,29 +227,11 @@
   line-height: 1.5;
 }
 
-.myApplyCount:focus-visible {
-  outline: 2px solid #fff;
-  outline-offset: 3px;
-}
-
-.applicationCountTooltip {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  z-index: 2;
-  width: 180px;
-  max-width: calc(100vw - 80px);
-  box-sizing: border-box;
-  padding: 10px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: #202530;
-  color: #fff;
-  font-size: 13px;
+.applicationCountHint {
+  color: #f3cf91;
+  font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  visibility: visible;
 }
 
 .backRow {

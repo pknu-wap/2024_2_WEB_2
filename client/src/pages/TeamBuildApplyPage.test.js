@@ -93,12 +93,13 @@ test.each([1, 2])(
     const countBadge = screen.getByLabelText("현재 지원서 2개");
     expect(within(countBadge).getByText("2개")).toBeTruthy();
     expect(countBadge.getAttribute("aria-describedby")).toBe(
-      "application-count-tooltip",
+      "application-count-hint",
     );
-    expect(countBadge.tabIndex).toBe(0);
-    expect(screen.getByRole("tooltip").textContent).toBe(
-      "최소 3개의 지원서를 작성해야합니다.",
-    );
+    expect(countBadge.hasAttribute("tabindex")).toBe(false);
+    expect(
+      screen.getByText("최소 3개의 지원서를 작성해야합니다."),
+    ).toBeTruthy();
+    expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.click(
       screen.getByRole("button", { name: "지원서 수정하기 (백엔드)" }),
     );
@@ -134,6 +135,9 @@ test.each([1, 2])(
     const countBadge = screen.getByLabelText("현재 지원서 3개");
     expect(countBadge.textContent).toBe("3개");
     expect(countBadge.hasAttribute("aria-describedby")).toBe(false);
+    expect(
+      screen.queryByText("최소 3개의 지원서를 작성해야합니다."),
+    ).toBeNull();
     expect(screen.queryByRole("tooltip")).toBeNull();
 
     expect(Boolean(screen.queryByRole("combobox", { name: "주요 직무" }))).toBe(

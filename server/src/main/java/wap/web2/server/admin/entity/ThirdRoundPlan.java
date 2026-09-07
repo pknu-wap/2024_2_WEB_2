@@ -12,6 +12,9 @@ public class ThirdRoundPlan {
     @Column(nullable = false) private long revision;
     @Column(nullable = false) private long nextTeamNumber = 1;
 
+    @Column(nullable = false) private boolean completed;
+
+    public void complete() { completed = true; advanceRevision(); }
     public ThirdRoundPlan(String semester) { this.semester = semester; }
     public void advanceRevision() { revision++; }
     public String nextTeamName() {

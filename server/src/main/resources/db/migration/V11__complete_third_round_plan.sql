@@ -1,0 +1,1 @@
+ALTER TABLE third_round_plan ADD COLUMN completed BOOLEAN NOT NULL DEFAULT FALSE;

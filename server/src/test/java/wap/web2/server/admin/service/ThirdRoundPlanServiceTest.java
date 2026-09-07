@@ -232,7 +232,64 @@ class ThirdRoundPlanServiceTest {
             assertThatThrownBy(service::open).isInstanceOf(ConflictException.class);
             assertThatThrownBy(() -> service.shuffle(0)).isInstanceOf(ConflictException.class);
         }
-        verifyNoInteractions(plans, slots, planTeams);
+        verifyNoInteractions(slots, planTeams);
+    }
+
+    @Test void completionPublishesExistingTeamAllocationsAndFreezesThePlan() {
+        ThirdRoundPlan plan = ready();
+        User leader = user(10), firstUser = user(12), secondUser = user(13);
+        when(projects.findProjectsBySemester(semester)).thenReturn(List.of(
+            Project.builder().projectId(100L).title("기존 팀").user(leader).build()));
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(
+            card(20, 100L, semester), card(30, null, semester)));
+        ThirdRoundPositionSlot first = slot(1, semester), second = slot(2, semester), unassigned = slot(3, semester);
+        first.identify(12L); second.identify(13L); unassigned.identify(14L);
+        first.moveTo(20L); second.moveTo(30L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(first, second, unassigned));
+        when(users.findAllById(any())).thenReturn(List.of(firstUser, secondUser, user(14)));
+        when(teams.saveAll(any())).thenAnswer(call -> {
+            List<Team> saved = call.getArgument(0);
+            when(teams.findAllBySemester(semester)).thenReturn(saved);
+            return saved;
+        });
+        var board = service.complete(0);
+        assertThat(board.completed()).isTrue();
+        assertThat(board.revision()).isEqualTo(1);
+        assertThat(board.teams().get(0).members()).hasSize(1);
+        assertThat(board.teams().get(1).members()).hasSize(1);
+        assertThat(board.unassigned()).hasSize(1);
+        ArgumentCaptor<List<Team>> allocation = ArgumentCaptor.forClass(List.class);
+        verify(teams).saveAll(allocation.capture());
+        assertThat(allocation.getValue()).singleElement().satisfies(team -> {
+            assertThat(team.getProjectId()).isEqualTo(100L);
+            assertThat(team.getMemberId()).isEqualTo(12L);
+            assertThat(team.getLeaderId()).isEqualTo(10L);
+            assertThat(team.getRound()).isEqualTo(3);
+            assertThat(team.getPosition()).isEqualTo(Position.FRONTEND);
+        });
+        assertThat(service.open().completed()).isTrue();
+        assertThat(service.get().completed()).isTrue();
+        assertThatThrownBy(() -> service.complete(1)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.shuffle(1)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.move(1, null, 1)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.create(1)).isInstanceOf(ConflictException.class);
+        assertThatThrownBy(() -> service.delete(30, 1)).isInstanceOf(ConflictException.class);
+        assertThat(plan.isCompleted()).isTrue();
+    }
+
+    @Test void completionRejectsStaleRevisionMissingApplicantsAndDuplicateAllocations() {
+        ThirdRoundPlan plan = ready();
+        assertThatThrownBy(() -> service.complete(1)).isInstanceOf(ConflictException.class);
+        ThirdRoundPositionSlot slot = slot(1, semester); slot.moveTo(20L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(slot));
+        assertThatThrownBy(() -> service.complete(0)).isInstanceOf(ConflictException.class);
+        slot.identify(12L);
+        when(users.findAllById(any())).thenReturn(List.of(user(12)));
+        when(teams.findAllBySemester(semester)).thenReturn(List.of(Team.builder().memberId(12L).build()));
+        assertThatThrownBy(() -> service.complete(0)).isInstanceOf(ConflictException.class);
+        verify(teams, never()).saveAll(any());
+        assertThat(plan.isCompleted()).isFalse();
+        assertThat(plan.getRevision()).isZero();
     }
 
     @Test void boardKeepsRealMemberNamesButSlotsHaveNoNameOrUserId() {

@@ -30,6 +30,10 @@ class TeamBuildingResultServiceTest {
     @Mock private wap.web2.server.project.repository.ProjectRepository projectRepository;
     @Mock private wap.web2.server.teambuild.repository.TeamRepository teamRepository;
 
+    @Mock private wap.web2.server.admin.repository.ThirdRoundPlanRepository plans;
+    @Mock private wap.web2.server.admin.repository.ThirdRoundPlanTeamRepository planTeams;
+    @Mock private wap.web2.server.admin.repository.ThirdRoundPositionSlotRepository slots;
+
     @Test
     void resultsUseActualAssignedPositionWithoutRequiringAnApplicationToThatProject() {
         User leader = user(1L, "leader");
@@ -43,6 +47,34 @@ class TeamBuildingResultServiceTest {
         var result = teamBuildingResultService.getResults();
         assertThat(result.getResults().get(0).getMembers()).containsExactly(
             new TeamMemberResult(2L, "member", Position.BACKEND));
+    }
+
+    @Test void createdTeamsOnlyAppearAfterCompletionAndTheirMembersAreAssigned() {
+        String semester = wap.web2.server.util.SemesterGenerator.generateSemester();
+        var plan = new wap.web2.server.admin.entity.ThirdRoundPlan(semester);
+        when(plans.findById(semester)).thenReturn(java.util.Optional.of(plan));
+        assertThat(teamBuildingResultService.getResults().getResults()).isEmpty();
+        plan.complete();
+        var card = new wap.web2.server.admin.entity.ThirdRoundPlanTeam(semester, null, "팀 A");
+        org.springframework.test.util.ReflectionTestUtils.setField(card, "id", 20L);
+        var slot = new wap.web2.server.admin.entity.ThirdRoundPositionSlot(semester, Position.APP);
+        slot.identify(12L); slot.moveTo(20L);
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(card));
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(slot));
+        when(userRepository.findAllById(List.of(12L))).thenReturn(List.of(user(12L, "지원자")));
+        var results = teamBuildingResultService.getResults();
+        assertThat(results.getResults()).singleElement().satisfies(result -> {
+            assertThat(result.getPlanTeamId()).isEqualTo(20L);
+            assertThat(result.getProjectId()).isNull();
+            assertThat(result.getLeader()).isNull();
+            assertThat(result.getTeamName()).isEqualTo("팀 A");
+            assertThat(result.getMembers()).containsExactly(new TeamMemberResult(12L, "지원자", Position.APP));
+        });
+        when(projectApplyRepository.findAllBySemester(semester)).thenReturn(List.of(
+            apply(1L, 1, Position.APP, semester, user(12L, "지원자"), null),
+            apply(2L, 1, Position.AI, semester, user(13L, "미배정"), null)));
+        assertThat(teamBuildingResultService.getUnassignedMembers(results)).extracting(TeamMemberResult::getId)
+            .containsExactly(13L);
     }
 
     @InjectMocks

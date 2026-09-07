@@ -1,6 +1,8 @@
 package wap.web2.server.project.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,12 +14,17 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import wap.web2.server.exception.ForbiddenException;
+import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.global.security.UserPrincipal;
+import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.dto.TeamMemberDto;
@@ -160,6 +167,78 @@ class ProjectServiceTest {
         // then
         assertThat(project.getImages()).isEmpty();
         verify(objectStorageService, never()).deleteImage(legacyS3Url);
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "1, ROLE_MEMBER", "2, ROLE_ADMIN" })
+    void 작성자와_관리자는_수정_조회와_수정_삭제가_가능하다(Long userId, Role role) throws Exception {
+        User owner = owner();
+        User user = new User();
+        user.setId(userId);
+        user.setRole(role);
+        UserPrincipal principal = principal(userId);
+        Project project = project(owner);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        var details = projectService.getProjectDetails(10L, principal);
+        assertThat(details.getIsOwner()).isEqualTo(userId.equals(owner.getId()));
+        assertThat(details.getCanManage()).isTrue();
+        var updateDetails = projectService.getProjectDetailsForUpdate(10L, principal);
+        assertThat(updateDetails.getProjectId()).isEqualTo(10L);
+        assertThat(updateDetails.getCanManage()).isTrue();
+        assertThat(updateDetails.getIsOwner()).isEqualTo(userId.equals(owner.getId()));
+        projectService.update(10L, baseRequestBuilder().build(), principal);
+        assertThat(project.getTitle()).isEqualTo("updated title");
+        assertThat(project.getUser()).isSameAs(owner);
+        projectService.delete(10L, principal);
+        verify(projectRepository).delete(project);
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "ROLE_MEMBER", "ROLE_USER", "ROLE_GUEST" })
+    void 작성자가_아닌_일반_사용자는_수정_조회와_수정_삭제가_금지된다(Role role) {
+        User user = new User();
+        user.setId(2L);
+        user.setRole(role);
+        UserPrincipal principal = principal(2L);
+        Project project = project(owner());
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        var details = projectService.getProjectDetails(10L, principal);
+        assertThat(details.getIsOwner()).isFalse();
+        assertThat(details.getCanManage()).isFalse();
+        assertThatThrownBy(() -> projectService.getProjectDetailsForUpdate(10L, principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> projectService.update(10L, baseRequestBuilder().build(), principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> projectService.delete(10L, principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThat(project.getTitle()).isEqualTo("old title");
+        verify(projectRepository, never()).delete(project);
+        verifyNoInteractions(objectStorageService);
+    }
+
+    @Test
+    void 비로그인_조회에는_관리_권한이_없고_수정_조회는_금지된다() {
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project(owner())));
+
+        var details = projectService.getProjectDetails(10L, null);
+        assertThat(details.getIsOwner()).isFalse();
+        assertThat(details.getCanManage()).isFalse();
+        assertThatThrownBy(() -> projectService.getProjectDetailsForUpdate(10L, null))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void 관리자도_수정할_때_게시물_비밀번호_검증을_거친다() {
+        UserPrincipal principal = mock(UserPrincipal.class);
+        ProjectRequest request = baseRequestBuilder().password("wrong").build();
+
+        assertThatThrownBy(() -> projectService.update(10L, request, principal))
+            .isInstanceOf(ProjectPasswordInvalidException.class);
+        verifyNoInteractions(projectRepository, objectStorageService);
     }
 
     private ProjectRequest.ProjectRequestBuilder baseRequestBuilder() {

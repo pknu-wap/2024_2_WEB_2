@@ -26,7 +26,7 @@ const ProjectDetailForm = () => {
   const navigate = useNavigate();
 
   const token = Cookies.get("authToken"); // 로그인한 사용자 토큰
-  const [isOwner, setIsOwner] = useState(false); // 작성자인지 확인
+  const [canManage, setCanManage] = useState(false);
   const [projectData, setProjectData] = useState(null); // 프로젝트 데이터
   const [isDataLoaded, setIsDataLoaded] = useState(false); // 데이터 로딩 완료 여부
 
@@ -37,8 +37,8 @@ const ProjectDetailForm = () => {
         setProjectData(data);
         console.log("API 응답 데이터:", data);
 
-        // 작성자인지 여부 확인
-        setIsOwner(data.isOwner === true);
+        // 서버가 판단한 게시물 수정·삭제 권한
+        setCanManage(data.canManage === true);
 
         // 일정 시간 후 데이터 렌더링을 완료하도록 설정
         new Promise((resolve) => setTimeout(resolve, 400)).then(() => {
@@ -182,7 +182,7 @@ const ProjectDetailForm = () => {
       </div>
 
       <div className={styles.buttons}>
-        {isOwner && token && (
+        {canManage && token && (
           <>
             <button onClick={handleDelete} className={styles.delete_button}>
               삭제하기

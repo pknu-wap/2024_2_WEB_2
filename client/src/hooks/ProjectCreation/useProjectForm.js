@@ -65,19 +65,6 @@ const useProjectForm = () => {
     }));
   };
 
-  // 이미지 삭제 핸들러
-  // const handleRemoveImage = (type, index) => {
-  //   if (type === "thumbnail") {
-  //     setThumbnail(null);
-  //   } else if (type === "image") {
-  //     setImages((prevImages) => {
-  //       const newImages = [...prevImages];
-  //       newImages.splice(index, 1);
-  //       return newImages;
-  //     });
-  //   }
-  // };
-
   const handleRemoveImage = (type, indexOrNull) => {
     if (type === "thumbnail") {
       // 썸네일은 파일이거나 URL일 수 있음
@@ -150,13 +137,6 @@ const useProjectForm = () => {
     setTeamMembers(newTeamMembers);
     // console.log(teamMembers);
   };
-
-  // const addTeamMember = () => {
-  //   setTeamMembers((prevMembers) => [
-  //     ...prevMembers,
-  //     { memberName: "", memberRole: "", image: null }, // 새 팀원 초기값 설정
-  //   ]);
-  // };
 
   // 입력 글자 수 제한 핸들러
   const handleInputLimit = (e) => {

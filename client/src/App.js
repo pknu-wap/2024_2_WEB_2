@@ -77,10 +77,22 @@ function App() {
           />
           <Route path="/select/role" element={<RoleSelectPage />} />
           <Route path="/team-build" element={<TeamBuildEntryPage />} />
-          <Route path="/team-build/projects" element={<TeamBuildApplyPage key="first" round={1} />} />
-          <Route path="/team-build/projects/2nd" element={<TeamBuildApplyPage key="second" round={2} />} />
-          <Route path="/team-build/recruit" element={<TeamBuildPage key="recruit-first" round={1} />} />
-          <Route path="/team-build/recruit/2nd" element={<TeamBuildPage key="recruit-second" round={2} />} />
+          <Route
+            path="/team-build/projects"
+            element={<TeamBuildApplyPage key="first" round={1} />}
+          />
+          <Route
+            path="/team-build/projects/2nd"
+            element={<TeamBuildApplyPage key="second" round={2} />}
+          />
+          <Route
+            path="/team-build/recruit"
+            element={<TeamBuildPage key="recruit-first" round={1} />}
+          />
+          <Route
+            path="/team-build/recruit/2nd"
+            element={<TeamBuildPage key="recruit-second" round={2} />}
+          />
           <Route path="/team-build/result" element={<TeamBuildResultPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           {/* 보호된 페이지 */}

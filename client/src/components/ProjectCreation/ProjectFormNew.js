@@ -9,7 +9,6 @@ import RadioButton from "./RadioButton";
 import TextInputForm from "./TextInputForm";
 import TechStackSelector from "./TechStackSelector";
 import TeamMemberInputForm from "./TeamMemberInputForm";
-// import TeamMemberInputNew from "./TeamMemberInputNew";
 import InputPin from "./InputPin";
 
 // 사용성을 높인 버전의 프로젝트 생성 폼
@@ -203,11 +202,6 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
       resetForm();
     } catch (error) {
       alert("프로젝트 요청에 실패했습니다. 다시 시도해 주세요.");
-      if (error.response) {
-        // 네트워크 에러 등은 콘솔에만 출력
-        // console.error("에러 응답 코드:", error.response.status);
-        // console.error("에러 메시지:", error.response.data);
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -282,48 +276,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
           }}
           errorMessage={errorMessage}
         />
-        {/* <div className="form-group">
-        <label>이미지 업로드:</label>
-        {images.map((img, index) => (
-          <ImageUploader
-            key={index}
-            imgText={`이미지 등록 ${index + 1}`}
-            imgName={images[index]}
-            errorMessage={errorMessage[`image${index}`]}
-            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-            handleRemoveImage={() => handleRemoveImage("image", index)}
-            type="image"
-          />
-        ))}
-      </div> */}
         <div className={styles.images}>
-          {/* {images.map((image, index) => (
-          <ImageUploader
-            key={index}
-            imgText={`이미지 등록 ${index + 1}`}
-            imgName={images[index]}
-            errorMessage={errorMessage[`image${index}`]}
-            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-            handleRemoveImage={() => handleRemoveImage("image", index)}
-            type="image"
-          />
-        ))} */}
-
-          {/* 남은 업로더 공간 표시 */}
-          {/* {Array.from({ length: maxImageCount - images.length }).map(
-          (_, index) => (
-            <ImageUploader
-              key={index}
-              imgText={`이미지 등록 ${index + 1}`}
-              imgName={images[index]}
-              errorMessage={errorMessage[`image${index}`]}
-              handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-              handleRemoveImage={() => handleRemoveImage("image", index)}
-              type="image"
-            />
-          )
-        )} */}
-
           {Array.from({ length: maxImageCount }).map((_, index) => (
             <ImageUploader
               key={index}
@@ -353,13 +306,6 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
             />
           ))}
         </div>
-
-        {/* <div className="form-group">
-        <label>팀원:</label>
-        {teamMembers.map((member, index) => (
-          <TeamMemberInputNew initialTeamMember={teamMembers} />
-        ))}
-      </div> */}
 
         <TechStackSelector
           selectedTechStacks={selectedTechStacks}

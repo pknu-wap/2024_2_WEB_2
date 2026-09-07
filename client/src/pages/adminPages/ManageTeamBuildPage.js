@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import styles from "../../assets/Admin/ManageTeamBuild.module.css";
 import { adminTeamBuildApi } from "../../api/admin";
-import { FiDownload, FiPlay } from "react-icons/fi";
+import { FiDownload, FiPlay, FiRotateCcw } from "react-icons/fi";
 import { getTeamBuildStep, getPreviousTeamBuildStatus, getNextTeamBuildStatus, getTeamBuildAllocationState } from "../../utils/teamBuildProgress";
 import useSemester from "../../hooks/useSemester";
 import { IconCheck } from "../../components/Admin/icons";
@@ -13,6 +13,7 @@ const ManageTeamBuildPage = () => {
   const [status, setStatus] = useState("unavailable"); // 현재 팀빌딩 상태
   const [statusLoading, setStatusLoading] = useState(true); // 팀빌딩 상태 로드 여부
   const [statusChanging, setStatusChanging] = useState(false); // 상태 변경 중 여부(버튼 중복 클릭 방지)
+  const [resetting, setResetting] = useState(false);
   const semester = useSemester();
 
   const statusSteps = [
@@ -57,6 +58,24 @@ const ManageTeamBuildPage = () => {
       alert("팀빌딩 시작에 실패했습니다.");
     }
     setStatusChanging(false);
+  };
+
+  const handleResetTeamBuild = async () => {
+    if (status === "unavailable" || statusLoading || statusChanging || loading) return;
+    if (!window.confirm(
+      `${semester} 팀 빌딩을 초기화하시겠습니까?\n배정 결과와 3차 분류 정보가 삭제되고 시작 단계로 돌아갑니다.\n지원·모집 데이터는 유지됩니다. 삭제한 결과는 복구할 수 없습니다.`,
+    )) return;
+    setStatusChanging(true);
+    setResetting(true);
+    try {
+      await adminTeamBuildApi.resetTeamBuild();
+      await fetchStatus();
+    } catch (e) {
+      alert("팀 빌딩 초기화에 실패했습니다.");
+    } finally {
+      setResetting(false);
+      setStatusChanging(false);
+    }
   };
 
   const nextStatus = getNextTeamBuildStatus({ status, round, completedRound });
@@ -153,9 +172,13 @@ const ManageTeamBuildPage = () => {
         <div className={styles.stepCard}>
           <div className={styles.progressHeading}>
             <div>
-              <span className={styles.progressEyebrow}>2026-02</span>
+              <span className={styles.progressEyebrow}>{semester}</span>
               <h2>TEAM BUILDING</h2>
             </div>
+            <button className={styles.resetBtn} onClick={handleResetTeamBuild}
+              disabled={status === "unavailable" || statusLoading || statusChanging || loading}>
+              <FiRotateCcw aria-hidden="true" /> {resetting ? "초기화 중..." : "팀 빌딩 초기화"}
+            </button>
           </div>
           <ol className={styles.stepper} aria-label="팀빌딩 진행 과정">
             {statusSteps.map((step, idx) => (
@@ -215,7 +238,7 @@ const ManageTeamBuildPage = () => {
             <article className={styles.csvCard} key={type}>
               <h3>{title}</h3>
               <button className={styles.exportBtn} onClick={() => handleDownload(type)}
-                disabled={loading || statusLoading} aria-label={`${title} 다운로드`}>
+                disabled={loading || statusLoading || statusChanging} aria-label={`${title} 다운로드`}>
                 <FiDownload size={16} aria-hidden="true" /> 다운로드
               </button>
             </article>

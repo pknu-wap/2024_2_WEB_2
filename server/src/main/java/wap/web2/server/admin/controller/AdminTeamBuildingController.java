@@ -58,6 +58,14 @@ public class AdminTeamBuildingController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/building/reset/current")
+    @Operation(summary = "현재 학기 팀빌딩 초기화",
+        description = "지원·모집 데이터는 유지하고 배정 결과와 3차 분류 정보를 삭제한 뒤 시작 단계로 되돌립니다.")
+    public ResponseEntity<Void> resetTeamBuilding() {
+        adminTeamBuildingService.resetTeamBuilding();
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping(value = "/applies/export", produces = "text/csv; charset=UTF-8")
     @Operation(
         summary = "지원 현황 CSV 다운로드",

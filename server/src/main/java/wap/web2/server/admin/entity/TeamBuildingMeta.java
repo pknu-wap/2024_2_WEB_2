@@ -55,6 +55,12 @@ public class TeamBuildingMeta {
         completedRound = round;
     }
 
+    public void reset() {
+        status = TeamBuildingStatus.OPEN;
+        round = 1;
+        completedRound = 0;
+    }
+
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)

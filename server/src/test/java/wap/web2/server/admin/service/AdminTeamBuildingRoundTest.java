@@ -25,8 +25,34 @@ class AdminTeamBuildingRoundTest {
     @Mock ProjectApplyRepository applyRepository;
     @Mock ProjectRepository projectRepository;
     @Mock TeamRepository teamRepository;
+    @Mock FieldClusterMemberRepository clusterRepository;
     @Mock PositionTeamBuilder teamBuilder;
     @InjectMocks AdminTeamBuildingService service;
+
+    @Test void resetClearsCurrentSemesterAllocationsAndRestartsCompletedTeamBuilding() {
+        String semester = generateSemester();
+        TeamBuildingMeta meta = new TeamBuildingMeta(3, 3, 1L, semester, TeamBuildingStatus.CLOSED);
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(semester)).thenReturn(Optional.of(meta));
+
+        service.resetTeamBuilding();
+
+        verify(teamRepository).deleteBySemester(semester);
+        verify(clusterRepository).deleteBySemester(semester);
+        verifyNoInteractions(applyRepository, recruitRepository, projectRepository, teamBuilder);
+        assertThat(meta.getStatus()).isEqualTo(TeamBuildingStatus.OPEN);
+        assertThat(meta.getRound()).isEqualTo(1);
+        assertThat(meta.getCompletedRound()).isZero();
+        meta.changeStatus(TeamBuildingStatus.APPLY);
+        assertThat(meta.getRound()).isEqualTo(1);
+    }
+
+    @Test void resetWithoutTeamBuildingDoesNotDeleteData() {
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(service::resetTeamBuilding).isInstanceOf(ConflictException.class);
+
+        verifyNoInteractions(teamRepository, clusterRepository, applyRepository, recruitRepository);
+    }
 
     @Test void secondRoundPreservesExistingMembersAndCannotBeRunTwice() {
         String semester = generateSemester();

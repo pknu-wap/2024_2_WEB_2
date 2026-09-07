@@ -126,11 +126,13 @@
 .exportBtn:hover:not(:disabled) { background: #44576d; }
 .teamBuildBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 40px; padding: 10px 16px; border: none; border-radius: 10px; background: #abd4fd; color: #172a40; font-size: 14px; font-weight: 600; cursor: pointer; }
 .teamBuildBtn:hover:not(:disabled) { background: #c9e4ff; }
+.resetBtn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 10px 14px; border: 1px solid #bc7777; border-radius: 10px; background: transparent; color: #ffb4b4; font-size: 14px; font-weight: 600; cursor: pointer; }
+.resetBtn:hover:not(:disabled) { background: #ffb4b414; }
 
 
 @media screen and (max-width: 768px) {
   .stepCard { padding: 24px 20px 20px; border-radius: 20px; }
-  .progressHeading { align-items: flex-start; gap: 12px; }
+  .progressHeading { align-items: flex-start; flex-wrap: wrap; gap: 12px; }
   .progressHeading h2 { font-size: 20px; }
       .stepper { grid-template-columns: 1fr; gap: 0; margin: 24px 0 16px; }
   .step { min-height: 76px; display: grid; grid-template-columns: 42px 1fr auto; gap: 14px; align-items: center; }

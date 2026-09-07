@@ -9,28 +9,32 @@ jest.mock("../api/team-build", () => ({
   teamBuildApi: {
     submitApply: jest.fn().mockResolvedValue({}),
     getApplyStatus: async () => ({ hasApplied: false }),
-    getApplyProjects: async () => [
-      {
-        projectId: 1,
-        title: "웹 프로젝트",
-        projectType: "WEB",
-        recruitPositions: ["BACKEND"],
-      },
-      {
-        projectId: 2,
-        title: "앱 프로젝트",
-        projectType: "APP",
-        recruitPositions: ["APP"],
-      },
-      {
-        projectId: 3,
-        title: "게임 프로젝트",
-        projectType: "GAME",
-        recruitPositions: ["GAME"],
-      },
-    ],
+    getApplyProjects: jest.fn(),
   },
 }));
+
+beforeEach(() => {
+  teamBuildApi.getApplyProjects.mockResolvedValue([
+    {
+      projectId: 1,
+      title: "웹 프로젝트",
+      projectType: "WEB",
+      recruitPositions: ["BACKEND"],
+    },
+    {
+      projectId: 2,
+      title: "앱 프로젝트",
+      projectType: "APP",
+      recruitPositions: ["APP"],
+    },
+    {
+      projectId: 3,
+      title: "게임 프로젝트",
+      projectType: "GAME",
+      recruitPositions: ["GAME"],
+    },
+  ]);
+});
 
 async function renderApplyPage(round) {
   render(
@@ -213,5 +217,72 @@ test.each([1, 2])(
     } finally {
       alertSpy.mockRestore();
     }
+  },
+);
+
+test.each([
+  [1, undefined],
+  [2, undefined],
+  [1, null],
+  [2, null],
+  [1, "BACKEND"],
+  [2, "BACKEND"],
+])(
+  "%i차 프로젝트의 직무 목록 %s를 기본 직무로 보완하고 지원서를 저장한다",
+  async (round, recruitPositions) => {
+    teamBuildApi.getApplyProjects.mockResolvedValueOnce([
+      {
+        projectId: 10,
+        title: "서버 프로젝트",
+        summary: "프로젝트 소개",
+        projectType: "WEB",
+        techStack: ["React"],
+        ...(recruitPositions === undefined ? {} : { recruitPositions }),
+      },
+    ]);
+    await renderApplyPage(round);
+    const card = within(screen.getByRole("article"));
+    expect(card.getByText("백엔드")).toBeTruthy();
+    expect(card.getByText("프론트엔드")).toBeTruthy();
+    openNewApplication();
+    const form = within(screen.getByRole("dialog"));
+    expect(form.getAllByRole("option").map((option) => option.value)).toEqual([
+      "",
+      "FRONTEND",
+      "BACKEND",
+      "DESIGN",
+      "AI",
+      "APP",
+      "EMBEDDED",
+      "GAME",
+    ]);
+    fillApplication({ position: "BACKEND", message: "함께 개발하고 싶습니다" });
+    saveApplication();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.getByLabelText("현재 지원서 1개")).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "지원서 수정하기 (백엔드)" }),
+    ).toBeTruthy();
+  },
+);
+
+test.each([[[]], [["BACKEND"]]])(
+  "서버에서 명시한 직무 목록 %j는 그대로 유지한다",
+  async (recruitPositions) => {
+    teamBuildApi.getApplyProjects.mockResolvedValueOnce([
+      {
+        projectId: 10,
+        title: "직무 지정 프로젝트",
+        projectType: "WEB",
+        recruitPositions,
+      },
+    ]);
+    await renderApplyPage(1);
+    openNewApplication();
+    const form = within(screen.getByRole("dialog"));
+    expect(form.getAllByRole("option").map((option) => option.value)).toEqual([
+      "",
+      ...recruitPositions,
+    ]);
   },
 );

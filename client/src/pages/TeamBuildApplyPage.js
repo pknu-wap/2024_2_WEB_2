@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
+import { POSITIONS } from "../constants/positions";
 import {
   MAX_APPLICATIONS,
   MIN_APPLICATIONS,
@@ -103,7 +104,17 @@ function TeamBuildApplyPage({ round = 1 }) {
         if (!applied) {
           const projectList = await teamBuildApi.getApplyProjects();
           if (!active) return;
-          setProjects(Array.isArray(projectList) ? projectList : []);
+          setProjects(
+            Array.isArray(projectList)
+              ? projectList.map((project) => ({
+                  ...project,
+                  // 현재 프로젝트 API는 모집 직무를 생략하므로 전체 직무를 기본값으로 사용한다.
+                  recruitPositions: Array.isArray(project.recruitPositions)
+                    ? project.recruitPositions
+                    : [...POSITIONS],
+                }))
+              : [],
+          );
         }
       } catch (err) {
         if (!active) return;

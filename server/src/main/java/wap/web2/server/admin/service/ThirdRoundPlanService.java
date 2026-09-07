@@ -229,7 +229,8 @@ public class ThirdRoundPlanService {
             Project project = currentProjects.get(card.getProjectId());
             User owner = project == null ? null : project.getUser();
             Leader leader = owner == null ? null : new Leader(owner.getId(), owner.getName());
-            result.add(new TeamCard(card.getId(), card.getProjectId(), card.getName(), card.isCreated(), roster, leader));
+            result.add(new TeamCard(card.getId(), card.getProjectId(), card.getName(), card.isCreated(), roster, leader,
+                project == null ? null : project.getProjectType()));
         }
         return new ThirdRoundBoardResponse(semester, plan.getRevision(), result,
             positions.stream().filter(s -> s.getTeamId() == null).map(s -> slotView(s, members)).toList(), plan.isCompleted());

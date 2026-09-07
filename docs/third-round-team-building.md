@@ -35,6 +35,7 @@
 
 - `teams[].id`: 배치안 팀 ID. 이동·삭제 API에 사용한다.
 - `teams[].projectId`: 기존 프로젝트 ID. 생성 팀은 `null`이다.
+- `teams[].projectType`: 프로젝트 분야(예: `WEB`, `APP`, `GAME`). 카드 배지에 표시하며 분야가 없는 생성 팀은 배지를 숨긴다.
 - `teams[].leader`: 기존 프로젝트 팀장의 `{ id, name }`. 생성 팀은 `null`이며 3차 팀빌딩 화면에는 팀장 문구를 표시하지 않는다. 팀장은 배치 인원과 별도로 표시한다.
 - `teams[].isCreated`: 삭제 가능한 생성 팀인지 나타낸다.
 - `members[]`, `unassigned[]`: `{ id, type, position, name? }`.

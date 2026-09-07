@@ -296,10 +296,12 @@ class ThirdRoundPlanServiceTest {
         ready();
         User owner = user(10); owner.setName("팀장 이름");
         when(projects.findProjectsBySemester(semester)).thenReturn(List.of(
-            Project.builder().projectId(100L).user(owner).build()));
+            Project.builder().projectId(100L).user(owner).projectType("WEB").build()));
         when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(
             card(20, 100L, semester), card(30, null, semester)));
         var board = service.get();
+        assertThat(board.teams().get(0).projectType()).isEqualTo("WEB");
+        assertThat(board.teams().get(1).projectType()).isNull();
         assertThat(board.teams().get(0).leader().id()).isEqualTo(10L);
         assertThat(board.teams().get(0).leader().name()).isEqualTo("팀장 이름");
         assertThat(board.teams().get(0).members()).isEmpty();

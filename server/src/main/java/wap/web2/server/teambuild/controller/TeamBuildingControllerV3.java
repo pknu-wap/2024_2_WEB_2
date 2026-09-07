@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import wap.web2.server.global.security.CurrentUser;
+import wap.web2.server.admin.dto.response.TeamBuildingMetaStatusResponse;
+import wap.web2.server.admin.service.AdminTeamBuildingService;
 import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.project.service.ProjectService;
 import wap.web2.server.teambuild.dto.RecruitmentDto;
@@ -21,6 +23,7 @@ import wap.web2.server.teambuild.dto.response.ApplyStatusResponse;
 import wap.web2.server.teambuild.dto.response.ProjectAppliesResponse;
 import wap.web2.server.teambuild.dto.response.ProjectTemplate;
 import wap.web2.server.teambuild.dto.response.RoleResponse;
+import wap.web2.server.teambuild.dto.response.RecruitProjectResponse;
 import wap.web2.server.teambuild.dto.response.TeamBuildingResults;
 import wap.web2.server.teambuild.dto.response.TeamResultsResponse;
 import wap.web2.server.teambuild.service.ApplyService;
@@ -34,6 +37,12 @@ public class TeamBuildingControllerV3 {
     private final TeamBuildingResultService teamBuildingResultService;
     private final ProjectService projectService;
     private final ApplyService applyService;
+    private final AdminTeamBuildingService adminTeamBuildingService;
+
+    @GetMapping("/status")
+    public ResponseEntity<TeamBuildingMetaStatusResponse> getStatus() {
+        return ResponseEntity.ok(TeamBuildingMetaStatusResponse.of(adminTeamBuildingService.getMeta()));
+    }
 
     @GetMapping("/role")
     public ResponseEntity<RoleResponse> getMyRole(@CurrentUser UserPrincipal userPrincipal) {
@@ -55,6 +64,13 @@ public class TeamBuildingControllerV3 {
     ) {
         List<ProjectTemplate> projects = projectService.getCurrentProjectRecruits();
         return ResponseEntity.ok(projects);
+    }
+
+    @GetMapping("/recruit/projects")
+    public ResponseEntity<List<RecruitProjectResponse>> getMyRecruitProjects(
+        @CurrentUser UserPrincipal userPrincipal
+    ) {
+        return ResponseEntity.ok(projectService.getMyRecruitProjects(userPrincipal.getId()));
     }
 
     @PostMapping("/apply/submit")

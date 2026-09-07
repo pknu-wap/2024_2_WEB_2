@@ -8,4 +8,6 @@ import wap.web2.server.teambuild.entity.Team;
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findAllBySemester(String semester);
+
+    void deleteBySemester(String semester);
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
@@ -39,7 +39,12 @@ const formatApiError = (err, fallback) => {
 
 function TeamBuildPage({ round = 1 }) {
   const navigate = useNavigate();
-  const [projectIdInput, setProjectIdInput] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const loadRequestRef = useRef(0);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [applies, setApplies] = useState([]);
@@ -138,18 +143,15 @@ function TeamBuildPage({ round = 1 }) {
 
   const totalApplicantsOf = (pos) => countsByPosition[pos] || 0;
 
-  const handleLoad = async () => {
-    const projectId = Number(projectIdInput);
-    if (!projectId) {
-      alert("프로젝트 ID를 입력하세요.");
-      return;
-    }
-
+  const handleLoad = useCallback(async (projectId) => {
+    if (!projectId) return;
+    const requestId = ++loadRequestRef.current;
     setIsLoading(true);
     setSubmitMsg("");
     setSubmitStatus("");
     try {
       const response = await teamBuildApi.getRecruitApplies(projectId, round);
+      if (requestId !== loadRequestRef.current) return;
       if (response?.success === false) {
         throw new Error(response.message || "불러오기 실패");
       }
@@ -167,6 +169,7 @@ function TeamBuildPage({ round = 1 }) {
       setCurrentFilter("");
       setFilterOpen(false);
     } catch (err) {
+      if (requestId !== loadRequestRef.current) return;
       setCurrentProjectId(null);
       setProjectTitle("");
       setApplies([]);
@@ -175,9 +178,37 @@ function TeamBuildPage({ round = 1 }) {
       setCurrentFilter("");
       alert(formatApiError(err, "불러오기 실패"));
     } finally {
-      setIsLoading(false);
+      if (requestId === loadRequestRef.current) setIsLoading(false);
     }
-  };
+  }, [round]);
+
+  useEffect(() => {
+    if (!Cookies.get("authToken")) return;
+    const requestRef = loadRequestRef;
+    let active = true;
+    setProjectsLoading(true);
+    setProjectsError("");
+    const loadProjects = async () => {
+      try {
+        const ownedProjects = await teamBuildApi.getRecruitProjects();
+        if (!active) return;
+        setProjects(ownedProjects);
+        if (ownedProjects.length === 1) {
+          setSelectedProjectId(String(ownedProjects[0].projectId));
+          await handleLoad(ownedProjects[0].projectId);
+        }
+      } catch (err) {
+        if (active) setProjectsError(formatApiError(err, "프로젝트 목록을 불러오지 못했습니다."));
+      } finally {
+        if (active) setProjectsLoading(false);
+      }
+    };
+    loadProjects();
+    return () => {
+      active = false;
+      requestRef.current++;
+    };
+  }, [handleLoad, retryCount]);
 
   const handleCapacityChange = (pos, value) => {
     if (value === "") {
@@ -390,29 +421,49 @@ function TeamBuildPage({ round = 1 }) {
         </div>
 
         <div className={styles.card}>
-          <div className={styles.sectionTitle}>프로젝트 ID</div>
+          <div className={styles.sectionTitle}>내 프로젝트</div>
           <div className={styles.sectionCaption}>
-            본인이 등록한 프로젝트의 ID를 입력하세요.
+            현재 학기에 본인이 등록한 프로젝트의 신청자를 확인하세요.
           </div>
 
+          {projectsLoading && <p role="status">프로젝트를 불러오는 중...</p>}
+          {projectsError && <div role="alert">{projectsError}
+            <button type="button" className={styles.primaryButton}
+              onClick={() => setRetryCount(count => count + 1)}>다시 시도</button>
+          </div>}
+          {!projectsLoading && !projectsError && projects.length === 0 && (
+            <p className={styles.muted}>현재 학기에 등록한 프로젝트가 없습니다.</p>
+          )}
+          {projects.length > 0 && (
           <div className={styles.projectRow}>
-            <input
+            {projects.length === 1 ? <span>{projects[0].title}</span> : <select
+              aria-label="모집할 프로젝트"
               className={`${styles.inputField} ${styles.projectIdInput}`}
-              type="number"
-              min="1"
-              placeholder="예) 1"
-              value={projectIdInput}
-              onChange={(event) => setProjectIdInput(event.target.value)}
-            />
+              value={selectedProjectId}
+              disabled={isLoading || isSubmitting || projectsLoading}
+              onChange={(event) => {
+                setSelectedProjectId(event.target.value);
+                setCurrentProjectId(null);
+                setProjectTitle("");
+                setApplies([]);
+                setRankedByPosition(createEmptyRankMap());
+                setCapacityByPosition(createEmptyCapacityMap());
+                setSubmitMsg("");
+              }}
+            >
+              <option value="">프로젝트를 선택하세요</option>
+              {projects.map(project => <option key={project.projectId} value={project.projectId}>{project.title}</option>)}
+            </select>}
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={handleLoad}
-              disabled={isLoading}
+              onClick={() => handleLoad(Number(selectedProjectId))}
+              disabled={isLoading || isSubmitting || projectsLoading || !selectedProjectId}
             >
               {isLoading ? "불러오는 중" : "불러오기"}
             </button>
           </div>
+          )}
           {projectTitle && <div className={styles.muted}>· {projectTitle}</div>}
 
           <div className={styles.sectionHeader}>
@@ -592,13 +643,7 @@ function TeamBuildPage({ round = 1 }) {
               </li>
               <li>3. capacity가 0이면 우선순위를 설정할 수 없습니다.</li>
               <li>
-                4. 지원자가 4명 미만이면 전원의 우선순위를 지정해야 합니다.
-              </li>
-              <li>
-                5. 지원자가 4명 이상이면 최소 4명의 우선순위를 지정해야 합니다.
-              </li>
-              <li>
-                6. 팀 최소 인원은 4명이며 최대 인원은 6명입니다. (디자이너 포함)
+                4. 최소 4명의 우선순위를 지정해야 합니다.
               </li>
             </ul>
           </div>
@@ -788,7 +833,7 @@ function TeamBuildPage({ round = 1 }) {
               type="button"
               className={styles.submitButton}
               onClick={handleSubmit}
-              disabled={isSubmitting || !currentProjectId}
+              disabled={isSubmitting || isLoading || projectsLoading || !currentProjectId}
             >
               {isSubmitting ? "제출 중..." : "희망 팀 제출하기"}
             </button>

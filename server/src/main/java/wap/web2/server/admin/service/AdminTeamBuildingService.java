@@ -23,6 +23,7 @@ public class AdminTeamBuildingService {
     private final ProjectApplyRepository applyRepository;
     private final ProjectRepository projectRepository;
     private final TeamRepository teamRepository;
+    private final FieldClusterMemberRepository clusterRepository;
     private final PositionTeamBuilder teamBuilder;
 
     @Transactional(readOnly = true)
@@ -51,6 +52,16 @@ public class AdminTeamBuildingService {
             throw new ConflictException("해당 학기의 팀빌딩이 이미 생성되었습니다.");
         }
         teamBuildingMetaRepository.save(new TeamBuildingMeta(semester));
+    }
+
+    @Transactional
+    public void resetTeamBuilding() {
+        String semester = generateSemester();
+        TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
+            .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 생성되지 않았습니다."));
+        teamRepository.deleteBySemester(semester);
+        clusterRepository.deleteBySemester(semester);
+        meta.reset();
     }
 
     @Transactional

@@ -20,6 +20,7 @@ import wap.web2.server.exception.ForbiddenException;
 import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.exception.ResourceNotFoundException;
 import wap.web2.server.global.security.UserPrincipal;
+import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.dto.request.ProjectRequest;
@@ -120,16 +121,12 @@ public class ProjectService {
     public ProjectDetailsResponse getProjectDetails(Long projectId, UserPrincipal userPrincipal) {
         Project project = findProject(projectId);
 
-        // response는 isOwner 플랙그가 false인 채로 생성된다.
         ProjectDetailsResponse projectDetailsResponse = ProjectDetailsResponse.from(project);
 
         if (userPrincipal != null) {
             User user = findUser(userPrincipal.getId());
-
-            if (project.isOwner(user)) {
-                // 로그인한 사용자이고, 프로젝트의 주인이면 isOwner 플래그를 true로 바꾸고 리턴한다.
-                return projectDetailsResponse.changeIsOwner(true);
-            }
+            projectDetailsResponse.changeIsOwner(project.isOwner(user));
+            projectDetailsResponse.changeCanManage(canManage(project, user));
         }
 
         return projectDetailsResponse;
@@ -153,11 +150,13 @@ public class ProjectService {
         );
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 수정 권한이 없습니다.");
         }
 
-        return ProjectDetailsResponse.from(project);
+        return ProjectDetailsResponse.from(project)
+            .changeIsOwner(project.isOwner(user))
+            .changeCanManage(true);
     }
 
     @CacheEvict(value = "projectList", allEntries = true)
@@ -171,7 +170,7 @@ public class ProjectService {
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 수정 권한이 없습니다.");
         }
 
@@ -230,7 +229,7 @@ public class ProjectService {
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 삭제 권한이 없습니다.");
         }
         projectRepository.delete(project);
@@ -244,6 +243,10 @@ public class ProjectService {
             .findProjectsBySemester(generateSemester())
             .stream()
             .anyMatch(project -> project.isOwner(user));
+    }
+
+    private boolean canManage(Project project, User user) {
+        return user.getRole() == Role.ROLE_ADMIN || project.isOwner(user);
     }
 
     private User findUser(Long userId) {

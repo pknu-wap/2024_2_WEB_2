@@ -28,6 +28,7 @@ public class ProjectDetailsResponse {
     private List<ImageDto> images;
     private List<CommentDto> comments;
     private Boolean isOwner;
+    private Boolean canManage;
 
     public static ProjectDetailsResponse from(Project project) {
         List<TeamMemberDto> teamMembers = project
@@ -56,7 +57,13 @@ public class ProjectDetailsResponse {
             .images(images)
             .comments(comments)
             .isOwner(false)
+            .canManage(false)
             .build();
+    }
+
+    public ProjectDetailsResponse changeCanManage(boolean canManage) {
+        this.canManage = canManage;
+        return this;
     }
 
     public ProjectDetailsResponse changeIsOwner(boolean isOwner) {

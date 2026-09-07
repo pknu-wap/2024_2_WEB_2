@@ -123,7 +123,7 @@ const ManageThirdTeamBuildPage = () => {
         </h2>
         <p id="assignment-help" className={styles.description}>
           멤버를 팀 카드로 드래그하면 주요 직무로 배정됩니다. 클릭으로 멤버를
-          선택한 뒤 팀의 배정 버튼을 눌러도 됩니다.
+          선택한 뒤 팀 카드를 클릭해도 됩니다.
         </p>
         <div className={styles.unassignedList}>
           {unassigned.map((member) => (
@@ -211,9 +211,24 @@ const ManageThirdTeamBuildPage = () => {
         {teams.map((team) => (
           <article
             key={team.projectId}
-            className={`${styles.card} ${dropTarget === team.projectId ? styles.dropTarget : ""}`}
+            className={`${styles.card} ${selectedMember ? styles.assignable : ""} ${dropTarget === team.projectId ? styles.dropTarget : ""}`}
             aria-labelledby={`team-${team.projectId}`}
             data-team-id={team.projectId}
+            role={selectedMember ? "button" : undefined}
+            tabIndex={selectedMember ? 0 : undefined}
+            aria-describedby={selectedMember ? "assignment-help" : undefined}
+            onClick={() => {
+              if (selectedMember)
+                assignMember(selectedMember.id, team.projectId);
+            }}
+            onKeyDown={(event) => {
+              if (!selectedMember) return;
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                assignMember(selectedMember.id, team.projectId);
+              }
+              if (event.key === "Escape") setSelectedId(null);
+            }}
           >
             <div className={styles.cardHeader}>
               <h2 id={`team-${team.projectId}`} className={styles.teamName}>
@@ -249,15 +264,6 @@ const ManageThirdTeamBuildPage = () => {
               </table>
             ) : (
               <p className={styles.empty}>아직 배정된 멤버가 없습니다.</p>
-            )}
-            {selectedMember && (
-              <button
-                type="button"
-                className={styles.assignButton}
-                onClick={() => assignMember(selectedMember.id, team.projectId)}
-              >
-                {selectedMember.name} 님을 {team.teamName}에 배정
-              </button>
             )}
           </article>
         ))}

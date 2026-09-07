@@ -51,9 +51,8 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", () => {
   fireEvent.click(
     within(getUnassigned()).getByRole("button", { name: /이준호/ }),
   );
-  fireEvent.click(
-    screen.getByRole("button", { name: "이준호 님을 WAPs에 배정" }),
-  );
+  expect(screen.queryByText("이준호 님을 WAPs에 배정")).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "WAPs" }));
 
   const team = within(getTeam("WAPs"));
   expect(team.getByRole("row", { name: "BACKEND 이준호" })).toBeInTheDocument();
@@ -77,3 +76,37 @@ test.each(["cancel", "outside", "escape"])(
     ).toBeInTheDocument();
   },
 );
+
+test.each(["Enter", " "])(
+  "선택한 멤버를 팀 카드에서 %s 키로 배정한다",
+  (key) => {
+    render(<ManageThirdTeamBuildPage />);
+    fireEvent.click(
+      within(getUnassigned()).getByRole("button", { name: /이준호/ }),
+    );
+    fireEvent.keyDown(screen.getByRole("button", { name: "오늘의 기록" }), {
+      key,
+    });
+    expect(
+      within(getTeam("오늘의 기록")).getByRole("row", {
+        name: "BACKEND 이준호",
+      }),
+    ).toBeInTheDocument();
+  },
+);
+
+test("멤버 선택 없이 팀을 클릭하거나 선택을 취소하면 배정하지 않는다", () => {
+  render(<ManageThirdTeamBuildPage />);
+  fireEvent.click(getTeam("WAPs"));
+  fireEvent.click(
+    within(getUnassigned()).getByRole("button", { name: /이준호/ }),
+  );
+  fireEvent.keyDown(screen.getByRole("button", { name: "WAPs" }), {
+    key: "Escape",
+  });
+  fireEvent.click(getTeam("WAPs"));
+  expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(7);
+  expect(
+    within(getTeam("WAPs")).getByText("배정 완료 4명"),
+  ).toBeInTheDocument();
+});

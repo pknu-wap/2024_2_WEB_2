@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
@@ -36,13 +36,6 @@ const POSITION_LABELS = POSITION_OPTIONS.reduce((acc, item) => {
   return acc;
 }, {});
 
-const PROJECT_TYPE_OPTIONS = [
-  { value: "WEB", label: "웹" },
-  { value: "APP", label: "앱" },
-  { value: "GAME", label: "게임" },
-  { value: "EMBEDDED", label: "임베디드" },
-];
-
 const readProjectType = (project) => project?.projectType || "";
 
 const normalizeProjectType = (projectType) => {
@@ -55,22 +48,6 @@ const normalizeProjectType = (projectType) => {
   if (lower === "embedded" || lower === "etc" || lower === "기타")
     return "EMBEDDED";
   return raw.toUpperCase();
-};
-
-const getProjectTypeLabel = (projectType) => {
-  const normalized = normalizeProjectType(projectType);
-  const matched = PROJECT_TYPE_OPTIONS.find(
-    (option) => option.value === normalized,
-  );
-  if (matched) return matched.label;
-  return projectType || "기타";
-};
-
-const getProjectTypeStyleKey = (projectType) => {
-  const normalized = normalizeProjectType(projectType);
-  return PROJECT_TYPE_OPTIONS.some((option) => option.value === normalized)
-    ? normalized
-    : "EMBEDDED";
 };
 
 const getProjectTeamType = (projectType) => {
@@ -122,19 +99,6 @@ const reorderProjectIds = (
   return next;
 };
 
-const calculateDropInsertIndex = (
-  projectIds,
-  movingId,
-  targetId,
-  placement = "before",
-) => {
-  if (!movingId || !targetId) return null;
-  const withoutMoving = projectIds.filter((id) => id !== movingId);
-  const targetIndex = withoutMoving.indexOf(targetId);
-  if (targetIndex === -1) return null;
-  return placement === "after" ? targetIndex + 1 : targetIndex;
-};
-
 function TeamBuildApplyPage({ round = 1 }) {
   const isSecondRound = round === 2;
   const navigate = useNavigate();
@@ -142,16 +106,6 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [loadError, setLoadError] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
   const [projects, setProjects] = useState([]);
-  const [commonApplication, setCommonApplication] = useState(null);
-  const [selectedProjectIds, setSelectedProjectIds] = useState([]);
-  const [selectedProjectTypes, setSelectedProjectTypes] = useState([]);
-  const [activeStep, setActiveStep] = useState(1);
-  const [formPosition, setFormPosition] = useState("");
-  const [formMessage, setFormMessage] = useState("");
-  const [messageLimitReached, setMessageLimitReached] = useState(false);
-  const [draggingId, setDraggingId] = useState(null);
-  const [dragOverId, setDragOverId] = useState(null);
-  const [dragOverPlacement, setDragOverPlacement] = useState("before");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
   const [projectApplications, setProjectApplications] = useState([]);
@@ -167,7 +121,6 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [applicationDragOverPlacement, setApplicationDragOverPlacement] =
     useState("before");
   const [primaryPosition, setPrimaryPosition] = useState("");
-  //추가한 내용
 
   useEffect(() => {
     const token =
@@ -220,59 +173,6 @@ function TeamBuildApplyPage({ round = 1 }) {
       active = false;
     };
   }, []);
-
-  const projectsById = useMemo(() => {
-    const map = new Map();
-    projects.forEach((project) => map.set(project.projectId, project));
-    return map;
-  }, [projects]);
-
-  const selectedProjects = useMemo(() => {
-    return selectedProjectIds.map((id) => projectsById.get(id)).filter(Boolean);
-  }, [selectedProjectIds, projectsById]);
-
-  const dropInsertIndex = useMemo(() => {
-    return calculateDropInsertIndex(
-      selectedProjectIds,
-      draggingId,
-      dragOverId,
-      dragOverPlacement,
-    );
-  }, [selectedProjectIds, draggingId, dragOverId, dragOverPlacement]);
-
-  const priorityPreviewProjects = useMemo(() => {
-    if (!draggingId || !dragOverId || dropInsertIndex === null)
-      return selectedProjects;
-
-    const previewProjectIds = reorderProjectIds(
-      selectedProjectIds,
-      draggingId,
-      dragOverId,
-      dragOverPlacement,
-    );
-    return previewProjectIds.map((id) => projectsById.get(id)).filter(Boolean);
-  }, [
-    selectedProjects,
-    selectedProjectIds,
-    draggingId,
-    dragOverId,
-    dragOverPlacement,
-    dropInsertIndex,
-    projectsById,
-  ]);
-
-  const filteredProjects = useMemo(() => {
-    if (selectedProjectTypes.length === 0) return projects;
-    const selectedTypeSet = new Set(selectedProjectTypes);
-    return projects.filter((project) =>
-      selectedTypeSet.has(normalizeProjectType(readProjectType(project))),
-    );
-  }, [projects, selectedProjectTypes]);
-
-  const canSelectProjects = Boolean(commonApplication);
-  const selectedCount = selectedProjectIds.length;
-  const canReviewPriority = canSelectProjects && selectedCount > 0;
-  const isAllProjectTypes = selectedProjectTypes.length === 0;
 
   const getPositionLabel = (value) => POSITION_LABELS[value] || value;
   const getPrimaryPositionLabel = (value) =>
@@ -455,250 +355,6 @@ function TeamBuildApplyPage({ round = 1 }) {
       setIsSubmitting(false);
     }
   };
-
-  const getPreviewText = (text, maxLength = 120) => {
-    if (!text) return "";
-    return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-  };
-
-  const toggleProjectTypeFilter = (type) => {
-    setSelectedProjectTypes((prev) =>
-      prev.includes(type)
-        ? prev.filter((item) => item !== type)
-        : [...prev, type],
-    );
-  };
-
-  const openStep = (step) => {
-    if (step !== 3) {
-      setDraggingId(null);
-      setDragOverId(null);
-      setDragOverPlacement("before");
-    }
-    if (step === 1) {
-      setActiveStep(1);
-      return;
-    }
-    if (step === 2) {
-      if (!canSelectProjects) {
-        alert("먼저 지원서를 작성해주세요.");
-        return;
-      }
-      setActiveStep(2);
-      return;
-    }
-    if (!canReviewPriority) {
-      alert("먼저 프로젝트를 선택해주세요.");
-      return;
-    }
-    setActiveStep(3);
-  };
-
-  const handleMessageChange = (event) => {
-    let value = event.target.value;
-    if (value.length > 255) {
-      value = value.slice(0, 255);
-    }
-    setFormMessage(value);
-    setMessageLimitReached(value.length >= 255);
-  };
-
-  const saveCommonApplication = () => {
-    if (!formPosition) {
-      alert("지원 직무를 선택해주세요.");
-      return;
-    }
-    if (!formMessage || formMessage.trim() === "") {
-      alert("자기소개 및 PR 메시지를 작성해주세요.");
-      return;
-    }
-
-    setCommonApplication({
-      position: formPosition,
-      message: formMessage.trim(),
-    });
-    setActiveStep(selectedProjectIds.length > 0 ? 3 : 2);
-  };
-
-  const addToCart = (projectId) => {
-    if (!commonApplication) {
-      alert("먼저 지원서를 작성해주세요.");
-      return;
-    }
-
-    if (selectedProjectIds.includes(projectId)) {
-      alert("이미 선택된 프로젝트입니다.");
-      return;
-    }
-
-    if (selectedProjectIds.length >= MAX_SELECTION) {
-      alert(`프로젝트는 최대 ${MAX_SELECTION}개까지만 선택할 수 있습니다.`);
-      return;
-    }
-
-    setSelectedProjectIds((prev) => [...prev, projectId]);
-  };
-
-  const removeFromCart = (projectId) => {
-    setSelectedProjectIds((prev) => prev.filter((id) => id !== projectId));
-  };
-
-  const clearCart = () => {
-    if (window.confirm("선택된 모든 프로젝트를 삭제하시겠습니까?")) {
-      setSelectedProjectIds([]);
-    }
-  };
-
-  const handleDragStart = (projectId) => (event) => {
-    setDraggingId(projectId);
-    event.dataTransfer.effectAllowed = "move";
-    event.dataTransfer.setData("text/plain", String(projectId));
-  };
-
-  const handleDragEnd = () => {
-    setDraggingId(null);
-    setDragOverId(null);
-    setDragOverPlacement("before");
-  };
-
-  const handleDragOver = (projectId) => (event) => {
-    if (!draggingId || draggingId === projectId) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-    const rect = event.currentTarget.getBoundingClientRect();
-    const isAfter = event.clientY - rect.top > rect.height / 2;
-    setDragOverPlacement(isAfter ? "after" : "before");
-    setDragOverId(projectId);
-  };
-
-  const finalizeReorder = (targetProjectId) => {
-    if (!draggingId) return;
-    const targetId =
-      targetProjectId && targetProjectId !== draggingId
-        ? targetProjectId
-        : dragOverId;
-
-    if (!targetId || targetId === draggingId) return;
-    setSelectedProjectIds((prev) =>
-      reorderProjectIds(prev, draggingId, targetId, dragOverPlacement),
-    );
-  };
-
-  const handleListDragOver = (event) => {
-    if (!draggingId) return;
-    event.preventDefault();
-    event.dataTransfer.dropEffect = "move";
-  };
-
-  const handleListDrop = (event) => {
-    event.preventDefault();
-    finalizeReorder();
-    setDragOverId(null);
-    setDragOverPlacement("before");
-  };
-
-  const handleDrop = (projectId) => (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    finalizeReorder(projectId);
-    setDragOverId(null);
-    setDragOverPlacement("before");
-  };
-
-  useEffect(() => {
-    if (!commonApplication && activeStep !== 1) {
-      setActiveStep(1);
-      return;
-    }
-    if (commonApplication && selectedCount === 0 && activeStep === 3) {
-      setActiveStep(2);
-    }
-  }, [activeStep, commonApplication, selectedCount]);
-
-  const submitAllApplications = async () => {
-    if (selectedProjectIds.length === 0) {
-      alert("제출할 프로젝트가 없습니다.");
-      return;
-    }
-    if (selectedProjectIds.length > MAX_SELECTION) {
-      alert(`프로젝트는 최대 ${MAX_SELECTION}개까지만 지원할 수 있습니다.`);
-      return;
-    }
-    if (!commonApplication) {
-      alert("지원서가 작성되지 않았습니다.");
-      return;
-    }
-
-    const projectTitles = selectedProjectIds.map((id) => {
-      const project = projectsById.get(id);
-      return project ? project.title : `프로젝트 ${id}`;
-    });
-
-    const confirmMessage =
-      `다음 순서로 ${selectedProjectIds.length}개 프로젝트에 지원하시겠습니까?\n\n` +
-      `지원 직무: ${getPositionLabel(commonApplication.position)}\n\n` +
-      projectTitles
-        .map((title, index) => `${index + 1}순위: ${title}`)
-        .join("\n");
-
-    if (!window.confirm(confirmMessage)) return;
-
-    const applies = selectedProjectIds.map((projectId) => ({
-      projectId,
-      position: commonApplication.position,
-      comment: commonApplication.message,
-    }));
-
-    setIsSubmitting(true);
-    try {
-      await teamBuildApi.submitApply({ applies }, round);
-      alert(
-        `${selectedProjectIds.length}개 프로젝트에 우선순위대로 지원이 완료되었습니다!`,
-      );
-      setHasApplied(true);
-      setSelectedProjectIds([]);
-      navigate(-1);
-    } catch (err) {
-      alert(formatApiError(err, "지원 중 오류가 발생했습니다."));
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  useEffect(() => {
-    if (!commonApplication) return;
-    setFormPosition(commonApplication.position || "");
-    setFormMessage(commonApplication.message || "");
-    setMessageLimitReached(Boolean(commonApplication.message?.length >= 255));
-  }, [commonApplication]);
-
-  const step1Expanded = activeStep === 1;
-  const step2Expanded = activeStep === 2;
-  const step3Expanded = activeStep === 3;
-  const step1Status = !canSelectProjects
-    ? "진행 중"
-    : step1Expanded
-      ? "수정 중"
-      : "완료";
-  const step2Status = !canSelectProjects
-    ? "잠김"
-    : step2Expanded
-      ? "진행 중"
-      : canReviewPriority
-        ? "완료"
-        : "대기 중";
-  const step3Status = !canReviewPriority
-    ? "잠김"
-    : step3Expanded
-      ? "진행 중"
-      : "대기 중";
-  const summaryPreviewProjects = selectedProjects.slice(0, 3);
-  const hiddenProjectCount = selectedCount - summaryPreviewProjects.length;
-  const selectedProjectTypeLabels = selectedProjectTypes.map(
-    (type) =>
-      PROJECT_TYPE_OPTIONS.find((option) => option.value === type)?.label ||
-      type,
-  );
 
   if (isLoading) {
     return <LoadingPage />;

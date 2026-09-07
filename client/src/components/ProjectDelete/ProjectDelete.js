@@ -11,7 +11,7 @@ const ProjectDelete = () => {
   const userId = Cookies.get("userId"); // 로그인한 사용자 ID 가져오기
   const [project, setProject] = useState(null); // 프로젝트 데이터
   const [isOwner, setIsOwner] = useState(false); // 소유자인지 확인
-  const [isLoggedIn, setIsLoggedIn] = useState(!!token); // 로그인 여부 확인
+  const [isLoggedIn] = useState(!!token); // 로그인 여부 확인
 
   // API URL
   const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/project/${projectId}`;

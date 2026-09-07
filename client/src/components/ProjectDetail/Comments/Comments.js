@@ -11,27 +11,6 @@ const Comments = ({ projectId }) => {
   const textAreaRef = useRef(null); // textarea DOM 참조
   const navigate = useNavigate();
 
-  // 닉네임
-  // const [userName, setUserName] = useState("");
-  // 비밀번호
-  // const [password, setPassword] = useState("");
-
-  // 닉네임 핸들러
-  // const handleUserNameChange = (e) => {
-  //   setUserName(e.target.value);
-  // };
-  // const handleUserNameChange = (e) => {
-  //   setUserName(e.target.value);
-  // };
-
-  // 비밀번호 핸들러
-  // const handlePasswordChange = (e) => {
-  //   setPassword(e.target.value);
-  // };
-  // const handlePasswordChange = (e) => {
-  //   setPassword(e.target.value);
-  // };
-
   const handleCommentsChange = (e) => {
     setComments(e.target.value);
   };
@@ -52,14 +31,8 @@ const Comments = ({ projectId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // if (!password) {
-    //   alert("비밀번호를 입력해 주세요.");
-    //   return;
-    // }
     const commentsData = {
       commentContent: comments,
-      // commenter: userName,
-      // password,
     };
 
     try {

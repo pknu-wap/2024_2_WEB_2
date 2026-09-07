@@ -7,10 +7,6 @@ import styles from "../../../assets/ProjectDetail/Comments/CommentsList.module.c
 const CommentsList = ({ comments }) => {
   // 댓글 삭제 버튼 핸들러
   const handleDelete = async (commentId) => {
-    // const userPasswordInput = prompt(
-    //   "댓글 작성 시 입력한 비밀번호를 입력해주세요."
-    // );
-
     try {
       await commentApi.deleteComment(commentId);
       alert("댓글이 삭제되었습니다.");

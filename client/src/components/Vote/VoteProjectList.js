@@ -41,11 +41,6 @@ const VoteProjectList = ({
 
         if (Array.isArray(response.data)) {
           setProjects(response.data);
-        } else {
-          // console.error(
-          //   "API 응답의 projectsResponse가 배열이 아닙니다:",
-          //   response.data
-          // );
         }
       } catch (error) {
         console.error("데이터 가져오는 중 오류 발생:", error);

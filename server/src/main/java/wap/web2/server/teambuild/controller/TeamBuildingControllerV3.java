@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import wap.web2.server.global.security.CurrentUser;
+import wap.web2.server.admin.dto.response.TeamBuildingMetaStatusResponse;
+import wap.web2.server.admin.service.AdminTeamBuildingService;
 import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.project.service.ProjectService;
 import wap.web2.server.teambuild.dto.RecruitmentDto;
@@ -35,6 +37,12 @@ public class TeamBuildingControllerV3 {
     private final TeamBuildingResultService teamBuildingResultService;
     private final ProjectService projectService;
     private final ApplyService applyService;
+    private final AdminTeamBuildingService adminTeamBuildingService;
+
+    @GetMapping("/status")
+    public ResponseEntity<TeamBuildingMetaStatusResponse> getStatus() {
+        return ResponseEntity.ok(TeamBuildingMetaStatusResponse.of(adminTeamBuildingService.getMeta()));
+    }
 
     @GetMapping("/role")
     public ResponseEntity<RoleResponse> getMyRole(@CurrentUser UserPrincipal userPrincipal) {

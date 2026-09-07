@@ -7,6 +7,8 @@ export const teamBuildApi = {
 
   getRecruitProjects: () => apiClient.get("/team-build/recruit/projects"),
 
+  getStatus: () => apiClient.get("/team-build/status"),
+
   // 리더 모집하기 - 프로젝트 지원자 조회
   getRecruitApplies: (projectId, round = 1) =>
     apiClient.get(`/team-build/${projectId}/applies`, {

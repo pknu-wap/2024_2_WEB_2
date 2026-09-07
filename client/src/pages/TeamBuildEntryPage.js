@@ -12,13 +12,24 @@ function TeamBuildEntryPage() {
 
     const fetchRole = async () => {
       try {
-        const response = await teamBuildApi.getRole();
+        const [response, progress] = await Promise.all([
+          teamBuildApi.getRole(),
+          teamBuildApi.getStatus(),
+        ]);
         const role = response?.role;
         if (!active) return;
+        if (![1, 2, 3].includes(progress?.round) || !["leader", "member"].includes(role)) {
+          throw new Error("팀빌딩 진행 정보가 올바르지 않습니다.");
+        }
+        if (progress.round === 3) {
+          navigate("/team-build/result", { replace: true });
+          return;
+        }
+        const suffix = progress.round === 2 ? "/2nd" : "";
         if (role === "leader") {
-          navigate("/team-build/recruit", { replace: true });
+          navigate(`/team-build/recruit${suffix}`, { replace: true });
         } else {
-          navigate("/team-build/projects", { replace: true });
+          navigate(`/team-build/projects${suffix}`, { replace: true });
         }
       } catch (err) {
         if (!active) return;

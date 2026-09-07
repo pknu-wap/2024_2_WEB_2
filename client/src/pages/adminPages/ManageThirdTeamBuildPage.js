@@ -369,7 +369,7 @@ const ManageThirdTeamBuildPage = () => {
         </button>
         <button
           type="button"
-          className={styles.createTeamButton}
+          className={`${styles.createTeamButton} ${styles.completeTeamButton}`}
           onClick={completeTeamBuild}
           disabled={busy || revision === null}
         >

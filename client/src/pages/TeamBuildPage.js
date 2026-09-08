@@ -3,6 +3,7 @@ import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import { POSITIONS } from "../constants/positions";
+import { FIRST_ROUND_MIN_SELECTED_APPLICANTS } from "../constants/recruitment";
 import wapsLogo from "../assets/img/waps_logo.png";
 import styles from "../assets/TeamBuildRecruit.module.css";
 
@@ -644,7 +645,8 @@ function TeamBuildPage({ round = 1 }) {
               <li>3. capacity가 0이면 우선순위를 설정할 수 없습니다.</li>
               {round === 1 && (
                 <li>
-                  4. 최소 3명의 우선순위를 지정해야 합니다. 지원자가 3명 미만이면
+                  4. 최소 {FIRST_ROUND_MIN_SELECTED_APPLICANTS}명의 우선순위를
+                  지정해야 합니다. 지원자가 {FIRST_ROUND_MIN_SELECTED_APPLICANTS}명 미만이면
                   모두 선택해야 합니다.
                 </li>
               )}

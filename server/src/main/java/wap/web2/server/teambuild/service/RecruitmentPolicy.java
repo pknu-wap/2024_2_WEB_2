@@ -8,6 +8,8 @@ import wap.web2.server.teambuild.entity.ProjectApply;
 
 /** Counts people across all positions; multiple applications by one person count once. */
 public final class RecruitmentPolicy {
+    private static final int FIRST_ROUND_MIN_SELECTED_APPLICANTS = 3;
+
     private RecruitmentPolicy() {}
 
     public static void validate(List<RecruitmentInfo> rosters, List<ProjectApply> applies, int round) {
@@ -49,8 +51,10 @@ public final class RecruitmentPolicy {
                 selected.add(id);
             }
         }
-        if (round == 1 && selected.size() < Math.min(4, applicants.size())) {
-            throw new BadRequestException("1차 모집은 지원자 4명 이상을 선택해야 하며, 4명 미만이면 모두 선택해야 합니다.");
+        if (round == 1 && selected.size() < Math.min(FIRST_ROUND_MIN_SELECTED_APPLICANTS, applicants.size())) {
+            throw new BadRequestException(String.format(
+                "1차 모집은 지원자 %d명 이상을 선택해야 하며, %d명 미만이면 모두 선택해야 합니다.",
+                FIRST_ROUND_MIN_SELECTED_APPLICANTS, FIRST_ROUND_MIN_SELECTED_APPLICANTS));
         }
     }
 }

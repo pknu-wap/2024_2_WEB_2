@@ -1,4 +1,4 @@
-export const MIN_APPLICATIONS = 3;
+export const MIN_APPLICATIONS = 2;
 export const MAX_APPLICATIONS = 5;
 export const MAX_MESSAGE_LENGTH = 60;
 

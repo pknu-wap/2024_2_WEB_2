@@ -1,3 +1,4 @@
+import { MIN_DEV_ACCOUNT_NUMBER, MAX_DEV_ACCOUNT_NUMBER } from "../constants/devLogin";
 import { useEffect, useRef, useState } from "react";
 import { Navigate, useSearchParams } from "react-router-dom";
 import { getDevSessionId, saveDevSession } from "../utils/authStorage";
@@ -16,8 +17,8 @@ export default function LoginDev() {
     if (!enabled || started.current) return;
     started.current = true;
 
-    if (requestedId !== null && (!/^[0-9]+$/.test(requestedId) || Number(requestedId) < 1 || Number(requestedId) > 100)) {
-      setError("테스트 계정 번호는 1~100 사이의 정수여야 합니다.");
+    if (requestedId !== null && (!/^[0-9]+$/.test(requestedId) || Number(requestedId) < MIN_DEV_ACCOUNT_NUMBER || Number(requestedId) > MAX_DEV_ACCOUNT_NUMBER)) {
+      setError(`테스트 계정 번호는 ${MIN_DEV_ACCOUNT_NUMBER}~${MAX_DEV_ACCOUNT_NUMBER} 사이의 정수여야 합니다.`);
       return;
     }
 

@@ -1,6 +1,7 @@
 package wap.web2.server.teambuild.service;
 
 import static wap.web2.server.util.SemesterGenerator.generateSemester;
+import static wap.web2.server.teambuild.service.ApplicationPolicy.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -72,8 +73,9 @@ public class ApplyService {
         List<ApplyRequest> applies = request.getApplies();
         List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
             user.getId(), semester, round);
-        if (applies == null || applies.isEmpty() || existing.size() + applies.size() > 5) {
-            throw new BadRequestException("차수별 지원은 1개 이상 5개 이하만 가능합니다.");
+        if (applies == null || applies.size() < MIN_APPLICATIONS_PER_REQUEST || existing.size() + applies.size() > MAX_APPLICATIONS_PER_ROUND) {
+            throw new BadRequestException(String.format("차수별 지원은 %d개 이상 %d개 이하만 가능합니다.",
+                MIN_APPLICATIONS_PER_REQUEST, MAX_APPLICATIONS_PER_ROUND));
         }
         Set<ApplicationChoice> choices = new HashSet<>();
         existing.forEach(a -> choices.add(new ApplicationChoice(a.getProject().getProjectId(), a.getPosition())));

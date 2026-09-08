@@ -1,3 +1,4 @@
+import { REQUIRED_VOTE_COUNT } from "../../constants/vote";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "../../assets/ProjectVote.module.css";
@@ -40,8 +41,8 @@ const VoteForm = ({ isVotedUser }) => {
   const handleVoteSubmit = async (e) => {
     e.preventDefault();
 
-    if (selectedProjects.length !== 3) {
-      alert("프로젝트를 3개 선택해야 합니다.");
+    if (selectedProjects.length !== REQUIRED_VOTE_COUNT) {
+      alert(`프로젝트를 ${REQUIRED_VOTE_COUNT}개 선택해야 합니다.`);
       return;
     }
 
@@ -95,9 +96,9 @@ const VoteForm = ({ isVotedUser }) => {
           ) : (
             <>
               <div className={styles.vote_title}>
-                마음에 드는 프로젝트 3개를 선택해 주세요
+                마음에 드는 프로젝트 {REQUIRED_VOTE_COUNT}개를 선택해 주세요
               </div>
-              <p className={styles.title_eng}>Choose 3 projects you like</p>
+              <p className={styles.title_eng}>Choose {REQUIRED_VOTE_COUNT} projects you like</p>
             </>
           )}
         </div>

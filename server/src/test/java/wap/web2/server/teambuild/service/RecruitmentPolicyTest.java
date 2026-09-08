@@ -20,11 +20,11 @@ class RecruitmentPolicyTest {
         List<ProjectApply> applies = List.of(apply(1, Position.AI), apply(1, Position.BACKEND),
             apply(2, Position.AI), apply(3, Position.BACKEND), apply(4, Position.BACKEND), apply(5, Position.AI));
         assertThatThrownBy(() -> RecruitmentPolicy.validate(List.of(roster("AI", 1L, 2L),
-            roster("BACKEND", 1L, 3L)), applies, 1)).isInstanceOf(BadRequestException.class);
+            roster("BACKEND", 1L)), applies, 1)).isInstanceOf(BadRequestException.class);
         assertThatCode(() -> RecruitmentPolicy.validate(List.of(roster("AI", 1L, 2L),
-            roster("BACKEND", 3L, 4L)), applies, 1)).doesNotThrowAnyException();
+            roster("BACKEND", 1L, 3L)), applies, 1)).doesNotThrowAnyException();
     }
-    @Test void fewerThanFourRequiresEveryoneButNotEveryApplication() {
+    @Test void fewerThanThreeRequiresEveryoneButNotEveryApplication() {
         List<ProjectApply> applies = List.of(apply(1, Position.AI), apply(1, Position.BACKEND), apply(2, Position.AI));
         assertThatThrownBy(() -> RecruitmentPolicy.validate(List.of(roster("AI", 1L)), applies, 1))
             .isInstanceOf(BadRequestException.class);

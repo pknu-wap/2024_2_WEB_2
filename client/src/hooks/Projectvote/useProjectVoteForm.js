@@ -1,3 +1,4 @@
+import { REQUIRED_VOTE_COUNT } from "../../constants/vote";
 import { useState } from "react";
 
 const useProjectvoteForm = () => {
@@ -15,11 +16,11 @@ const useProjectvoteForm = () => {
       // 이미 선택된 프로젝트는 해제
       setSelectedProjects(selectedProjects.filter((id) => id !== projectId));
     } else {
-      // 선택된 프로젝트가 3개 미만일 때만 추가
-      if (selectedProjects.length < 3) {
+      // 선택 가능한 개수 미만일 때만 추가
+      if (selectedProjects.length < REQUIRED_VOTE_COUNT) {
         setSelectedProjects([...selectedProjects, projectId]);
       } else {
-        alert("최대 3개의 프로젝트만 선택할 수 있습니다."); // 사용자에게 알림
+        alert(`최대 ${REQUIRED_VOTE_COUNT}개의 프로젝트만 선택할 수 있습니다.`); // 사용자에게 알림
       }
     }
   };

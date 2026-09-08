@@ -1,5 +1,7 @@
 package wap.web2.server.vote.service;
 
+import static wap.web2.server.vote.service.VotePolicy.REQUIRED_VOTE_COUNT;
+
 import static wap.web2.server.util.SemesterGenerator.generateSemester;
 
 import java.util.List;
@@ -154,8 +156,8 @@ public class VoteService {
 
     private void validateUserBallot(String semester, Long userId) {
         long votedCount = ballotRepository.countBallotsBySemesterAndUserId(semester, userId);
-        if (votedCount >= 3) {
-            throw new BadRequestException("투표는 최대 3개까지 가능합니다.");
+        if (votedCount >= REQUIRED_VOTE_COUNT) {
+            throw new BadRequestException("투표는 최대 " + REQUIRED_VOTE_COUNT + "개까지 가능합니다.");
         }
     }
 

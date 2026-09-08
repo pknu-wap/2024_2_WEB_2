@@ -22,6 +22,8 @@ import wap.web2.server.teambuild.repository.ProjectRecruitRepository;
 @Service
 @RequiredArgsConstructor
 public class TeamBuildingExportService {
+    private static final int EXPORT_PAGE_SIZE = 1000;
+    private static final int INITIAL_BUFFER_SIZE_BYTES = 64 * 1024;
 
     private final ProjectApplyRepository applyRepository;
     private final ProjectRecruitRepository projectRecruitRepository;
@@ -30,7 +32,7 @@ public class TeamBuildingExportService {
      * 지원현황 CSV(UTF-8 with BOM) 전체를 메모리에서 만들어 byte[]로 반환
      */
     public byte[] generateAppliesCsvBytes() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(64 * 1024);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE_BYTES);
 
         try (
             OutputStreamWriter w = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
@@ -47,7 +49,7 @@ public class TeamBuildingExportService {
             do {
                 p = applyRepository.findAllBySemester(
                     generateSemester(),
-                    PageRequest.of(page++, 1000)
+                    PageRequest.of(page++, EXPORT_PAGE_SIZE)
                 );
                 for (ProjectApply a : p.getContent()) {
                     csv.printRecord(
@@ -73,7 +75,7 @@ public class TeamBuildingExportService {
      * 누락되지 않도록 함.
      */
     public byte[] generateRecruitsCsvBytes() {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(64 * 1024);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream(INITIAL_BUFFER_SIZE_BYTES);
 
         try (
             OutputStreamWriter w = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
@@ -99,7 +101,7 @@ public class TeamBuildingExportService {
             do {
                 p = projectRecruitRepository.findAllBySemester(
                     generateSemester(),
-                    PageRequest.of(page++, 1000)
+                    PageRequest.of(page++, EXPORT_PAGE_SIZE)
                 );
 
                 for (ProjectRecruit r : p.getContent()) {

@@ -840,3 +840,24 @@
     animation: none;
   }
 }
+
+.recruitedSection {
+  margin-top: 24px;
+}
+
+.recruitedMembers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.recruitedMember {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}

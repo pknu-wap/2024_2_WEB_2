@@ -48,6 +48,7 @@ function TeamBuildPage({ round = 1 }) {
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [applies, setApplies] = useState([]);
+  const [recruitedMembers, setRecruitedMembers] = useState([]);
   const [rankedByPosition, setRankedByPosition] = useState(createEmptyRankMap);
   const [capacityByPosition, setCapacityByPosition] = useState(
     createEmptyCapacityMap,
@@ -147,6 +148,7 @@ function TeamBuildPage({ round = 1 }) {
     if (!projectId) return;
     const requestId = ++loadRequestRef.current;
     setIsLoading(true);
+    setRecruitedMembers([]);
     setSubmitMsg("");
     setSubmitStatus("");
     try {
@@ -164,6 +166,7 @@ function TeamBuildPage({ round = 1 }) {
       setCurrentProjectId(projectId);
       setProjectTitle(safeTitle);
       setApplies(normalized);
+      setRecruitedMembers(response?.recruitedMembers || response?.data?.recruitedMembers || []);
       setRankedByPosition(createEmptyRankMap());
       setCapacityByPosition(createEmptyCapacityMap());
       setCurrentFilter("");
@@ -173,6 +176,7 @@ function TeamBuildPage({ round = 1 }) {
       setCurrentProjectId(null);
       setProjectTitle("");
       setApplies([]);
+      setRecruitedMembers([]);
       setRankedByPosition(createEmptyRankMap());
       setCapacityByPosition(createEmptyCapacityMap());
       setCurrentFilter("");
@@ -446,6 +450,7 @@ function TeamBuildPage({ round = 1 }) {
                 setCurrentProjectId(null);
                 setProjectTitle("");
                 setApplies([]);
+                setRecruitedMembers([]);
                 setRankedByPosition(createEmptyRankMap());
                 setCapacityByPosition(createEmptyCapacityMap());
                 setSubmitMsg("");
@@ -465,6 +470,27 @@ function TeamBuildPage({ round = 1 }) {
           </div>
           )}
           {projectTitle && <div className={styles.muted}>· {projectTitle}</div>}
+
+          {round === 2 && currentProjectId && !isLoading && (
+            <section className={styles.recruitedSection} aria-labelledby="recruited-members-title">
+              <h2 id="recruited-members-title" className={styles.sectionTitle}>
+                1차 모집된 팀원 ({recruitedMembers.length}명)
+              </h2>
+              <p className={styles.sectionCaption}>1차 팀빌딩에서 확정된 팀원입니다.</p>
+              {recruitedMembers.length === 0 ? (
+                <p className={styles.muted}>1차에서 모집된 팀원이 없습니다.</p>
+              ) : (
+                <ul className={styles.recruitedMembers}>
+                  {recruitedMembers.map((member) => (
+                    <li key={member.memberId} className={styles.recruitedMember}>
+                      <span>{member.memberName || "알 수 없는 사용자"}</span>
+                      {renderPositionBadge(member.position)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
           <div className={styles.sectionHeader}>
             <div>

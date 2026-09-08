@@ -26,6 +26,16 @@ public class AdminThirdRoundPlanController {
         return service.create(request.revision());
     }
 
+    @PostMapping("/complete")
+    public ThirdRoundBoardResponse complete(@Valid @RequestBody ThirdRoundRevisionRequest request) {
+        return service.complete(request.revision());
+    }
+
+    @PostMapping("/shuffle")
+    public ThirdRoundBoardResponse shuffle(@Valid @RequestBody ThirdRoundRevisionRequest request) {
+        return service.shuffle(request.revision());
+    }
+
     @PatchMapping("/slots/{slotId}")
     public ThirdRoundBoardResponse move(@PathVariable long slotId,
                                        @Valid @RequestBody ThirdRoundMoveRequest request) {

@@ -197,7 +197,7 @@ const ManageTeamBuildPage = () => {
             ))}
           </ol>
           {currentStep === "THIRD" && (
-            <p className={styles.stageNotice}>3차 팀빌딩 실행 기능 연결이 필요합니다.</p>
+            <p className={styles.stageNotice}>3차 팀빌딩 메뉴에서 배치한 뒤 팀 빌딩 완료를 눌러주세요.</p>
           )}
           <div className={styles.progressFooter}>
             <button className={styles.teamBuildBtn} onClick={handleRunTeamBuilding}

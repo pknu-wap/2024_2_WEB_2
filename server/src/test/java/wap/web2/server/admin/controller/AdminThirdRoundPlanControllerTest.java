@@ -37,9 +37,15 @@ class AdminThirdRoundPlanControllerTest {
                 assertThatThrownBy(controller::get).isInstanceOf(AccessDeniedException.class);
                 assertThatThrownBy(() -> controller.create(new wap.web2.server.admin.dto.request.ThirdRoundRevisionRequest(0L)))
                     .isInstanceOf(AccessDeniedException.class);
+                assertThatThrownBy(() -> controller.complete(new wap.web2.server.admin.dto.request.ThirdRoundRevisionRequest(0L)))
+                    .isInstanceOf(AccessDeniedException.class);
+                assertThatThrownBy(() -> controller.shuffle(new wap.web2.server.admin.dto.request.ThirdRoundRevisionRequest(0L)))
+                    .isInstanceOf(AccessDeniedException.class);
                 SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
                     "admin", "", List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))));
                 controller.open(); verify(service).open();
+                controller.complete(new wap.web2.server.admin.dto.request.ThirdRoundRevisionRequest(0L));
+                verify(service).complete(0);
             });
     }
 
@@ -49,6 +55,8 @@ class AdminThirdRoundPlanControllerTest {
         String root = "/admin/team/building/third-round";
         for (String body : List.of("{}", "{\"revision\":-1}", "{\"revision\":null}")) {
             mvc.perform(post(root + "/teams").contentType("application/json").content(body)).andExpect(status().isBadRequest());
+            mvc.perform(post(root + "/complete").contentType("application/json").content(body)).andExpect(status().isBadRequest());
+            mvc.perform(post(root + "/shuffle").contentType("application/json").content(body)).andExpect(status().isBadRequest());
         }
         mvc.perform(patch(root + "/slots/1").contentType("application/json")
             .content("{\"revision\":0,\"teamId\":-1}")).andExpect(status().isBadRequest());
@@ -62,5 +70,11 @@ class AdminThirdRoundPlanControllerTest {
         mvc.perform(patch(root + "/slots/1").contentType("application/json")
             .content("{\"revision\":0,\"teamId\":null}")).andExpect(status().isOk());
         verify(service).move(1, null, 0);
+        mvc.perform(post(root + "/shuffle").contentType("application/json")
+            .content("{\"revision\":3}")).andExpect(status().isOk());
+        verify(service).shuffle(3);
+        mvc.perform(post(root + "/complete").contentType("application/json")
+            .content("{\"revision\":4}")).andExpect(status().isOk());
+        verify(service).complete(4);
     }
 }

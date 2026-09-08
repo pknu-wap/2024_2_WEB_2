@@ -27,6 +27,9 @@ class AdminTeamBuildingRoundTest {
     @Mock TeamRepository teamRepository;
     @Mock FieldClusterMemberRepository clusterRepository;
     @Mock PositionTeamBuilder teamBuilder;
+    @Mock wap.web2.server.admin.repository.ThirdRoundPlanRepository plans;
+    @Mock wap.web2.server.admin.repository.ThirdRoundPlanTeamRepository planTeams;
+    @Mock wap.web2.server.admin.repository.ThirdRoundPositionSlotRepository slots;
     @InjectMocks AdminTeamBuildingService service;
 
     @Test void resetClearsCurrentSemesterAllocationsAndRestartsCompletedTeamBuilding() {
@@ -35,6 +38,10 @@ class AdminTeamBuildingRoundTest {
         when(teamBuildingMetaRepository.findBySemesterForUpdate(semester)).thenReturn(Optional.of(meta));
 
         service.resetTeamBuilding();
+        var order = inOrder(slots, planTeams, plans);
+        order.verify(slots).deleteAllInBatch(any());
+        order.verify(planTeams).deleteAllInBatch(any());
+        order.verify(plans).deleteById(semester);
 
         verify(teamRepository).deleteBySemester(semester);
         verify(clusterRepository).deleteBySemester(semester);

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import wap.web2.server.admin.dto.request.TeamBuildingStatusRequest;
 import wap.web2.server.admin.entity.*;
-import wap.web2.server.admin.repository.TeamBuildingMetaRepository;
+import wap.web2.server.admin.repository.*;
 import wap.web2.server.exception.*;
 import wap.web2.server.project.entity.Project;
 import wap.web2.server.project.repository.ProjectRepository;
@@ -25,6 +25,9 @@ public class AdminTeamBuildingService {
     private final TeamRepository teamRepository;
     private final FieldClusterMemberRepository clusterRepository;
     private final PositionTeamBuilder teamBuilder;
+    private final ThirdRoundPlanRepository plans;
+    private final ThirdRoundPlanTeamRepository planTeams;
+    private final ThirdRoundPositionSlotRepository slots;
 
     @Transactional(readOnly = true)
     public TeamBuildingStatus getStatus() {
@@ -59,6 +62,9 @@ public class AdminTeamBuildingService {
         String semester = generateSemester();
         TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
             .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 생성되지 않았습니다."));
+        slots.deleteAllInBatch(slots.findAllBySemesterOrderById(semester));
+        planTeams.deleteAllInBatch(planTeams.findAllBySemesterOrderById(semester));
+        plans.deleteById(semester);
         teamRepository.deleteBySemester(semester);
         clusterRepository.deleteBySemester(semester);
         meta.reset();

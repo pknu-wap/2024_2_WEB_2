@@ -31,6 +31,9 @@ public class TeamBuildingResultService {
     private final TeamRepository teamRepository;
     private final ProjectRepository projectRepository;
     private final ProjectApplyRepository projectApplyRepository;
+    private final wap.web2.server.admin.repository.ThirdRoundPlanRepository plans;
+    private final wap.web2.server.admin.repository.ThirdRoundPlanTeamRepository planTeams;
+    private final wap.web2.server.admin.repository.ThirdRoundPositionSlotRepository slots;
 
     @Transactional(readOnly = true)
     public TeamBuildingResults getResults() {
@@ -79,6 +82,21 @@ public class TeamBuildingResultService {
             results.add(result);
         }
 
+        plans.findById(semester).filter(wap.web2.server.admin.entity.ThirdRoundPlan::isCompleted).ifPresent(plan -> {
+            var positions = slots.findAllBySemesterOrderById(semester);
+            var applicants = userRepository.findAllById(positions.stream()
+                .map(wap.web2.server.admin.entity.ThirdRoundPositionSlot::getUserId)
+                .filter(java.util.Objects::nonNull).toList()).stream()
+                .collect(Collectors.toMap(wap.web2.server.member.entity.User::getId, u -> u));
+            planTeams.findAllBySemesterOrderById(semester).stream().filter(card -> card.isCreated()).forEach(card -> {
+                var members = positions.stream().filter(slot -> card.getId().equals(slot.getTeamId())).map(slot -> {
+                    var user = applicants.get(slot.getUserId());
+                    if (user == null) throw new wap.web2.server.exception.ResourceNotFoundException("배정된 사용자를 찾을 수 없습니다.");
+                    return new TeamMemberResult(user.getId(), user.getName(), slot.getPosition());
+                }).toList();
+                results.add(new TeamBuildingResult(card.getId(), null, card.getName(), null, null, members));
+            });
+        });
         return results;
     }
 

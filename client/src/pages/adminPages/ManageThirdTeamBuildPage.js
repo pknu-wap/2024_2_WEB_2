@@ -2,11 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import styles from "../../assets/Admin/ManageThirdTeamBuild.module.css";
 import { thirdRoundApi } from "../../api/third-round";
 
+const memberLabel = (member) =>
+  member.name ? `${member.name}(${member.position})` : member.position;
+
 const ManageThirdTeamBuildPage = () => {
-  const [{ teams, unassigned, revision }, setRoster] = useState({
+  const [{ teams, unassigned, revision, completed }, setRoster] = useState({
     teams: [],
     unassigned: [],
     revision: null,
+    completed: false,
   });
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -14,7 +18,7 @@ const ManageThirdTeamBuildPage = () => {
   const [saving, setSaving] = useState(false);
   const requestInFlight = useRef(false);
   const mounted = useRef(false);
-  const busy = loading || saving;
+  const busy = loading || saving || completed;
 
   useEffect(() => {
     let cancelled = false;
@@ -108,6 +112,11 @@ const ManageThirdTeamBuildPage = () => {
   ].find(
     (member) => member.id === selectedId && member.type === "POSITION_SLOT",
   );
+  const canUnassign =
+    selectedMember &&
+    teams.some((team) =>
+      team.members.some((member) => member.id === selectedMember.id),
+    );
   const assignedMemberCount = teams.reduce(
     (total, team) => total + team.members.length,
     0,
@@ -123,6 +132,18 @@ const ManageThirdTeamBuildPage = () => {
     mutate(
       () => thirdRoundApi.create(revision),
       "빈 팀을 생성했습니다. 직무 인원을 배치해 주세요.",
+    );
+
+  const completeTeamBuild = () =>
+    mutate(
+      () => thirdRoundApi.complete(revision),
+      "팀 빌딩을 완료했습니다. 팀빌딩 결과에 반영되었습니다.",
+    );
+
+  const shuffleMembers = () =>
+    mutate(
+      () => thirdRoundApi.shuffle(revision),
+      "같은 직무 지원자를 셔플하고 저장했습니다.",
     );
 
   const deleteTeam = (teamId) => {
@@ -147,8 +168,8 @@ const ManageThirdTeamBuildPage = () => {
     if (
       !member ||
       member.type !== "POSITION_SLOT" ||
-      !target ||
-      source === target
+      (teamId !== null && !target) ||
+      (teamId === null ? !source : source === target)
     ) {
       setSelectedId(null);
       clearDrag();
@@ -156,16 +177,22 @@ const ManageThirdTeamBuildPage = () => {
     }
     mutate(
       () => thirdRoundApi.move(memberId, teamId, revision),
-      source
-        ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
-        : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
+      teamId === null
+        ? `${memberLabel(member)}을 미배정 목록으로 옮겼습니다.`
+        : source
+          ? `${member.position} 인원 1명을 ${source.teamName} 팀에서 ${target.teamName} 팀으로 이동했습니다.`
+          : `${target.teamName} 팀에 ${member.position} 인원 1명을 배치했습니다.`,
     );
   };
 
-  const teamAtPoint = (x, y) => {
-    const card = document.elementFromPoint(x, y)?.closest("[data-team-id]");
+  const destinationAtPoint = (x, y) => {
+    const card = document
+      .elementFromPoint(x, y)
+      ?.closest("[data-team-id], [data-unassigned]");
     return card && containerRef.current?.contains(card)
-      ? Number(card.dataset.teamId)
+      ? card.hasAttribute("data-unassigned")
+        ? "unassigned"
+        : Number(card.dataset.teamId)
       : null;
   };
 
@@ -181,7 +208,7 @@ const ManageThirdTeamBuildPage = () => {
         const speed =
           drag.y > bounds.bottom - 60 ? 12 : drag.y < bounds.top + 60 ? -12 : 0;
         container.scrollTop += speed;
-        setDropTarget(teamAtPoint(drag.x, drag.y));
+        setDropTarget(destinationAtPoint(drag.x, drag.y));
       }
       frame = requestAnimationFrame(scroll);
     };
@@ -192,8 +219,11 @@ const ManageThirdTeamBuildPage = () => {
   const finishPointerDrag = (event, cancelled = false) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    const target = cancelled ? null : teamAtPoint(event.clientX, event.clientY);
-    if (drag.active && target !== null) assignMember(drag.member.id, target);
+    const target = cancelled
+      ? null
+      : destinationAtPoint(event.clientX, event.clientY);
+    if (drag.active && target !== null)
+      assignMember(drag.member.id, target === "unassigned" ? null : target);
     else clearDrag();
     if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -252,7 +282,7 @@ const ManageThirdTeamBuildPage = () => {
         suppressClick.current = true;
         setSelectedId(null);
         setDragPreview({ member: drag.member, x: drag.x, y: drag.y });
-        setDropTarget(teamAtPoint(drag.x, drag.y));
+        setDropTarget(destinationAtPoint(drag.x, drag.y));
       }}
       onPointerUp={finishPointerDrag}
       onPointerCancel={(event) => finishPointerDrag(event, true)}
@@ -264,7 +294,7 @@ const ManageThirdTeamBuildPage = () => {
           suppressClick.current = false;
       }}
     >
-      <span className={styles.position}>{member.position}</span>
+      <span className={styles.position}>{memberLabel(member)}</span>
     </button>
   );
 
@@ -282,8 +312,10 @@ const ManageThirdTeamBuildPage = () => {
           팀별 배정이 완료된 멤버와 담당 직무를 확인하세요.
         </p>
         <p className={styles.notice}>
-          생성한 팀과 직무 배치안은 자동 저장됩니다. 실제 멤버 배정은 별도로
-          진행됩니다.
+          {completed
+            ? "팀 빌딩이 완료되었습니다."
+            : "배치안은 자동 저장됩니다. 팀 빌딩 완료를 누르면 현재 배치가 결과에 반영되며 이후 수정할 수 없습니다."}
+          {completed && <a href="/team-build/result">팀빌딩 결과 보기</a>}
         </p>
       </header>
 
@@ -326,16 +358,55 @@ const ManageThirdTeamBuildPage = () => {
         >
           팀 생성
         </button>
+        <button
+          type="button"
+          className={styles.createTeamButton}
+          onClick={shuffleMembers}
+          disabled={busy || revision === null}
+          aria-describedby="shuffle-help"
+        >
+          셔플
+        </button>
+        <button
+          type="button"
+          className={`${styles.createTeamButton} ${styles.completeTeamButton}`}
+          onClick={completeTeamBuild}
+          disabled={busy || revision === null}
+        >
+          팀 빌딩 완료
+        </button>
+        <p id="shuffle-help" className={styles.description}>
+          같은 직무 지원자를 미배정 목록과 팀 사이에서 무작위로 섞습니다. 팀별
+          직무 인원수는 유지되며, 결과가 기존 배치와 같을 수도 있습니다.
+        </p>
       </div>
 
-      <section className={styles.unassigned} aria-labelledby="unassigned-title">
+      <section
+        className={`${styles.unassigned} ${canUnassign ? styles.assignable : ""} ${dropTarget === "unassigned" ? styles.dropTarget : ""}`}
+        aria-labelledby="unassigned-title"
+        data-unassigned="true"
+        role={canUnassign ? "button" : undefined}
+        tabIndex={canUnassign ? 0 : undefined}
+        aria-describedby={canUnassign ? "assignment-help" : undefined}
+        onClick={() => {
+          if (canUnassign) assignMember(selectedMember.id, null);
+        }}
+        onKeyDown={(event) => {
+          if (!canUnassign) return;
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            assignMember(selectedMember.id, null);
+          }
+          if (event.key === "Escape") setSelectedId(null);
+        }}
+      >
         <h2 id="unassigned-title" className={styles.teamName}>
           미배정 멤버
         </h2>
         <p id="assignment-help" className={styles.description}>
-          직무를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각 항목은
-          해당 직무의 인원 1명을 나타내며, 실제 멤버를 지정하지 않습니다. 배치한
-          직무 인원도 같은 방법으로 다른 팀으로 이동할 수 있습니다.
+          지원자를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각
+          항목은 지원자의 이름과 주요 직무를 나타냅니다. 배치한 지원자도 같은
+          방법으로 다른 팀이나 미배정 멤버 섹션으로 이동할 수 있습니다.
         </p>
         <div className={styles.unassignedList}>
           {unassigned.map((member) => renderPositionSlot(member))}
@@ -356,7 +427,7 @@ const ManageThirdTeamBuildPage = () => {
           aria-hidden="true"
           style={{ left: dragPreview.x + 12, top: dragPreview.y + 12 }}
         >
-          {dragPreview.member.position}
+          {memberLabel(dragPreview.member)}
         </div>
       )}
       <div className={styles.grid}>
@@ -385,9 +456,9 @@ const ManageThirdTeamBuildPage = () => {
               <h2 id={`team-${team.id}`} className={styles.teamName}>
                 {team.teamName}
               </h2>
-              <span className={styles.badge}>
-                배정 완료 {team.members.length}명
-              </span>
+              {team.projectType && (
+                <span className={styles.badge}>{team.projectType}</span>
+              )}
               {team.isCreated && (
                 <button
                   type="button"
@@ -404,6 +475,9 @@ const ManageThirdTeamBuildPage = () => {
                 </button>
               )}
             </div>
+            {team.leader?.name && (
+              <p className={styles.description}>팀장: {team.leader.name}</p>
+            )}
             {team.members.length > 0 ? (
               <table
                 className={styles.members}

@@ -75,7 +75,15 @@
 }
 
 .createTeamControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
   margin-bottom: 24px;
+}
+
+.createTeamControls .description {
+  flex-basis: 100%;
 }
 
 .createTeamButton {
@@ -87,6 +95,10 @@
   font: inherit;
   font-weight: 700;
   cursor: pointer;
+}
+
+.completeTeamButton {
+  margin-left: auto;
 }
 
 .createTeamButton:focus-visible {
@@ -171,23 +183,27 @@
 }
 
 .memberChip.selected,
-.card.dropTarget {
+.card.dropTarget,
+.unassigned.dropTarget {
   border-color: #abd4fd;
   background: #2c4054;
   box-shadow: inset 0 0 0 1px #abd4fd;
 }
 
-.card.assignable {
+.card.assignable,
+.unassigned.assignable {
   cursor: pointer;
   border-color: #abd4fd;
 }
 
-.card.assignable:hover {
+.card.assignable:hover,
+.unassigned.assignable:hover {
   background: #2c4054;
 }
 
 .memberChip:focus-visible,
-.card.assignable:focus-visible {
+.card.assignable:focus-visible,
+.unassigned.assignable:focus-visible {
   outline: 2px solid #abd4fd;
   outline-offset: 3px;
 }

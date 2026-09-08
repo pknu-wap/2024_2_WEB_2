@@ -77,7 +77,8 @@ class SubmissionLockIntegrationTest {
         metas = new JpaRepositoryFactory(entityManager).getRepository(TeamBuildingMetaRepository.class);
         var transactionManager = new JpaTransactionManager(factory.getObject());
         transaction = new TransactionTemplate(transactionManager);
-        var proxy = new ProxyFactory(new ApplyService(metas, wishes, recruits, applies, projects, users));
+        var proxy = new ProxyFactory(new ApplyService(metas, wishes, recruits, applies, projects, users,
+            mock(wap.web2.server.teambuild.repository.TeamRepository.class)));
         proxy.addAdvice(new TransactionInterceptor(transactionManager, new AnnotationTransactionAttributeSource()));
         service = (ApplyService) proxy.getProxy();
         User user = new User();

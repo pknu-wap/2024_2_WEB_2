@@ -13,6 +13,20 @@ public class ProjectAppliesResponse {
 
     private List<ApplyResponse> applies;
 
+    private List<RecruitedMemberResponse> recruitedMembers = List.of();
+
+    public ProjectAppliesResponse(List<ApplyResponse> applies) {
+        this.applies = applies;
+    }
+
+    @Getter
+    @AllArgsConstructor
+    public static class RecruitedMemberResponse {
+        private Long memberId;
+        private String memberName;
+        private String position;
+    }
+
     @Getter
     @NoArgsConstructor
     @AllArgsConstructor

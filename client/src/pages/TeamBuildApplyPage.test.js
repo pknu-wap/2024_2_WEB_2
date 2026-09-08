@@ -91,13 +91,11 @@ test.each([1, 2])(
     });
     saveApplication();
     const countBadge = screen.getByLabelText("현재 지원서 2개");
-    expect(within(countBadge).getByText("2개")).toBeTruthy();
-    expect(countBadge.getAttribute("aria-describedby")).toBe(
-      "application-count-hint",
-    );
+    expect(countBadge.textContent).toBe("2");
+    expect(countBadge.hasAttribute("aria-describedby")).toBe(false);
     expect(countBadge.hasAttribute("tabindex")).toBe(false);
     expect(
-      screen.getByText("최소 3개의 지원서를 작성해야합니다."),
+      screen.getByText("최소 2개의 지원서를 작성해야합니다."),
     ).toBeTruthy();
     expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.click(
@@ -116,13 +114,13 @@ test.each([1, 2])(
 );
 
 test.each([1, 2])(
-  "%i차 지원서를 작성하고 우선순위대로 최종 제출한다",
+  "%i차 지원서 2개를 작성하고 우선순위대로 최종 제출한다",
   async (round) => {
     teamBuildApi.submitApply.mockClear();
     await renderApplyPage(round);
     expect(screen.queryByRole("button", { name: "최종 제출하기" })).toBeNull();
 
-    for (const position of ["BACKEND", "APP", "GAME"]) {
+    for (const position of ["BACKEND", "APP"]) {
       openNewApplication();
       fillApplication({
         position: position,
@@ -130,14 +128,20 @@ test.each([1, 2])(
         message: "함께하고 싶습니다",
       });
       saveApplication();
+      if (position === "BACKEND") {
+        expect(screen.queryByRole("button", { name: "최종 제출하기" })).toBeNull();
+        expect(
+          screen.getByLabelText("현재 지원서 1개").getAttribute("aria-describedby"),
+        ).toBe("application-count-hint");
+      }
     }
 
-    const countBadge = screen.getByLabelText("현재 지원서 3개");
-    expect(countBadge.textContent).toBe("3개");
+    const countBadge = screen.getByLabelText("현재 지원서 2개");
+    expect(countBadge.textContent).toBe("2");
     expect(countBadge.hasAttribute("aria-describedby")).toBe(false);
     expect(
-      screen.queryByText("최소 3개의 지원서를 작성해야합니다."),
-    ).toBeNull();
+      screen.getByText("최소 2개의 지원서를 작성해야합니다."),
+    ).toBeTruthy();
     expect(screen.queryByRole("tooltip")).toBeNull();
 
     expect(Boolean(screen.queryByRole("combobox", { name: "주요 직무" }))).toBe(
@@ -155,7 +159,6 @@ test.each([1, 2])(
     ).toEqual([
       "1웹 프로젝트·백엔드",
       "2앱 프로젝트·앱",
-      "3게임 프로젝트·게임",
     ]);
     expect(teamBuildApi.submitApply).not.toHaveBeenCalled();
     fireEvent.click(
@@ -165,7 +168,7 @@ test.each([1, 2])(
     expect(teamBuildApi.submitApply).toHaveBeenCalledTimes(1);
     expect(teamBuildApi.submitApply).toHaveBeenCalledWith(
       {
-        applies: ["BACKEND", "APP", "GAME"].map((position, index) => ({
+        applies: ["BACKEND", "APP"].map((position, index) => ({
           projectId: index + 1,
           position,
           comment: "함께하고 싶습니다",

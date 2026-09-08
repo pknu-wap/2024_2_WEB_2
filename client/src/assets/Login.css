@@ -31,7 +31,7 @@
   position: absolute;
   top: 20px;
   right: 20px;
-  font-size: 28px;
+  font-size: 24px;
   background: none;
   border: none;
   color: white;
@@ -45,14 +45,19 @@
 }
 
 .login-page .login-caption {
-  font-size: 20px;
+  font-size: 16px;
   color: white;
   font-family: "Pretendard-Regular";
-  line-height: 0.5;
+  line-height: 1.4;
+  white-space: nowrap;
   text-align: left;
-  width: 80%;
+  width: 76%;
   margin-bottom: 10px;
-  margin-top: 50px;
+  margin-top: 44px;
+}
+
+.login-page .login-caption p {
+  margin-bottom: 0;
 }
 
 .login-button no-login {
@@ -60,8 +65,8 @@
 }
 
 .login-page .Kakao-image {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
   border-radius: 50%;
   object-fit: cover;
   margin-right: 8px;
@@ -77,16 +82,16 @@
 }
 
 .login-page .login-button {
-  width: 80%;
-  height: 55px; /* 버튼 크기 통일 */
-  border-radius: 15px;
-  font-size: 18px;
+  width: 76%;
+  height: 50px; /* 버튼 크기 통일 */
+  border-radius: 13px;
+  font-size: 16px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   background-color: transparent;
-  border: 2px solid #ffffff;
+  border: 1px solid #ffffff;
   color: #ffffff;
   transition:
     background-color 0.3s ease,
@@ -115,7 +120,7 @@
 }
 
 .login-page .login-mini-caption {
-  font-size: 12px;
+  font-size: 11px;
   color: white;
   font-family: "Pretendard-Regular";
   margin-top: 10px;

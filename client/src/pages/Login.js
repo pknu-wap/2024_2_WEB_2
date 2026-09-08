@@ -43,12 +43,11 @@ const Login = () => {
           alt="WAPs"
           className="waplogo"
           onClick={() => navigate("/ProjectPage")}
-          style={{ cursor: "pointer", height: "75px" }} // 크기 조절
+          style={{ cursor: "pointer", height: "66px", opacity: 0.7 }} // 크기 조절
         />
       </div>
       <div className="login-caption">
-        <p>WAP에서의</p>
-        <p>프로젝트를 만나보세요</p>
+        <p>WAP에서의 프로젝트를 만나보세요</p>
       </div>
       <div className="login-buttons">
         {isLoggedIn ? (

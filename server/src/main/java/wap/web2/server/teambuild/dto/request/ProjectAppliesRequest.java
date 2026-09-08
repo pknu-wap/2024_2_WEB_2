@@ -1,5 +1,7 @@
 package wap.web2.server.teambuild.dto.request;
 
+import static wap.web2.server.teambuild.service.ApplicationPolicy.*;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,7 +19,8 @@ import lombok.ToString;
 public class ProjectAppliesRequest {
 
     @NotNull
-    @Size(min = 1, max = 5, message = "지원은 1개 이상 5개 이하만 가능합니다.")
+    @Size(min = MIN_APPLICATIONS_PER_REQUEST, max = MAX_APPLICATIONS_PER_ROUND,
+        message = "지원은 {min}개 이상 {max}개 이하만 가능합니다.")
     private List<@Valid ApplyRequest> applies;
 
     @Getter
@@ -34,7 +37,7 @@ public class ProjectAppliesRequest {
         private String position;
 
         @NotBlank
-        @Size(max = 120)
+        @Size(max = MAX_MESSAGE_LENGTH)
         private String comment;
 
         private String career;

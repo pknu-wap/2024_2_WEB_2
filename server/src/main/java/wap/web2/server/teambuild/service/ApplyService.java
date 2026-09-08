@@ -7,6 +7,11 @@ import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import wap.web2.server.teambuild.entity.Team;
+import wap.web2.server.teambuild.repository.TeamRepository;
+import wap.web2.server.teambuild.dto.response.ProjectAppliesResponse.RecruitedMemberResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +52,7 @@ public class ApplyService {
     private final ProjectApplyRepository applyRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
 
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request) {
@@ -154,7 +160,20 @@ public class ApplyService {
             throw new ConflictException("이미 제출된 모집이 존재합니다.");
         }
 
-        return getApplies(userPrincipal, projectId, round);
+        ProjectAppliesResponse response = getApplies(userPrincipal, projectId, round);
+        if (round == 1) return response;
+
+        List<Team> teams = teamRepository.findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(
+            projectId, generateSemester(), 1);
+        Map<Long, User> members = userRepository.findAllById(
+            teams.stream().map(Team::getMemberId).distinct().toList()).stream()
+            .collect(Collectors.toMap(User::getId, member -> member));
+        List<RecruitedMemberResponse> recruitedMembers = teams.stream()
+            .map(team -> new RecruitedMemberResponse(team.getMemberId(),
+                members.containsKey(team.getMemberId()) ? members.get(team.getMemberId()).getName() : "알 수 없는 사용자",
+                team.getPosition().name()))
+            .toList();
+        return new ProjectAppliesResponse(response.getApplies(), recruitedMembers);
     }
 
     @Transactional

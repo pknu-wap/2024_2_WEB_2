@@ -43,6 +43,7 @@ class ApplyRoundTest {
     @Mock ProjectApplyRepository applyRepository;
     @Mock ProjectRepository projectRepository;
     @Mock UserRepository userRepository;
+    @Mock wap.web2.server.teambuild.repository.TeamRepository teamRepository;
     @InjectMocks ApplyService service;
 
     UserPrincipal principal;
@@ -146,11 +147,34 @@ class ApplyRoundTest {
     }
 
     @Test
+    void secondRoundPageIncludesConfirmedFirstRoundMembersWithoutApplicants() {
+        owner();
+        User member = new User();
+        member.setId(2L);
+        member.setName("기존 팀원");
+        when(teamRepository.findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(10L, generateSemester(), 1))
+            .thenReturn(List.of(wap.web2.server.teambuild.entity.Team.builder()
+                .projectId(10L).memberId(2L).position(wap.web2.server.teambuild.entity.Position.BACKEND)
+                .round(1).semester(generateSemester()).build()));
+        when(userRepository.findAllById(List.of(2L))).thenReturn(List.of(member));
+
+        var response = service.getRecruitPageData(principal, 10L, 2);
+
+        assertThat(response.getApplies()).isEmpty();
+        assertThat(response.getRecruitedMembers()).singleElement().satisfies(recruited -> {
+            assertThat(recruited.getMemberId()).isEqualTo(2L);
+            assertThat(recruited.getMemberName()).isEqualTo("기존 팀원");
+            assertThat(recruited.getPosition()).isEqualTo("BACKEND");
+        });
+    }
+
+    @Test
     void legacyPageUsesFirstRound() {
         owner();
         when(applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), 1))
             .thenReturn(List.of());
-        service.getRecruitPageData(principal, 10L);
+        assertThat(service.getRecruitPageData(principal, 10L).getRecruitedMembers()).isEmpty();
+        verifyNoInteractions(teamRepository);
         verify(recruitRepository).existsByProjectIdAndSemesterAndRound(10L, generateSemester(), 1);
         verify(applyRepository).findAllByProjectAndSemesterAndRound(project, generateSemester(), 1);
         assertThat(ProjectApply.builder().build().getRound()).isEqualTo(1);

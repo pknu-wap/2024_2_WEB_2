@@ -1518,6 +1518,9 @@
 }
 
 .myApplicationPriorityNumber {
+  width: auto;
+  min-width: 48px;
+  white-space: nowrap;
   flex-shrink: 0;
   align-self: center;
   background: transparent;

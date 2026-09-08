@@ -362,7 +362,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                   <div
                     className={`${styles.priorityNumber} ${styles.myApplicationPriorityNumber}`}
                   >
-                    {index + 1}
+                    {index + 1}순위
                   </div>
                   <div className={styles.myApplicationName}>
                     <strong>{application.projectTitle}</strong>
@@ -553,7 +553,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                       <div
                         className={`${styles.priorityNumber} ${styles.myApplicationPriorityNumber}`}
                       >
-                        {index + 1}
+                        {index + 1}순위
                       </div>
                       <div className={styles.myApplicationName}>
                         <strong>{application.projectTitle}</strong>

@@ -193,7 +193,13 @@
 }
 
 .completedApply {
-  margin-top: 120px;
+  margin-top: 0;
+}
+
+.completedActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 .emptyApply {

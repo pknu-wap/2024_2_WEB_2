@@ -318,6 +318,29 @@ function TeamBuildApplyPage({ round = 1 }) {
     return (
       <div className={styles.page}>
         <div className={styles.shell}>
+        <div className={styles.topBar}>
+          <div className={styles.brand}>
+            <img src={wapsLogo} alt="WAPs" className={styles.brandLogo} />
+            {isSecondRound && <span className={styles.brandText}>WAPs</span>}
+          </div>
+          <button
+            type="button"
+            className={styles.closeButton}
+            onClick={() => navigate("/ProjectPage")}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className={styles.hero}>
+          <div className={styles.heroTitle}>
+            지원 완료
+          </div>
+          <div className={styles.heroSubtitle}>
+            제출한 지원서를 확인해보세요
+          </div>
+        </div>
+
           <section className={`${styles.myApply} ${styles.completedApply}`}>
             <div className={styles.myApplyHeader}>
               <div className={styles.myApplyTitle}>
@@ -350,6 +373,15 @@ function TeamBuildApplyPage({ round = 1 }) {
               ))}
             </div>
           </section>
+          <div className={styles.completedActions}>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={() => navigate("/ProjectPage")}
+            >
+              메인페이지로 돌아가기
+            </button>
+          </div>
         </div>
       </div>
     );

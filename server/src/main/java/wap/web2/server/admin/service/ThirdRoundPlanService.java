@@ -86,7 +86,14 @@ public class ThirdRoundPlanService {
         ThirdRoundPositionSlot slot = slots.findById(slotId)
             .filter(s -> s.getSemester().equals(plan.getSemester()))
             .orElseThrow(() -> new ResourceNotFoundException("직무 인원을 찾을 수 없습니다."));
-        if (teamId != null) requireTeam(teamId, plan.getSemester());
+        if (teamId != null) {
+            ThirdRoundPlanTeam target = requireTeam(teamId, plan.getSemester());
+            if (target.getProjectId() != null) {
+                Project project = projects.findById(target.getProjectId())
+                    .orElseThrow(() -> new ResourceNotFoundException("기존 프로젝트를 찾을 수 없습니다."));
+                validateRecruitmentOpen(project);
+            }
+        }
         if (!Objects.equals(slot.getTeamId(), teamId)) {
             slot.moveTo(teamId);
             plan.advanceRevision();
@@ -120,6 +127,7 @@ public class ThirdRoundPlanService {
             if (card.getProjectId() != null) {
                 Project project = currentProjects.get(card.getProjectId());
                 if (project == null) throw new ConflictException("기존 프로젝트를 찾을 수 없습니다.");
+                validateRecruitmentOpen(project);
                 allocation.add(Team.builder().projectId(project.getProjectId())
                     .leaderId(project.getUser().getId()).memberId(slot.getUserId())
                     .position(slot.getPosition()).round(3).semester(semester).build());
@@ -163,6 +171,12 @@ public class ThirdRoundPlanService {
         planTeams.delete(team);
         plan.advanceRevision();
         return board(plan);
+    }
+
+    private void validateRecruitmentOpen(Project project) {
+        if (project.isRecruitmentClosed()) {
+            throw new ConflictException("모집이 마감된 팀에는 추가 배정할 수 없습니다. 지원자를 다른 팀으로 이동해 주세요.");
+        }
     }
 
     private ThirdRoundPlan editable(long revision) {

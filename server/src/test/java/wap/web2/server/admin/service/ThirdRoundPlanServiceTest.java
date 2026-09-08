@@ -277,6 +277,32 @@ class ThirdRoundPlanServiceTest {
         assertThat(plan.isCompleted()).isTrue();
     }
 
+    @Test void cannotMoveApplicantsToClosedTeam() {
+        ready();
+        ThirdRoundPositionSlot applicant = slot(1, semester);
+        when(slots.findById(1L)).thenReturn(Optional.of(applicant));
+        when(planTeams.findById(20L)).thenReturn(Optional.of(card(20, 100L, semester)));
+        when(projects.findById(100L)).thenReturn(Optional.of(
+            Project.builder().projectId(100L).recruitmentClosed(true).build()));
+        assertThatThrownBy(() -> service.move(1, 20L, 0)).isInstanceOf(ConflictException.class);
+        assertThat(applicant.getTeamId()).isNull();
+    }
+
+    @Test void cannotCompletePlanIfTeamClosedAfterApplicantWasMoved() {
+        ThirdRoundPlan plan = ready();
+        when(projects.findProjectsBySemester(semester)).thenReturn(List.of(
+            Project.builder().projectId(100L).user(user(10)).recruitmentClosed(true).build()));
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(card(20, 100L, semester)));
+        ThirdRoundPositionSlot applicant = slot(1, semester);
+        applicant.identify(12L); applicant.moveTo(20L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(applicant));
+        when(users.findAllById(any())).thenReturn(List.of(user(12)));
+        assertThatThrownBy(() -> service.complete(0)).isInstanceOf(ConflictException.class)
+            .hasMessageContaining("모집이 마감된 팀");
+        verify(teams, never()).saveAll(any());
+        assertThat(plan.isCompleted()).isFalse();
+    }
+
     @Test void completionRejectsStaleRevisionMissingApplicantsAndDuplicateAllocations() {
         ThirdRoundPlan plan = ready();
         assertThatThrownBy(() -> service.complete(1)).isInstanceOf(ConflictException.class);

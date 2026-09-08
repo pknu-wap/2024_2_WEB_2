@@ -40,6 +40,9 @@ const formatApiError = (err, fallback) => {
 
 function TeamBuildPage({ round = 1 }) {
   const navigate = useNavigate();
+  const [progress, setProgress] = useState(null);
+  const [closingProjectId, setClosingProjectId] = useState(null);
+  const [closeError, setCloseError] = useState("");
   const [projects, setProjects] = useState([]);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [projectsLoading, setProjectsLoading] = useState(true);
@@ -195,12 +198,18 @@ function TeamBuildPage({ round = 1 }) {
     setProjectsError("");
     const loadProjects = async () => {
       try {
-        const ownedProjects = await teamBuildApi.getRecruitProjects();
+        const [ownedProjects, currentProgress] = await Promise.all([
+          teamBuildApi.getRecruitProjects(),
+          teamBuildApi.getStatus(),
+        ]);
         if (!active) return;
         setProjects(ownedProjects);
+        setProgress(currentProgress);
         if (ownedProjects.length === 1) {
           setSelectedProjectId(String(ownedProjects[0].projectId));
-          await handleLoad(ownedProjects[0].projectId);
+          if (!ownedProjects[0].recruitmentClosed && currentProgress.completedRound < round) {
+            await handleLoad(ownedProjects[0].projectId);
+          }
         }
       } catch (err) {
         if (active) setProjectsError(formatApiError(err, "프로젝트 목록을 불러오지 못했습니다."));
@@ -213,7 +222,33 @@ function TeamBuildPage({ round = 1 }) {
       active = false;
       requestRef.current++;
     };
-  }, [handleLoad, retryCount]);
+  }, [handleLoad, retryCount, round]);
+
+  const canCloseRecruitment = [1, 2].includes(progress?.completedRound);
+  const selectedProject = projects.find(project => String(project.projectId) === selectedProjectId);
+  const recruitmentUnavailable = selectedProject?.recruitmentClosed || progress?.completedRound >= round;
+
+  const handleCloseRecruitment = async (projectId) => {
+    setClosingProjectId(projectId);
+    setCloseError("");
+    try {
+      await teamBuildApi.closeRecruitment(projectId, progress.completedRound);
+      setProjects(previous => previous.map(project => project.projectId === projectId
+        ? { ...project, recruitmentClosed: true } : project));
+      if (currentProjectId === projectId) {
+        loadRequestRef.current++;
+        setCurrentProjectId(null);
+        setApplies([]);
+        setRecruitedMembers([]);
+        setRankedByPosition(createEmptyRankMap());
+        setCapacityByPosition(createEmptyCapacityMap());
+      }
+    } catch (err) {
+      setCloseError(formatApiError(err, "팀 모집을 마감하지 못했습니다. 다시 시도해주세요."));
+    } finally {
+      setClosingProjectId(null);
+    }
+  };
 
   const handleCapacityChange = (pos, value) => {
     if (value === "") {
@@ -464,11 +499,36 @@ function TeamBuildPage({ round = 1 }) {
               type="button"
               className={styles.primaryButton}
               onClick={() => handleLoad(Number(selectedProjectId))}
-              disabled={isLoading || isSubmitting || projectsLoading || !selectedProjectId}
+              disabled={isLoading || isSubmitting || projectsLoading || !selectedProjectId || recruitmentUnavailable}
             >
               {isLoading ? "불러오는 중" : "불러오기"}
             </button>
           </div>
+          )}
+          {!projectsLoading && !projectsError && (canCloseRecruitment || projects.some(project => project.recruitmentClosed)) && (
+            <section className={styles.recruitedSection} aria-labelledby="recruitment-close-title">
+              <h2 id="recruitment-close-title" className={styles.sectionTitle}>팀 모집 마감</h2>
+              {canCloseRecruitment && <p className={styles.sectionCaption}>
+                {progress.completedRound}차 팀빌딩이 완료되었습니다. 다음 팀빌딩 실행 전까지 모집을 마감할 수 있습니다.
+                마감한 팀은 팀원의 지원서 프로젝트 목록에서 사라집니다.
+              </p>}
+              <ul className={styles.recruitedMembers}>
+                {projects.map(project => (
+                  <li key={project.projectId} className={styles.recruitedMember}>
+                    <span>{project.title}</span>
+                    {project.recruitmentClosed ? <span role="status">모집 마감 완료</span> : canCloseRecruitment && (
+                      <button type="button" className={styles.primaryButton}
+                        aria-label={`${project.title} 팀 모집 마감`}
+                        disabled={closingProjectId !== null || isLoading || isSubmitting}
+                        onClick={() => handleCloseRecruitment(project.projectId)}>
+                        {closingProjectId === project.projectId ? "마감 중..." : "팀 모집 마감"}
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+              {closeError && <p role="alert">{closeError}</p>}
+            </section>
           )}
           {projectTitle && <div className={styles.muted}>· {projectTitle}</div>}
 
@@ -864,7 +924,7 @@ function TeamBuildPage({ round = 1 }) {
               type="button"
               className={styles.submitButton}
               onClick={handleSubmit}
-              disabled={isSubmitting || isLoading || projectsLoading || !currentProjectId}
+              disabled={isSubmitting || isLoading || projectsLoading || !currentProjectId || recruitmentUnavailable || closingProjectId !== null}
             >
               {isSubmitting ? "제출 중..." : "희망 팀 제출하기"}
             </button>

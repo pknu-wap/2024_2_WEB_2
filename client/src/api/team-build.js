@@ -7,6 +7,11 @@ export const teamBuildApi = {
 
   getRecruitProjects: () => apiClient.get("/team-build/recruit/projects"),
 
+  closeRecruitment: (projectId, completedRound) =>
+    apiClient.post(`/team-build/recruit/${projectId}/close`, null, {
+      params: { completedRound },
+    }),
+
   getStatus: () => apiClient.get("/team-build/status"),
 
   // 리더 모집하기 - 프로젝트 지원자 조회

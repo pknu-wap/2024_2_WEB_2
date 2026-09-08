@@ -104,7 +104,7 @@ body {
   padding: 0 20px;
   color: fff;
   font-size: 32px;
-  font-weight: 600;
+  font-weight: 700;
   text-align: center;
   margin-bottom: 6px;
   line-height: 1;
@@ -112,9 +112,9 @@ body {
 }
 
 .titleSub {
-  font-size: 10px;
+  font-size: 13px;
   text-align: center;
-  font-weight: 100;
+  font-weight: 200;
   color: ffffff;
   opacity: 50%;
   margin-top: 7px;
@@ -162,9 +162,9 @@ body {
 }
 
 .search {
-  height: 48px;
+  height: 40px;
   display: flex;
-  gap: 8px;
+  gap: px;
 }
 
 .search input {
@@ -172,7 +172,7 @@ body {
   padding: 9px 12px;
   border: 1px;
   border-radius: 15px;
-  font-size: 14px;
+  font-size: 13px;
   min-width: 100px;
   background: var(--bg);
   caret-color: white;
@@ -265,6 +265,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  color: #b4d8fe;
+  letter-spacing: -0.5px;
 }
 
 .nameSpace {
@@ -277,6 +279,7 @@ body {
   max-width: 200px;
   font-size: 22px;
   font-weight: 600;
+  letter-spacing: -1px;
 
   /* 제목이 한줄이상이면 ...으로 생략 */
   white-space: nowrap;
@@ -387,4 +390,5 @@ body {
   font-size: 18px;
   font-weight: 600;
   gap: 10px;
+  color: #fff;
 }

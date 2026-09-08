@@ -49,8 +49,8 @@ public final class RecruitmentPolicy {
                 selected.add(id);
             }
         }
-        if (round == 1 && selected.size() < Math.min(4, applicants.size())) {
-            throw new BadRequestException("1차 모집은 지원자 4명 이상을 선택해야 하며, 4명 미만이면 모두 선택해야 합니다.");
+        if (round == 1 && selected.size() < Math.min(3, applicants.size())) {
+            throw new BadRequestException("1차 모집은 지원자 3명 이상을 선택해야 하며, 3명 미만이면 모두 선택해야 합니다.");
         }
     }
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import Cookies, { clearDevSession } from "../../utils/authStorage";
+import apiClient from "../../api/client";
 import LoadingPage from "../../components/LoadingPage";
 
 const Callback = () => {
@@ -9,7 +10,7 @@ const Callback = () => {
 
   const fetchUserInfo = useCallback(
     (token) => {
-      fetch(`${process.env.REACT_APP_API_BASE_URL}/user/me`, {
+      fetch(`${apiClient.defaults.baseURL.replace(/\/+$/, "")}/user/me`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -32,7 +33,7 @@ const Callback = () => {
           alert("로그인에 성공했습니다!"); // alert창 없애기
           // navigate("/"); // 또는 "/mystudy", 등 원하는 경로
 
-          return fetch(`${process.env.REACT_APP_API_BASE_URL}/user/role`, {
+          return fetch(`${apiClient.defaults.baseURL.replace(/\/+$/, "")}/user/role`, {
             method: "GET",
             headers: {
               Authorization: `Bearer ${token}`,

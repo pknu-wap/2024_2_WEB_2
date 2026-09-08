@@ -16,7 +16,7 @@ export const authApi = {
 
   // 카카오 로그인 URL 생성
   getKakaoLoginUrl: (redirectUri) => {
-    const baseUrl = process.env.REACT_APP_API_BASE_URL;
+    const baseUrl = apiClient.defaults.baseURL.replace(/\/+$/, "");
     return `${baseUrl}/oauth2/authorization/kakao?redirect_uri=${redirectUri}`;
   },
 };

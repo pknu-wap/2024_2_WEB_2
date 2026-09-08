@@ -18,6 +18,7 @@ const Login = () => {
       window.location.href = kakaoLoginUrl;
     } catch (error) {
       console.error("Error during Kakao login redirect:", error);
+      alert("로그인 페이지로 이동하지 못했습니다. 잠시 후 다시 시도해주세요.");
     }
   };
 

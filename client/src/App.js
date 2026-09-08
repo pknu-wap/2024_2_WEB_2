@@ -30,6 +30,7 @@ import ManagePlanPage from "./pages/adminPages/ManagePlanPage";
 import ManageTeamBuildPage from "./pages/adminPages/ManageTeamBuildPage";
 import ManageThirdTeamBuildPage from "./pages/adminPages/ManageThirdTeamBuildPage";
 import ManageVotePage from "./pages/adminPages/ManageVotePage";
+import AdminPreviewPage from "./pages/adminPages/AdminPreviewPage";
 import MainLayout from "./components/MainLayout";
 
 // 레이아웃 컴포넌트들
@@ -102,6 +103,9 @@ function App() {
 
         {/* 전체화면 레이아웃 */}
         <Route element={<FullScreenLayout />}>
+          <Route path="/admin-preview" element={<AdminPageLayout preview />} >
+            <Route index element={<AdminPreviewPage />} />
+          </Route>
           {/* 관리자 페이지 */}
           <Route
             path="admin/*"

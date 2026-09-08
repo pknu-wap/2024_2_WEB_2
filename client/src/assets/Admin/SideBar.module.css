@@ -13,7 +13,7 @@
 .container {
   display: flex;
   flex-direction: column;
-  gap: 73px;
+  gap: 54px;
   width: 100%;
 }
 
@@ -25,12 +25,12 @@
 }
 
 .eng {
-  font-size: 30px;
+  font-size: 23px;
   font-weight: 700;
 }
 
 .kr {
-  font-size: 25px;
+  font-size: 21px;
 }
 
 .pageBtn {
@@ -42,10 +42,10 @@
 
 .pageBtn button {
   width: 100%;
-  max-width: 292px;
-  height: 66px;
+  max-width: 280px;
+  height: 58px;
 
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   text-align: center;
   color: white;
@@ -61,17 +61,17 @@
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  padding-left: 35px;
-  gap: 20px;
+  padding-left: 24px;
+  gap: 16px;
   box-sizing: border-box;
 }
 
 .pageBtn button svg {
-  /* SVG의 크기를 텍스트 크기에 맞춰 24px로 고정 */
-  width: 24px;
-  height: 24px;
-  min-width: 24px;
-  min-height: 24px;
+  /* SVG의 크기를 텍스트 크기에 맞춰 20px로 고정 */
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   vertical-align: middle;
 }
 
@@ -82,11 +82,11 @@
 
 @media (max-width: 1024px) {
   .eng {
-    font-size: 25px;
+    font-size: 18px;
     font-weight: 600;
   }
 
   .kr {
-    font-size: 20px;
+    font-size: 18px;
   }
 }

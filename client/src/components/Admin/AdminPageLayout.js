@@ -5,7 +5,7 @@ import SideBar from "./SideBar";
 import Cookies from "../../utils/authStorage";
 
 // 어드민 페이지 공용 레이아웃
-const AdminPageLayout = () => {
+const AdminPageLayout = ({ preview = false }) => {
   // 유저 이름 저장
   const [userName, setUserName] = useState(Cookies.get("userName") || null);
   // 모바일 사이드바 열림 상태 관리
@@ -22,6 +22,10 @@ const AdminPageLayout = () => {
 
   const handleExit = () => {
     // 이전 위치를 가져와서 뒤로 돌려보냄
+    if (preview) {
+      navigate("/ProjectPage?preview=1");
+      return;
+    }
     const previousPage = Cookies.get("previousPage") || "/ProjectPage";
     Cookies.remove("previousPage"); // 사용 후 쿠키 삭제
     navigate(previousPage);
@@ -55,7 +59,7 @@ const AdminPageLayout = () => {
 
         <div className={styles.headerRight}>
           <div className={styles.adminUser}>
-            <span>관리자 {userName} 님</span>
+            <span>관리자 {preview ? "테스트" : userName} 님</span>
           </div>
           <div className={styles.exitBtn} onClick={handleExit}>
             ✕
@@ -67,7 +71,7 @@ const AdminPageLayout = () => {
       <div className={styles.main}>
         {/* 데스크탑용 사이드바 (CSS에서 화면 작아지면 숨김) */}
         <div className={styles.sidebarWrapper}>
-          <SideBar />
+          <SideBar preview={preview} />
         </div>
 
         {/* 모바일용 사이드바 (상태값에 따라 렌더링) */}
@@ -79,7 +83,7 @@ const AdminPageLayout = () => {
               onClick={closeMobileMenu}
             />
             <div className={styles.mobileSidebarContent}>
-              <SideBar />
+              <SideBar preview={preview} />
             </div>
           </>
         )}

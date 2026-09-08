@@ -4,7 +4,7 @@ import { adminVoteApi } from "../../api/admin";
 import { projectApi } from "../../api/project";
 import { getCurrentSemester } from "../../utils/dateUtils";
 import SubmitModal from "./SubmitModal";
-const ManageVotePage = () => {
+const ManageVotePage = ({ voteApi = adminVoteApi, projectsApi = projectApi }) => {
   const [voteStatus, setVoteStatus] = useState(""); // 투표 상태 (NOT_CREATED, VOTING, ENDED)
   const [semester, setSemester] = useState(null); // 현재 학기
   const [isProcessing, setIsProcessing] = useState(false); // 열기,닫기 버튼 누를 때 로딩 상태
@@ -28,7 +28,7 @@ const ManageVotePage = () => {
 
     const fetchVoteStart = async () => {
       try {
-        const data = await adminVoteApi.getStatus(semester);
+        const data = await voteApi.getStatus(semester);
         setVoteStatus(data.status);
       } catch (e) {
         setError("투표 상태 조회 실패");
@@ -37,7 +37,7 @@ const ManageVotePage = () => {
       }
     };
     fetchVoteStart();
-  }, [semester]);
+  }, [semester, voteApi]);
 
   // 프로젝트 목록 불러오기
   useEffect(() => {
@@ -45,14 +45,14 @@ const ManageVotePage = () => {
 
     const fetchProjects = async () => {
       try {
-        const data = await projectApi.getProjectList(semester);
+        const data = await projectsApi.getProjectList(semester);
         setProjects(data.projectsResponse || []);
       } catch (e) {
         setError("프로젝트 목록 조회 실패");
       }
     };
     fetchProjects();
-  }, [voteStatus, semester]);
+  }, [voteStatus, semester, projectsApi]);
 
   // 프젝목록을 모두 저장
   useEffect(() => {
@@ -67,7 +67,7 @@ const ManageVotePage = () => {
 
     try {
       setIsProcessing(true);
-      await adminVoteApi.open(semester, selectedProjects);
+      await voteApi.open(semester, selectedProjects);
       setVoteStatus("VOTING");
       setIsModalOpen(false);
     } catch (e) {
@@ -85,10 +85,10 @@ const ManageVotePage = () => {
       setIsProcessing(true);
 
       // 투표 종료 요청
-      await adminVoteApi.close(semester);
+      await voteApi.close(semester);
 
       // 투표 종료 후, 결과를 비공개 상태로 설정
-      await adminVoteApi.setPublicStatus(semester, false);
+      await voteApi.setPublicStatus(semester, false);
 
       // 로컬 상태 업데이트
       setVoteStatus("ENDED");
@@ -120,12 +120,12 @@ const ManageVotePage = () => {
   const fetchResultVisibility = useCallback(async () => {
     if (!semester) return;
     try {
-      const data = await adminVoteApi.getIsVoteOpen(semester);
+      const data = await voteApi.getIsVoteOpen(semester);
       setIsResultPublic(data.isPublic || false);
     } catch (e) {
       setError("투표 공개 상태 조회 실패");
     }
-  }, [semester]);
+  }, [semester, voteApi]);
 
   // ENDED 상태일 때 투표 결과 요청하기
   useEffect(() => {
@@ -133,7 +133,7 @@ const ManageVotePage = () => {
 
     const fetchVoteResult = async () => {
       try {
-        const data = await adminVoteApi.getResults(semester);
+        const data = await voteApi.getResults(semester);
         setVoteResult(data || []); // 투표 결과 저장
       } catch (e) {
         setError("투표 결과 조회 실패");
@@ -141,13 +141,13 @@ const ManageVotePage = () => {
     };
     fetchResultVisibility();
     fetchVoteResult();
-  }, [voteStatus, semester, fetchResultVisibility]);
+  }, [voteStatus, semester, fetchResultVisibility, voteApi]);
 
   // 투표 결과 공개 여부 핸들러
   const handleSetPublicStatus = async (isPublic) => {
     if (voteStatus !== "ENDED") return;
     try {
-      await adminVoteApi.setPublicStatus(semester, isPublic);
+      await voteApi.setPublicStatus(semester, isPublic);
 
       // 서버 요청 성공 후 로컬 상태 업데이
       setIsResultPublic(isPublic);

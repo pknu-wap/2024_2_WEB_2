@@ -37,7 +37,10 @@ class AdminTeamBuildingRoundTest {
         TeamBuildingMeta meta = new TeamBuildingMeta(3, 3, 1L, semester, TeamBuildingStatus.CLOSED);
         when(teamBuildingMetaRepository.findBySemesterForUpdate(semester)).thenReturn(Optional.of(meta));
 
+        Project closed = Project.builder().recruitmentClosed(true).build();
+        when(projectRepository.findProjectsBySemester(semester)).thenReturn(List.of(closed));
         service.resetTeamBuilding();
+        assertThat(closed.isRecruitmentClosed()).isFalse();
         var order = inOrder(slots, planTeams, plans);
         order.verify(slots).deleteAllInBatch(any());
         order.verify(planTeams).deleteAllInBatch(any());
@@ -45,7 +48,7 @@ class AdminTeamBuildingRoundTest {
 
         verify(teamRepository).deleteBySemester(semester);
         verify(clusterRepository).deleteBySemester(semester);
-        verifyNoInteractions(applyRepository, recruitRepository, projectRepository, teamBuilder);
+        verifyNoInteractions(applyRepository, recruitRepository, teamBuilder);
         assertThat(meta.getStatus()).isEqualTo(TeamBuildingStatus.OPEN);
         assertThat(meta.getRound()).isEqualTo(1);
         assertThat(meta.getCompletedRound()).isZero();
@@ -80,6 +83,20 @@ class AdminTeamBuildingRoundTest {
             assertThat(t.getMemberId()).isEqualTo(30L); assertThat(t.getRound()).isEqualTo(2);
         });
         assertThatThrownBy(service::makeTeam).isInstanceOf(ConflictException.class);
+    }
+
+    @Test void closedTeamIsExcludedFromNextAllocation() {
+        String semester = generateSemester();
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(semester)).thenReturn(Optional.of(
+            new TeamBuildingMeta(2, 1, 1L, semester, TeamBuildingStatus.CLOSED)));
+        User leader = new User(); leader.setId(10L);
+        when(projectRepository.findProjectsBySemester(semester)).thenReturn(List.of(
+            Project.builder().projectId(100L).user(leader).recruitmentClosed(true).build()));
+        when(recruitRepository.findAllBySemesterAndRound(semester, 2)).thenReturn(List.of(
+            ProjectRecruit.builder().projectId(100L).position(Position.AI).capacity(2).build()));
+        service.makeTeam();
+        verify(teamBuilder).allocate(List.of(), List.of(), Set.of(10L));
+        verify(teamRepository).saveAll(List.of());
     }
 
     @Test void reopeningAfterCompletedFirstRoundAdvancesToSecondRound() {

@@ -38,6 +38,17 @@ public class Project {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long projectId;
 
+    @Column(nullable = false)
+    private boolean recruitmentClosed;
+
+    public void closeRecruitment() {
+        recruitmentClosed = true;
+    }
+
+    public void reopenRecruitment() {
+        recruitmentClosed = false;
+    }
+
     @Column
     private String title;
 

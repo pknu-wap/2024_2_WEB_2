@@ -1,0 +1,1 @@
+ALTER TABLE project ADD COLUMN recruitment_closed BOOLEAN NOT NULL DEFAULT FALSE;

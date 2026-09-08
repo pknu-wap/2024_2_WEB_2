@@ -89,6 +89,7 @@ public class ApplyService {
 
         for (ApplyRequest applyRequest : applies) {
             Project project = findProject(applyRequest.getProjectId());
+            validateRecruitmentOpen(project);
             log.info(
                 "apply-user:{},priority:{},project:{}",
                 userPrincipal.getName(),
@@ -197,6 +198,8 @@ public class ApplyService {
             throw new ForbiddenException("프로젝트 모집 권한이 없습니다.");
         }
 
+        validateRecruitmentOpen(project);
+
         log.info("setPreference-user:{},project:{}", user.getId(), project.getProjectId());
 
         List<RecruitmentInfo> roasters = request.getRoasters();
@@ -237,6 +240,31 @@ public class ApplyService {
         int round = teamBuildingMetaRepository.findBySemester(generateSemester())
             .map(TeamBuildingMeta::getRound).orElse(1);
         return !applyRepository.findAllByUserIdAndSemesterAndRound(userId, generateSemester(), round).isEmpty();
+    }
+
+    @Transactional
+    public void closeRecruitment(UserPrincipal principal, Long projectId, int completedRound) {
+        validateRound(completedRound);
+        String semester = generateSemester();
+        TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
+            .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다."));
+        if (meta.getCompletedRound() != completedRound) {
+            throw new ConflictException("해당 차수 배정 완료 후 다음 팀빌딩 실행 전까지만 모집을 마감할 수 있습니다.");
+        }
+        Project project = findProject(projectId);
+        if (!project.isOwner(findUser(principal.getId()))) {
+            throw new ForbiddenException("프로젝트 모집 권한이 없습니다.");
+        }
+        if (!semester.equals(project.getSemester())) {
+            throw new BadRequestException("현재 학기의 프로젝트만 모집을 마감할 수 있습니다.");
+        }
+        project.closeRecruitment();
+    }
+
+    private void validateRecruitmentOpen(Project project) {
+        if (project.isRecruitmentClosed()) {
+            throw new ConflictException("모집이 마감된 팀입니다.");
+        }
     }
 
     private void validateRound(int round) {

@@ -69,6 +69,19 @@ class ProjectServiceTest {
     }
 
     @Test
+    void closedTeamsDisappearFromApplicationsButRemainVisibleToOwner() {
+        String semester = wap.web2.server.util.SemesterGenerator.generateSemester();
+        Project open = Project.builder().projectId(1L).title("모집 중").build();
+        Project closed = Project.builder().projectId(2L).title("모집 마감").recruitmentClosed(true).build();
+        when(projectRepository.findProjectsBySemester(semester)).thenReturn(List.of(open, closed));
+        when(projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(7L, semester))
+            .thenReturn(List.of(open, closed));
+        assertThat(projectService.getCurrentProjectRecruits()).extracting("projectId").containsExactly(1L);
+        assertThat(projectService.getMyRecruitProjects(7L)).extracting("recruitmentClosed")
+            .containsExactly(false, true);
+    }
+
+    @Test
     void removal이_없어도_프로젝트_수정은_성공한다() throws Exception {
         // given
         User owner = owner();

@@ -168,6 +168,86 @@ class ApplyRoundTest {
         });
     }
 
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2})
+    void ownerCanCloseAfterAllocationAndRepeatedClosingIsHarmless(int completedRound) {
+        owner();
+        project = Project.builder().projectId(10L).user(project.getUser()).semester(generateSemester()).build();
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(completedRound, completedRound, 1L,
+                generateSemester(), TeamBuildingStatus.CLOSED)));
+        service.closeRecruitment(principal, 10L, completedRound);
+        service.closeRecruitment(principal, 10L, completedRound);
+        assertThat(project.isRecruitmentClosed()).isTrue();
+    }
+
+    @Test
+    void canCloseDuringSecondRoundApplications() {
+        owner();
+        project = Project.builder().projectId(10L).user(project.getUser()).semester(generateSemester()).build();
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(2, 1, 1L, generateSemester(), TeamBuildingStatus.APPLY)));
+        service.closeRecruitment(principal, 10L, 1);
+        assertThat(project.isRecruitmentClosed()).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {0, 2, 3})
+    void rejectsClosingBeforeAllocationOrAfterNextAllocation(int completedRound) {
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(2, completedRound, 1L,
+                generateSemester(), TeamBuildingStatus.CLOSED)));
+        assertThatThrownBy(() -> service.closeRecruitment(principal, 10L, 1))
+            .isInstanceOf(ConflictException.class);
+        verifyNoInteractions(projectRepository, userRepository);
+    }
+
+    @Test
+    void rejectsClosingAnotherOwnersProject() {
+        owner();
+        User other = new User(); other.setId(2L);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(other));
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(1, 1, 1L, generateSemester(), TeamBuildingStatus.CLOSED)));
+        assertThatThrownBy(() -> service.closeRecruitment(principal, 10L, 1))
+            .isInstanceOf(wap.web2.server.exception.ForbiddenException.class);
+        assertThat(project.isRecruitmentClosed()).isFalse();
+    }
+
+    @Test
+    void rejectsClosingPastSemesterProject() {
+        owner();
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester()))
+            .thenReturn(Optional.of(new TeamBuildingMeta(1, 1, 1L, generateSemester(), TeamBuildingStatus.CLOSED)));
+        assertThatThrownBy(() -> service.closeRecruitment(principal, 10L, 1))
+            .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void rejectsApplicationToClosedTeam() {
+        User user = new User(); user.setId(1L);
+        when(principal.getId()).thenReturn(1L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(
+            Project.builder().projectId(10L).recruitmentClosed(true).build()));
+        status(TeamBuildingStatus.APPLY, 2);
+        assertThatThrownBy(() -> service.apply(principal, new ProjectAppliesRequest(List.of(
+            new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), 2))
+            .isInstanceOf(ConflictException.class);
+        verify(applyRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsRecruitmentPreferenceForClosedTeam() {
+        owner(); project.closeRecruitment();
+        status(TeamBuildingStatus.RECRUIT, 2);
+        assertThatThrownBy(() -> service.setPreference(principal, new RecruitmentDto(10L, List.of()), 2))
+            .isInstanceOf(ConflictException.class);
+        verifyNoInteractions(recruitRepository, recruitWishRepository);
+    }
+
     @Test
     void legacyPageUsesFirstRound() {
         owner();

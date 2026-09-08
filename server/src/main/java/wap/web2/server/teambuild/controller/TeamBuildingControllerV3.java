@@ -83,6 +83,16 @@ public class TeamBuildingControllerV3 {
         return ResponseEntity.ok("지원이 완료되었습니다.");
     }
 
+    @PostMapping("/recruit/{projectId}/close")
+    public ResponseEntity<String> closeRecruitment(
+        @CurrentUser UserPrincipal userPrincipal,
+        @PathVariable("projectId") Long projectId,
+        @RequestParam("completedRound") int completedRound
+    ) {
+        applyService.closeRecruitment(userPrincipal, projectId, completedRound);
+        return ResponseEntity.ok("팀 모집이 마감되었습니다.");
+    }
+
     @PostMapping("/recruit/submit")
     public ResponseEntity<String> setPreference(
         @CurrentUser UserPrincipal userPrincipal,

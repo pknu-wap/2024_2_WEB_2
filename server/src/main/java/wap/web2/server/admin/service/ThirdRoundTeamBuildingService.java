@@ -70,6 +70,7 @@ public class ThirdRoundTeamBuildingService {
             throw new ConflictException("현재 미배정 인원으로 클러스터를 생성한 후 배정해야 합니다.");
         }
         Map<Long, Long> leaders = projectRepository.findProjectsBySemester(semester).stream()
+            .filter(p -> !p.isRecruitmentClosed())
             .collect(Collectors.toMap(Project::getProjectId, p -> p.getUser().getId()));
         Map<Slot, ProjectRecruit> latest = new HashMap<>();
         for (int round : List.of(1, 2)) {

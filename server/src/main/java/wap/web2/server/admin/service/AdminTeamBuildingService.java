@@ -67,6 +67,7 @@ public class AdminTeamBuildingService {
         plans.deleteById(semester);
         teamRepository.deleteBySemester(semester);
         clusterRepository.deleteBySemester(semester);
+        projectRepository.findProjectsBySemester(semester).forEach(Project::reopenRecruitment);
         meta.reset();
     }
 
@@ -81,7 +82,10 @@ public class AdminTeamBuildingService {
         List<Project> projects = projectRepository.findProjectsBySemester(semester);
         Map<Long, Long> leaders = new HashMap<>();
         Set<Long> excluded = new HashSet<>();
-        projects.forEach(p -> { leaders.put(p.getProjectId(), p.getUser().getId()); excluded.add(p.getUser().getId()); });
+        projects.forEach(p -> {
+            if (!p.isRecruitmentClosed()) leaders.put(p.getProjectId(), p.getUser().getId());
+            excluded.add(p.getUser().getId());
+        });
         teamRepository.findAllBySemester(semester).forEach(t -> excluded.add(t.getMemberId()));
         var applies = applyRepository.findAllBySemesterAndRound(semester, meta.getRound());
         var recruits = recruitRepository.findAllBySemesterAndRound(semester, meta.getRound()).stream()

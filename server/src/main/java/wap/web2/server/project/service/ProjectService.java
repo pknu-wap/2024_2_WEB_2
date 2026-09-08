@@ -115,6 +115,7 @@ public class ProjectService {
         return projectRepository
             .findProjectsBySemester(generateSemester())
             .stream()
+            .filter(project -> !project.isRecruitmentClosed())
             .map(ProjectTemplate::from)
             .toList();
     }
@@ -241,7 +242,7 @@ public class ProjectService {
         return projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(userId, generateSemester())
             .stream()
             .map(project -> new RecruitProjectResponse(
-                project.getProjectId(), project.getTitle()))
+                project.getProjectId(), project.getTitle(), project.isRecruitmentClosed()))
             .toList();
     }
 

@@ -1,3 +1,4 @@
+import { MAX_PROJECT_TITLE_LENGTH, MAX_PROJECT_SUMMARY_LENGTH, MAX_PROJECT_CONTENT_LENGTH } from "../../constants/project";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -246,7 +247,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="title"
           placeholder="프로젝트 명"
-          maxLen="20"
+          maxLen={MAX_PROJECT_TITLE_LENGTH}
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
@@ -257,7 +258,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="summary"
           placeholder="한줄 소개"
-          maxLen="80"
+          maxLen={MAX_PROJECT_SUMMARY_LENGTH}
           value={summary}
           onChange={(e) => {
             setSummary(e.target.value);
@@ -268,7 +269,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="content"
           placeholder="상세 설명"
-          maxLen="3000"
+          maxLen={MAX_PROJECT_CONTENT_LENGTH}
           value={content}
           onChange={(e) => {
             setContent(e.target.value);

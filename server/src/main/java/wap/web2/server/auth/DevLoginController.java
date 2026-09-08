@@ -1,5 +1,7 @@
 package wap.web2.server.auth;
 
+import static wap.web2.server.auth.DevLoginPolicy.*;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
@@ -29,7 +31,7 @@ public class DevLoginController {
         return ResponseEntity.noContent().build();
     }
 
-    public record LoginRequest(@NotNull UUID sessionId, @Min(1) @Max(100) Integer accountNumber) {}
+    public record LoginRequest(@NotNull UUID sessionId, @Min(MIN_DEV_ACCOUNT_NUMBER) @Max(MAX_DEV_ACCOUNT_NUMBER) Integer accountNumber) {}
 
     public record SessionRequest(@NotNull UUID sessionId) {}
 }

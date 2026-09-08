@@ -1,5 +1,7 @@
 package wap.web2.server.auth;
 
+import static wap.web2.server.auth.DevLoginPolicy.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -39,9 +41,9 @@ public class DevLoginService {
             .filter(s -> session.equals(s.getSessionId()) && !s.isAvailable(now))
             .findFirst()
             .orElseGet(() -> pool.stream().filter(s -> s.isAvailable(now)).findFirst()
-                .orElseThrow(() -> new ConflictException("테스트 계정 100개가 모두 사용 중입니다. 잠시 후 다시 시도해주세요.")))
+                .orElseThrow(() -> new ConflictException("테스트 계정 " + DEV_ACCOUNT_COUNT + "개가 모두 사용 중입니다. 잠시 후 다시 시도해주세요.")))
             : pool.stream().filter(s -> s.getSlotNumber().equals(accountNumber)).findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("테스트 계정 번호는 1~100이어야 합니다."));
+                .orElseThrow(() -> new IllegalArgumentException("테스트 계정 번호는 " + MIN_DEV_ACCOUNT_NUMBER + "~" + MAX_DEV_ACCOUNT_NUMBER + "이어야 합니다."));
 
         if (!slot.isAvailable(now) && !session.equals(slot.getSessionId())) {
             throw new ConflictException("테스트 계정 " + accountNumber + "번이 사용 중입니다. 다른 계정을 선택해주세요.");

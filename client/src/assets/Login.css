@@ -101,9 +101,9 @@
 .login-page .kakao,
 .login-page .logout,
 .login-page .no-login {
-  background-color: transparent;
+  background-color: #76767613;
   color: #ffffff;
-  border: 2px solid #ffffff;
+  border: 1.7px solid #ffffff;
   transition:
     background-color 0.3s ease,
     opacity 0.3s ease;
@@ -112,7 +112,7 @@
 .login-page .kakao:hover,
 .login-page .logout:hover,
 .login-page .no-login:hover {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(152, 152, 152, 0.105);
 }
 
 .login-page .login-button:hover {

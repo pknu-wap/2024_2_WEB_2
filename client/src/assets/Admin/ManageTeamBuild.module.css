@@ -152,3 +152,5 @@
   .stageActions { justify-content: space-between; }
   .previousBtn, .nextBtn { padding: 10px 12px; }
 }
+
+.resetActions { display: flex; flex-wrap: wrap; gap: 8px; }

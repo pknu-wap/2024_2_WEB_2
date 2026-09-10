@@ -5,6 +5,9 @@ import static org.mockito.Mockito.*;
 import static wap.web2.server.util.SemesterGenerator.generateSemester;
 import java.util.*;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -285,7 +288,10 @@ class ThirdRoundPlanServiceTest {
         assertThatThrownBy(() -> service.complete(0)).isInstanceOf(ConflictException.class);
         slot.identify(12L);
         when(users.findAllById(any())).thenReturn(List.of(user(12)));
-        when(teams.findAllBySemester(semester)).thenReturn(List.of(Team.builder().memberId(12L).build()));
+        ThirdRoundPositionSlot duplicate = slot(2, semester);
+        duplicate.identify(12L); duplicate.moveTo(20L);
+        when(slots.findAllBySemesterOrderById(semester)).thenReturn(List.of(slot, duplicate));
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(card(20, null, semester)));
         assertThatThrownBy(() -> service.complete(0)).isInstanceOf(ConflictException.class);
         verify(teams, never()).saveAll(any());
         assertThat(plan.isCompleted()).isFalse();
@@ -309,7 +315,7 @@ class ThirdRoundPlanServiceTest {
         assertThat(board.unassigned()).isEmpty();
     }
 
-    @Test void boardKeepsRealMemberNamesButSlotsHaveNoNameOrUserId() {
+    @Test void boardUpgradesExistingMembersToEditableSlotsAndPreservesAnonymousSlots() {
         ready();
         when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(card(20, 100L, semester)));
         ThirdRoundPositionSlot slot = slot(1, semester); slot.moveTo(20L);
@@ -317,11 +323,74 @@ class ThirdRoundPlanServiceTest {
         when(teams.findAllBySemester(semester)).thenReturn(List.of(Team.builder()
             .projectId(100L).memberId(11L).position(Position.AI).build()));
         when(users.findAllById(List.of(11L))).thenReturn(List.of(user(11)));
+        when(slots.save(any())).thenAnswer(call -> {
+            ThirdRoundPositionSlot saved = call.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 2L);
+            return saved;
+        });
         var board = service.get();
         assertThat(board.teams().get(0).members()).hasSize(2);
-        assertThat(board.teams().get(0).members().get(0).name()).isEqualTo("기존 멤버");
-        var anonymous = board.teams().get(0).members().get(1);
+        assertThat(board.teams().get(0).members().get(1).name()).isEqualTo("기존 멤버");
+        assertThat(board.teams().get(0).members().get(1).type()).isEqualTo("POSITION_SLOT");
+        var anonymous = board.teams().get(0).members().get(0);
         assertThat(anonymous.name()).isNull();
         assertThat(anonymous.id()).isEqualTo("slot-1");
     }
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(longs = {20, 30, 40})
+    void existingMemberMovesPersistInDraftAndPublishOnlyOnCompletion(Long destination) {
+        ready();
+        User owner = user(10), member = user(11);
+        when(projects.findProjectsBySemester(semester)).thenReturn(List.of(
+            Project.builder().projectId(100L).user(owner).build(),
+            Project.builder().projectId(200L).user(owner).build()));
+        var original = card(20, 100L, semester);
+        var other = card(30, 200L, semester);
+        var created = card(40, null, semester);
+        when(planTeams.findAllBySemesterOrderById(semester)).thenReturn(List.of(original, other, created));
+        Team allocation = Team.builder().projectId(100L).memberId(11L).leaderId(10L)
+            .position(Position.FRONTEND).semester(semester).round(2).build();
+        List<Team> published = new ArrayList<>(List.of(allocation));
+        when(teams.findAllBySemester(semester)).thenAnswer(call -> new ArrayList<>(published));
+        List<ThirdRoundPositionSlot> persisted = new ArrayList<>();
+        when(slots.findAllBySemesterOrderById(semester)).thenAnswer(call -> new ArrayList<>(persisted));
+        when(slots.save(any())).thenAnswer(call -> {
+            ThirdRoundPositionSlot saved = call.getArgument(0);
+            ReflectionTestUtils.setField(saved, "id", 1L);
+            persisted.add(saved);
+            return saved;
+        });
+        when(users.findAllById(any())).thenReturn(List.of(member));
+        assertThat(service.open().teams().get(0).members()).singleElement()
+            .satisfies(m -> assertThat(m.type()).isEqualTo("POSITION_SLOT"));
+        when(slots.findById(1L)).thenReturn(Optional.of(persisted.get(0)));
+        if (destination != null) when(planTeams.findById(destination)).thenReturn(Optional.of(
+            destination == 20 ? original : destination == 30 ? other : created));
+        var moved = service.move(1, destination, 0);
+        service.open();
+        assertThat(persisted).hasSize(1);
+        assertThat(persisted.get(0).getTeamId()).isEqualTo(destination);
+        verify(teams, never()).deleteAll(any());
+        verify(teams, never()).saveAll(any());
+        doAnswer(call -> { published.removeAll(call.getArgument(0)); return null; })
+            .when(teams).deleteAll(any());
+        when(teams.saveAll(any())).thenAnswer(call -> {
+            List<Team> saved = call.getArgument(0); published.addAll(saved); return saved;
+        });
+        var completed = service.complete(moved.revision());
+        assertThat(completed.completed()).isTrue();
+        if (destination == null || destination == 40) assertThat(published).isEmpty();
+        else assertThat(published).singleElement().satisfies(t -> {
+            assertThat(t.getProjectId()).isEqualTo(destination == 20 ? 100L : 200L);
+            assertThat(t.getRound()).isEqualTo(destination == 20 ? 2 : 3);
+            assertThat(t.getMemberId()).isEqualTo(11L);
+        });
+        assertThat(completed.unassigned()).hasSize(destination == null ? 1 : 0);
+        assertThat(completed.teams().stream().mapToInt(t -> t.members().size()).sum())
+            .isEqualTo(destination == null ? 0 : 1);
+        service.open();
+        verify(slots).save(any());
+    }
+
 }

@@ -10,6 +10,8 @@ import wap.web2.server.teambuild.entity.ProjectRecruit;
 
 @Repository
 public interface ProjectRecruitRepository extends JpaRepository<ProjectRecruit, Long> {
+    void deleteBySemester(String semester);
+
     Boolean existsByProjectIdAndSemester(Long projectId, String semester);
 
     boolean existsByProjectIdAndSemesterAndRound(Long projectId, String semester, int round);

@@ -59,6 +59,15 @@ public class AdminTeamBuildingService {
 
     @Transactional
     public void resetTeamBuilding() {
+        resetTeamBuilding(false);
+    }
+
+    @Transactional
+    public void resetTeamBuildingCompletely() {
+        resetTeamBuilding(true);
+    }
+
+    private void resetTeamBuilding(boolean includeSubmissions) {
         String semester = generateSemester();
         TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
             .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 생성되지 않았습니다."));
@@ -67,6 +76,11 @@ public class AdminTeamBuildingService {
         plans.deleteById(semester);
         teamRepository.deleteBySemester(semester);
         clusterRepository.deleteBySemester(semester);
+        if (includeSubmissions) {
+            // Derived deletes remove entities so recruitment wishes cascade with their parent.
+            recruitRepository.deleteBySemester(semester);
+            applyRepository.deleteBySemester(semester);
+        }
         meta.reset();
     }
 

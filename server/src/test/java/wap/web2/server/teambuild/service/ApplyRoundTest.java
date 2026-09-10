@@ -86,6 +86,29 @@ class ApplyRoundTest {
         assertThat(captor.getValue().getSemester()).isEqualTo(generateSemester());
     }
 
+    @Test
+    void rejectsAssignedMemberBeforeSavingSecondRoundApplications() {
+        User user = new User();
+        user.setId(1L);
+        when(principal.getId()).thenReturn(1L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(teamRepository.existsByMemberIdAndSemester(1L, generateSemester())).thenReturn(true);
+        status(TeamBuildingStatus.APPLY, 2);
+
+        assertThatThrownBy(() -> service.apply(principal, new ProjectAppliesRequest(List.of(
+            new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), 2))
+            .isInstanceOf(ConflictException.class)
+            .hasMessage("이미 팀 배정이 완료되어 2차 팀빌딩에 지원할 수 없습니다.");
+        verifyNoInteractions(applyRepository, projectRepository);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void assignmentStatusUsesCurrentSemester(boolean assigned) {
+        when(teamRepository.existsByMemberIdAndSemester(1L, generateSemester())).thenReturn(assigned);
+        assertThat(service.isAssignedThisSemester(1L)).isEqualTo(assigned);
+    }
+
     @ParameterizedTest
     @ValueSource(ints = {1, 2})
     void savesRecruitmentInRequestedRound(int round) {

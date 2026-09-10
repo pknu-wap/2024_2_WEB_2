@@ -11,5 +11,7 @@ public interface TeamRepository extends JpaRepository<Team, Long> {
 
     List<Team> findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(Long projectId, String semester, int round);
 
+    boolean existsByMemberIdAndSemester(Long memberId, String semester);
+
     void deleteBySemester(String semester);
 }

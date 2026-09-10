@@ -1,10 +1,24 @@
 import React from "react";
+import { POSITIONS } from "../../constants/positions";
+import { getPositionLabel } from "../../utils/teamBuildApplication";
 import styles from "../../assets/ProjectCreation/ProjectForm.module.css";
 
+const normalizeRole = (role) => {
+  const value = (role || "").trim();
+  const aliases = {
+    CLIENT: "FRONTEND", SERVER: "BACKEND", DESIGNER: "DESIGN",
+    디자인: "DESIGN", HARDWARE: "EMBEDDED", 하드웨어: "EMBEDDED",
+  };
+  const code = aliases[value.toUpperCase()] || value.toUpperCase();
+  return POSITIONS.find((position) =>
+    position === code || getPositionLabel(position) === value,
+  );
+};
+
 export const recruitmentPositionsError = (positions) => {
-  const roles = positions.map(({ role }) => role.trim());
-  if (roles.some((role) => !role || role.length > 50)) {
-    return "모집 직무는 1~50자로 입력해 주세요.";
+  const roles = positions.map(({ role }) => normalizeRole(role));
+  if (roles.some((role) => !role)) {
+    return "존재하는 모집 직무를 선택해 주세요.";
   }
   if (new Set(roles).size !== roles.length) {
     return "모집 직무가 중복되었습니다.";
@@ -39,13 +53,24 @@ export default function RecruitmentPositionInput({ positions, onChange }) {
         <div className={styles.recruitment_row} key={index}>
           <label>
             직무 {index + 1}
-            <input
-              value={position.role}
-              placeholder="예: 프론트엔드"
-              maxLength={50}
+            <select
+              value={normalizeRole(position.role) || ""}
               required
-              onChange={(event) => update(index, "role", event.target.value)}
-            />
+              onChange={(event) => update(index, "role", getPositionLabel(event.target.value))}
+            >
+              <option value="">직무 선택</option>
+              {POSITIONS.map((role) => (
+                <option
+                  key={role}
+                  value={role}
+                  disabled={positions.some((other, i) =>
+                    i !== index && normalizeRole(other.role) === role,
+                  )}
+                >
+                  {getPositionLabel(role)}
+                </option>
+              ))}
+            </select>
           </label>
           <label>
             모집 인원 {index + 1} (명)

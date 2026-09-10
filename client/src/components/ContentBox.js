@@ -12,7 +12,7 @@ const TYPE_OPTIONS = [
   { label: "웹", value: "Web" },
   { label: "앱", value: "App" },
   { label: "게임", value: "Game" },
-  { label: "임베디드", value: "기타" },
+  { label: "기타", value: "기타" },
 ];
 
 // 프로젝트 타입을 한글로 변환하는 함수
@@ -21,7 +21,7 @@ const getTypeLabel = (type) => {
     web: "웹",
     app: "앱",
     game: "게임",
-    기타: "임베디드",
+    기타: "기타",
   };
   return typeMap[type?.toLowerCase?.()] || type;
 };

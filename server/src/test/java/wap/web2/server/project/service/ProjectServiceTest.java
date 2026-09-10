@@ -1,6 +1,8 @@
 package wap.web2.server.project.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -12,14 +14,22 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import wap.web2.server.exception.BadRequestException;
+import wap.web2.server.exception.ForbiddenException;
+import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.global.security.UserPrincipal;
+import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
+import wap.web2.server.project.dto.response.ProjectDetailsResponse;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.dto.TechStackDto;
 import wap.web2.server.project.dto.request.ProjectRequest;
@@ -46,6 +56,19 @@ class ProjectServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(projectService, "projectPassword", "pw");
+    }
+
+    @Test
+    void recruitProjectsUsesCurrentSemesterAndAuthenticatedOwner() {
+        String semester = wap.web2.server.util.SemesterGenerator.generateSemester();
+        when(projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(7L, semester))
+            .thenReturn(List.of(Project.builder().projectId(42L).title("내 프로젝트").build()));
+
+        assertThat(projectService.getMyRecruitProjects(7L)).singleElement().satisfies(project -> {
+            assertThat(project.projectId()).isEqualTo(42L);
+            assertThat(project.title()).isEqualTo("내 프로젝트");
+        });
+        verify(projectRepository).findAllByUser_IdAndSemesterOrderByProjectIdDesc(7L, semester);
     }
 
     @Test
@@ -160,6 +183,201 @@ class ProjectServiceTest {
         // then
         assertThat(project.getImages()).isEmpty();
         verify(objectStorageService, never()).deleteImage(legacyS3Url);
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "1, ROLE_MEMBER", "2, ROLE_ADMIN" })
+    void 작성자와_관리자는_수정_조회와_수정_삭제가_가능하다(Long userId, Role role) throws Exception {
+        User owner = owner();
+        User user = new User();
+        user.setId(userId);
+        user.setRole(role);
+        UserPrincipal principal = principal(userId);
+        Project project = project(owner);
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        var details = projectService.getProjectDetails(10L, principal);
+        assertThat(details.getIsOwner()).isEqualTo(userId.equals(owner.getId()));
+        assertThat(details.getCanManage()).isTrue();
+        var updateDetails = projectService.getProjectDetailsForUpdate(10L, principal);
+        assertThat(updateDetails.getProjectId()).isEqualTo(10L);
+        assertThat(updateDetails.getCanManage()).isTrue();
+        assertThat(updateDetails.getIsOwner()).isEqualTo(userId.equals(owner.getId()));
+        projectService.update(10L, baseRequestBuilder().build(), principal);
+        assertThat(project.getTitle()).isEqualTo("updated title");
+        assertThat(project.getUser()).isSameAs(owner);
+        projectService.delete(10L, principal);
+        verify(projectRepository).delete(project);
+    }
+
+    @ParameterizedTest
+    @CsvSource({ "ROLE_MEMBER", "ROLE_USER", "ROLE_GUEST" })
+    void 작성자가_아닌_일반_사용자는_수정_조회와_수정_삭제가_금지된다(Role role) {
+        User user = new User();
+        user.setId(2L);
+        user.setRole(role);
+        UserPrincipal principal = principal(2L);
+        Project project = project(owner());
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        var details = projectService.getProjectDetails(10L, principal);
+        assertThat(details.getIsOwner()).isFalse();
+        assertThat(details.getCanManage()).isFalse();
+        assertThatThrownBy(() -> projectService.getProjectDetailsForUpdate(10L, principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> projectService.update(10L, baseRequestBuilder().build(), principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThatThrownBy(() -> projectService.delete(10L, principal))
+            .isInstanceOf(ForbiddenException.class);
+        assertThat(project.getTitle()).isEqualTo("old title");
+        verify(projectRepository, never()).delete(project);
+        verifyNoInteractions(objectStorageService);
+    }
+
+    @Test
+    void 비로그인_조회에는_관리_권한이_없고_수정_조회는_금지된다() {
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project(owner())));
+
+        var details = projectService.getProjectDetails(10L, null);
+        assertThat(details.getIsOwner()).isFalse();
+        assertThat(details.getCanManage()).isFalse();
+        assertThatThrownBy(() -> projectService.getProjectDetailsForUpdate(10L, null))
+            .isInstanceOf(ForbiddenException.class);
+    }
+
+    @Test
+    void 관리자도_수정할_때_게시물_비밀번호_검증을_거친다() {
+        UserPrincipal principal = mock(UserPrincipal.class);
+        ProjectRequest request = baseRequestBuilder().password("wrong").build();
+
+        assertThatThrownBy(() -> projectService.update(10L, request, principal))
+            .isInstanceOf(ProjectPasswordInvalidException.class);
+        verifyNoInteractions(projectRepository, objectStorageService);
+    }
+
+    @Test
+    void 모집_인원을_생성_조회_수정_삭제한다() {
+        var positions = List.of(
+            new RecruitmentPositionDto("프론트엔드", 3),
+            new RecruitmentPositionDto("백엔드", 2));
+        ProjectRequest request = baseRequestBuilder().recruitmentPositions(positions).build();
+        Project project = request.toEntity(request, "2026-02", List.of(), "", owner());
+        assertThat(ProjectDetailsResponse.from(project)
+            .getRecruitmentPositions()).containsExactlyElementsOf(positions);
+        project.update(baseRequestBuilder().build());
+        assertThat(project.getRecruitmentPositions()).hasSize(2);
+        project.update(baseRequestBuilder().recruitmentPositions(List.of(positions.get(1))).build());
+        assertThat(project.getRecruitmentPositions()).singleElement().satisfies(position -> {
+            assertThat(position.getRole()).isEqualTo("백엔드");
+            assertThat(position.getCount()).isEqualTo(2);
+        });
+        project.update(baseRequestBuilder().recruitmentPositions(List.of()).build());
+        assertThat(project.getRecruitmentPositions()).isEmpty();
+        assertThat(baseRequestBuilder().build().toEntity(baseRequestBuilder().build(), "2026-02", List.of(), "", owner())
+            .getRecruitmentPositions()).isEmpty();
+    }
+
+    @Test
+    void 잘못된_모집_정보는_거절한다() {
+        var invalid = java.util.Arrays.asList(
+            new RecruitmentPositionDto(" ", 1),
+            new RecruitmentPositionDto("백엔드", 0),
+            new RecruitmentPositionDto("백엔드", -1),
+            new RecruitmentPositionDto("백엔드", null),
+            new RecruitmentPositionDto("가".repeat(51), 1), null);
+        for (var position : invalid) {
+            assertThatThrownBy(() -> RecruitmentPositionDto.toEntities(
+                java.util.Arrays.asList(position)))
+                .isInstanceOf(BadRequestException.class);
+        }
+        assertThatThrownBy(() -> RecruitmentPositionDto.toEntities(List.of(
+            new RecruitmentPositionDto("백엔드", 1),
+            new RecruitmentPositionDto(" BACKEND ", 2))))
+            .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void 존재하지_않는_모집_직무는_등록과_수정에서_거절한다() {
+        ProjectRequest request = baseRequestBuilder()
+            .recruitmentPositions(List.of(new RecruitmentPositionDto("없는직무", 1))).build();
+        User owner = owner();
+        UserPrincipal principal = principal(owner.getId());
+        Project project = project(owner);
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> projectService.save(request, principal))
+            .isInstanceOf(BadRequestException.class)
+            .hasMessage("존재하는 모집 직무를 선택해 주세요.");
+        assertThatThrownBy(() -> projectService.update(10L, request, principal))
+            .isInstanceOf(BadRequestException.class)
+            .hasMessage("존재하는 모집 직무를 선택해 주세요.");
+        assertThat(project.getTitle()).isEqualTo("old title");
+        verify(projectRepository, never()).save(org.mockito.ArgumentMatchers.any());
+        verifyNoInteractions(objectStorageService);
+    }
+
+    @ParameterizedTest
+    @CsvSource({"FRONTEND", "BACKEND", "AI", "DESIGN", "APP", "GAME", "EMBEDDED",
+        "프론트엔드", "백엔드", "디자인", "앱", "게임", "임베디드", " backend "})
+    void 정의된_모집_직무를_허용한다(String role) {
+        assertThat(RecruitmentPositionDto.toEntities(List.of(new RecruitmentPositionDto(role, 2))))
+            .singleElement().satisfies(position -> {
+                assertThat(position.getRole()).isEqualTo(role.strip());
+                assertThat(position.getCount()).isEqualTo(2);
+            });
+    }
+
+    @Test
+    void 소수_모집_인원은_JSON_변환에서_거절한다() {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertThatThrownBy(() -> mapper.readValue(
+            "{\"recruitmentPositions\":[{\"role\":\"백엔드\",\"count\":1.5}]}", ProjectRequest.class))
+            .isInstanceOf(com.fasterxml.jackson.core.JsonProcessingException.class);
+    }
+
+    @Test
+    void 신규_프로젝트는_모집_정보_누락과_빈_목록을_거절한다() {
+        for (List<RecruitmentPositionDto> positions : java.util.Arrays.<List<RecruitmentPositionDto>>asList(null, List.of())) {
+            ProjectRequest request = baseRequestBuilder().recruitmentPositions(positions).build();
+            assertThatThrownBy(() -> projectService.save(request, null))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("모집 직무와 인원을 최소 한 개 입력해 주세요.");
+        }
+        verifyNoInteractions(projectRepository, userRepository, objectStorageService);
+    }
+
+    @Test
+    void 신규_프로젝트는_모집_정보가_있으면_등록한다() throws Exception {
+        User owner = owner();
+        UserPrincipal principal = principal(owner.getId());
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        ProjectRequest request = baseRequestBuilder()
+            .recruitmentPositions(List.of(new RecruitmentPositionDto("백엔드", 1))).build();
+
+        assertThat(projectService.save(request, principal)).isEqualTo("등록되었습니다.");
+        var saved = org.mockito.ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).save(saved.capture());
+        assertThat(saved.getValue().getRecruitmentPositions()).singleElement().satisfies(position -> {
+            assertThat(position.getRole()).isEqualTo("백엔드");
+            assertThat(position.getCount()).isEqualTo(1);
+        });
+    }
+
+    @Test
+    void 기존_프로젝트는_빈_모집_목록으로_수정할_수_있다() throws Exception {
+        User owner = owner();
+        UserPrincipal principal = principal(owner.getId());
+        Project project = project(owner);
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        assertThat(projectService.update(10L,
+            baseRequestBuilder().recruitmentPositions(List.of()).build(), principal))
+            .isEqualTo("수정되었습니다.");
+        assertThat(project.getRecruitmentPositions()).isEmpty();
     }
 
     private ProjectRequest.ProjectRequestBuilder baseRequestBuilder() {

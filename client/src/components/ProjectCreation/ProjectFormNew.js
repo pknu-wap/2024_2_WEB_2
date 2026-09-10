@@ -1,3 +1,8 @@
+import {
+  MAX_PROJECT_TITLE_LENGTH,
+  MAX_PROJECT_SUMMARY_LENGTH,
+  MAX_PROJECT_CONTENT_LENGTH,
+} from "../../constants/project";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -9,8 +14,10 @@ import RadioButton from "./RadioButton";
 import TextInputForm from "./TextInputForm";
 import TechStackSelector from "./TechStackSelector";
 import TeamMemberInputForm from "./TeamMemberInputForm";
-// import TeamMemberInputNew from "./TeamMemberInputNew";
 import InputPin from "./InputPin";
+import RecruitmentPositionInput, {
+  recruitmentPositionsError,
+} from "./RecruitmentPositionInput";
 
 // 사용성을 높인 버전의 프로젝트 생성 폼
 
@@ -40,6 +47,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
   const { projectId } = useParams();
   const maxImageCount = 4; // 최대 이미지 업로드 개수
   const navigate = useNavigate(); // navigate 함수
+  const [recruitmentPositions, setRecruitmentPositions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSemesterLoading, setIsSemesterLoading] = useState(!isEdit);
   const [semesterError, setSemesterError] = useState("");
@@ -120,6 +128,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
   // 기존 데이터 초기화
   useEffect(() => {
     if (isEdit && existingProject) {
+      setRecruitmentPositions(existingProject.recruitmentPositions || []);
       setThumbnail(existingProject.thumbnail || null);
       setSemester(existingProject.semester || "");
       setProjectType(existingProject.projectType || "");
@@ -154,10 +163,20 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
       return;
     }
 
+    const recruitmentError = recruitmentPositionsError(recruitmentPositions, !isEdit);
+    if (recruitmentError) {
+      alert(recruitmentError);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData();
     const projectData = {
+      recruitmentPositions: recruitmentPositions.map(({ role, count }) => ({
+        role: role.trim(),
+        count: Number(count),
+      })),
       title,
       projectType,
       content,
@@ -203,11 +222,6 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
       resetForm();
     } catch (error) {
       alert("프로젝트 요청에 실패했습니다. 다시 시도해 주세요.");
-      if (error.response) {
-        // 네트워크 에러 등은 콘솔에만 출력
-        // console.error("에러 응답 코드:", error.response.status);
-        // console.error("에러 메시지:", error.response.data);
-      }
     } finally {
       setIsSubmitting(false);
     }
@@ -252,7 +266,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="title"
           placeholder="프로젝트 명"
-          maxLen="20"
+          maxLen={MAX_PROJECT_TITLE_LENGTH}
           value={title}
           onChange={(e) => {
             setTitle(e.target.value);
@@ -263,7 +277,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="summary"
           placeholder="한줄 소개"
-          maxLen="80"
+          maxLen={MAX_PROJECT_SUMMARY_LENGTH}
           value={summary}
           onChange={(e) => {
             setSummary(e.target.value);
@@ -274,7 +288,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         <TextInputForm
           name="content"
           placeholder="상세 설명"
-          maxLen="3000"
+          maxLen={MAX_PROJECT_CONTENT_LENGTH}
           value={content}
           onChange={(e) => {
             setContent(e.target.value);
@@ -282,48 +296,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
           }}
           errorMessage={errorMessage}
         />
-        {/* <div className="form-group">
-        <label>이미지 업로드:</label>
-        {images.map((img, index) => (
-          <ImageUploader
-            key={index}
-            imgText={`이미지 등록 ${index + 1}`}
-            imgName={images[index]}
-            errorMessage={errorMessage[`image${index}`]}
-            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-            handleRemoveImage={() => handleRemoveImage("image", index)}
-            type="image"
-          />
-        ))}
-      </div> */}
         <div className={styles.images}>
-          {/* {images.map((image, index) => (
-          <ImageUploader
-            key={index}
-            imgText={`이미지 등록 ${index + 1}`}
-            imgName={images[index]}
-            errorMessage={errorMessage[`image${index}`]}
-            handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-            handleRemoveImage={() => handleRemoveImage("image", index)}
-            type="image"
-          />
-        ))} */}
-
-          {/* 남은 업로더 공간 표시 */}
-          {/* {Array.from({ length: maxImageCount - images.length }).map(
-          (_, index) => (
-            <ImageUploader
-              key={index}
-              imgText={`이미지 등록 ${index + 1}`}
-              imgName={images[index]}
-              errorMessage={errorMessage[`image${index}`]}
-              handleImgUpload={(file) => handleImgUpload(file, "image", index)}
-              handleRemoveImage={() => handleRemoveImage("image", index)}
-              type="image"
-            />
-          )
-        )} */}
-
           {Array.from({ length: maxImageCount }).map((_, index) => (
             <ImageUploader
               key={index}
@@ -354,13 +327,11 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
           ))}
         </div>
 
-        {/* <div className="form-group">
-        <label>팀원:</label>
-        {teamMembers.map((member, index) => (
-          <TeamMemberInputNew initialTeamMember={teamMembers} />
-        ))}
-      </div> */}
-
+        <RecruitmentPositionInput
+          required={!isEdit}
+          positions={recruitmentPositions}
+          onChange={setRecruitmentPositions}
+        />
         <TechStackSelector
           selectedTechStacks={selectedTechStacks}
           toggleTechStack={toggleTechStack}

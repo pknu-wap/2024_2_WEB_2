@@ -259,10 +259,10 @@ const ManageVotePage = () => {
                     </td>
                   </tr>
                 ) : (
-                  voteResult
+                  [...voteResult]
                     .sort((a, b) => b.voteCount - a.voteCount)
                     .map((result, idx) => (
-                      <tr ket={idx}>
+                      <tr key={result.projectName}>
                         <td>{idx + 1}</td>
                         <td>{result.projectName}</td>
                         <td>{result.voteCount}</td>

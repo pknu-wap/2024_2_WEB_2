@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Cookies from "../utils/authStorage";
 import { useNavigate } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import { POSITIONS } from "../constants/positions";
+import { FIRST_ROUND_MIN_SELECTED_APPLICANTS } from "../constants/recruitment";
 import wapsLogo from "../assets/img/waps_logo.png";
 import styles from "../assets/TeamBuildRecruit.module.css";
 
@@ -39,10 +40,16 @@ const formatApiError = (err, fallback) => {
 
 function TeamBuildPage({ round = 1 }) {
   const navigate = useNavigate();
-  const [projectIdInput, setProjectIdInput] = useState("");
+  const [projects, setProjects] = useState([]);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [projectsLoading, setProjectsLoading] = useState(true);
+  const [projectsError, setProjectsError] = useState("");
+  const [retryCount, setRetryCount] = useState(0);
+  const loadRequestRef = useRef(0);
   const [currentProjectId, setCurrentProjectId] = useState(null);
   const [projectTitle, setProjectTitle] = useState("");
   const [applies, setApplies] = useState([]);
+  const [recruitedMembers, setRecruitedMembers] = useState([]);
   const [rankedByPosition, setRankedByPosition] = useState(createEmptyRankMap);
   const [capacityByPosition, setCapacityByPosition] = useState(
     createEmptyCapacityMap,
@@ -138,18 +145,16 @@ function TeamBuildPage({ round = 1 }) {
 
   const totalApplicantsOf = (pos) => countsByPosition[pos] || 0;
 
-  const handleLoad = async () => {
-    const projectId = Number(projectIdInput);
-    if (!projectId) {
-      alert("프로젝트 ID를 입력하세요.");
-      return;
-    }
-
+  const handleLoad = useCallback(async (projectId) => {
+    if (!projectId) return;
+    const requestId = ++loadRequestRef.current;
     setIsLoading(true);
+    setRecruitedMembers([]);
     setSubmitMsg("");
     setSubmitStatus("");
     try {
-      const response = await teamBuildApi.getRecruitApplies(projectId);
+      const response = await teamBuildApi.getRecruitApplies(projectId, round);
+      if (requestId !== loadRequestRef.current) return;
       if (response?.success === false) {
         throw new Error(response.message || "불러오기 실패");
       }
@@ -162,22 +167,53 @@ function TeamBuildPage({ round = 1 }) {
       setCurrentProjectId(projectId);
       setProjectTitle(safeTitle);
       setApplies(normalized);
+      setRecruitedMembers(response?.recruitedMembers || response?.data?.recruitedMembers || []);
       setRankedByPosition(createEmptyRankMap());
       setCapacityByPosition(createEmptyCapacityMap());
       setCurrentFilter("");
       setFilterOpen(false);
     } catch (err) {
+      if (requestId !== loadRequestRef.current) return;
       setCurrentProjectId(null);
       setProjectTitle("");
       setApplies([]);
+      setRecruitedMembers([]);
       setRankedByPosition(createEmptyRankMap());
       setCapacityByPosition(createEmptyCapacityMap());
       setCurrentFilter("");
       alert(formatApiError(err, "불러오기 실패"));
     } finally {
-      setIsLoading(false);
+      if (requestId === loadRequestRef.current) setIsLoading(false);
     }
-  };
+  }, [round]);
+
+  useEffect(() => {
+    if (!Cookies.get("authToken")) return;
+    const requestRef = loadRequestRef;
+    let active = true;
+    setProjectsLoading(true);
+    setProjectsError("");
+    const loadProjects = async () => {
+      try {
+        const ownedProjects = await teamBuildApi.getRecruitProjects();
+        if (!active) return;
+        setProjects(ownedProjects);
+        if (ownedProjects.length === 1) {
+          setSelectedProjectId(String(ownedProjects[0].projectId));
+          await handleLoad(ownedProjects[0].projectId);
+        }
+      } catch (err) {
+        if (active) setProjectsError(formatApiError(err, "프로젝트 목록을 불러오지 못했습니다."));
+      } finally {
+        if (active) setProjectsLoading(false);
+      }
+    };
+    loadProjects();
+    return () => {
+      active = false;
+      requestRef.current++;
+    };
+  }, [handleLoad, retryCount]);
 
   const handleCapacityChange = (pos, value) => {
     if (value === "") {
@@ -324,10 +360,13 @@ function TeamBuildPage({ round = 1 }) {
     setSubmitMsg("");
     setSubmitStatus("");
     try {
-      const response = await teamBuildApi.submitRecruitPreference({
-        projectId: currentProjectId,
-        roasters,
-      });
+      const response = await teamBuildApi.submitRecruitPreference(
+        {
+          projectId: currentProjectId,
+          roasters,
+        },
+        round,
+      );
       const message =
         typeof response === "string"
           ? response
@@ -380,35 +419,79 @@ function TeamBuildPage({ round = 1 }) {
         </div>
 
         <div className={styles.hero}>
-          <h1 className={styles.heroTitle}>RECRUITMENT PAGE_{round === 2 ? "2nd" : "1st"}</h1>
+          <h1 className={styles.heroTitle}>
+            RECRUITMENT PAGE_{round === 2 ? "2nd" : "1st"}
+          </h1>
           <div className={styles.heroSubtitle}>{round}차 모집하기 페이지</div>
         </div>
 
         <div className={styles.card}>
-          <div className={styles.sectionTitle}>프로젝트 ID</div>
+          <div className={styles.sectionTitle}>내 프로젝트</div>
           <div className={styles.sectionCaption}>
-            본인이 등록한 프로젝트의 ID를 입력하세요.
+            현재 학기에 본인이 등록한 프로젝트의 신청자를 확인하세요.
           </div>
 
+          {projectsLoading && <p role="status">프로젝트를 불러오는 중...</p>}
+          {projectsError && <div role="alert">{projectsError}
+            <button type="button" className={styles.primaryButton}
+              onClick={() => setRetryCount(count => count + 1)}>다시 시도</button>
+          </div>}
+          {!projectsLoading && !projectsError && projects.length === 0 && (
+            <p className={styles.muted}>현재 학기에 등록한 프로젝트가 없습니다.</p>
+          )}
+          {projects.length > 0 && (
           <div className={styles.projectRow}>
-            <input
+            {projects.length === 1 ? <span>{projects[0].title}</span> : <select
+              aria-label="모집할 프로젝트"
               className={`${styles.inputField} ${styles.projectIdInput}`}
-              type="number"
-              min="1"
-              placeholder="예) 1"
-              value={projectIdInput}
-              onChange={(event) => setProjectIdInput(event.target.value)}
-            />
+              value={selectedProjectId}
+              disabled={isLoading || isSubmitting || projectsLoading}
+              onChange={(event) => {
+                setSelectedProjectId(event.target.value);
+                setCurrentProjectId(null);
+                setProjectTitle("");
+                setApplies([]);
+                setRecruitedMembers([]);
+                setRankedByPosition(createEmptyRankMap());
+                setCapacityByPosition(createEmptyCapacityMap());
+                setSubmitMsg("");
+              }}
+            >
+              <option value="">프로젝트를 선택하세요</option>
+              {projects.map(project => <option key={project.projectId} value={project.projectId}>{project.title}</option>)}
+            </select>}
             <button
               type="button"
               className={styles.primaryButton}
-              onClick={handleLoad}
-              disabled={isLoading}
+              onClick={() => handleLoad(Number(selectedProjectId))}
+              disabled={isLoading || isSubmitting || projectsLoading || !selectedProjectId}
             >
               {isLoading ? "불러오는 중" : "불러오기"}
             </button>
           </div>
+          )}
           {projectTitle && <div className={styles.muted}>· {projectTitle}</div>}
+
+          {round === 2 && currentProjectId && !isLoading && (
+            <section className={styles.recruitedSection} aria-labelledby="recruited-members-title">
+              <h2 id="recruited-members-title" className={styles.sectionTitle}>
+                1차 모집된 팀원 ({recruitedMembers.length}명)
+              </h2>
+              <p className={styles.sectionCaption}>1차 팀빌딩에서 확정된 팀원입니다.</p>
+              {recruitedMembers.length === 0 ? (
+                <p className={styles.muted}>1차에서 모집된 팀원이 없습니다.</p>
+              ) : (
+                <ul className={styles.recruitedMembers}>
+                  {recruitedMembers.map((member) => (
+                    <li key={member.memberId} className={styles.recruitedMember}>
+                      <span>{member.memberName || "알 수 없는 사용자"}</span>
+                      {renderPositionBadge(member.position)}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
           <div className={styles.sectionHeader}>
             <div>
@@ -494,8 +577,12 @@ function TeamBuildPage({ round = 1 }) {
                           : ""
                       }
                     >
-                      <td className={styles.applicantNameCell}>{apply.applicantName || "-"}</td>
-                      <td className={styles.positionCell}>{renderPositionBadge(apply.position)}</td>
+                      <td className={styles.applicantNameCell}>
+                        {apply.applicantName || "-"}
+                      </td>
+                      <td className={styles.positionCell}>
+                        {renderPositionBadge(apply.position)}
+                      </td>
                       <td className={styles.careerCell}>
                         {apply.career || "작성된 경력이 없습니다."}
                       </td>
@@ -516,42 +603,52 @@ function TeamBuildPage({ round = 1 }) {
               filteredApplies.map((apply) => {
                 const isExpanded = expandedApplicantIds.has(apply.applicantId);
                 return (
-                <div
-                  key={apply.applicantId}
-                  className={`${styles.applicantCard} ${isExpanded ? styles.applicantCardExpanded : ""}`}
-                  onMouseEnter={() => setHighlightedApplicantId(apply.applicantId)}
-                  onMouseLeave={() => setHighlightedApplicantId(null)}
-                >
-                  <div className={styles.cardHeaderRow}>
-                    <span className={styles.cardName}>{apply.applicantName || "-"}</span>
-                    {renderPositionBadge(apply.position)}
-                    <button
-                      type="button"
-                      className={`${styles.applicationArrow} ${
-                        isExpanded ? styles.applicationArrowExpanded : ""
-                      }`}
-                      aria-label={`${apply.applicantName || "지원자"} 지원서 ${
-                        isExpanded ? "닫기" : "보기"
-                      }`}
-                      aria-expanded={isExpanded}
-                      onClick={() =>
-                        setExpandedApplicantIds((prev) => {
-                          const next = new Set(prev);
-                          if (next.has(apply.applicantId)) next.delete(apply.applicantId);
-                          else next.add(apply.applicantId);
-                          return next;
-                        })
-                      }
-                    >
-                      &rsaquo;
-                    </button>
-                  </div>
-                  {isExpanded && (
-                    <div className={styles.applicationContent}>
-                      {apply.career && <>경력: {apply.career}<br /></>}
-                      {apply.comment || "작성된 지원서 내용이 없습니다."}
+                  <div
+                    key={apply.applicantId}
+                    className={`${styles.applicantCard} ${isExpanded ? styles.applicantCardExpanded : ""}`}
+                    onMouseEnter={() =>
+                      setHighlightedApplicantId(apply.applicantId)
+                    }
+                    onMouseLeave={() => setHighlightedApplicantId(null)}
+                  >
+                    <div className={styles.cardHeaderRow}>
+                      <span className={styles.cardName}>
+                        {apply.applicantName || "-"}
+                      </span>
+                      {renderPositionBadge(apply.position)}
+                      <button
+                        type="button"
+                        className={`${styles.applicationArrow} ${
+                          isExpanded ? styles.applicationArrowExpanded : ""
+                        }`}
+                        aria-label={`${apply.applicantName || "지원자"} 지원서 ${
+                          isExpanded ? "닫기" : "보기"
+                        }`}
+                        aria-expanded={isExpanded}
+                        onClick={() =>
+                          setExpandedApplicantIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(apply.applicantId))
+                              next.delete(apply.applicantId);
+                            else next.add(apply.applicantId);
+                            return next;
+                          })
+                        }
+                      >
+                        &rsaquo;
+                      </button>
                     </div>
-                  )}
+                    {isExpanded && (
+                      <div className={styles.applicationContent}>
+                        {apply.career && (
+                          <>
+                            경력: {apply.career}
+                            <br />
+                          </>
+                        )}
+                        {apply.comment || "작성된 지원서 내용이 없습니다."}
+                      </div>
+                    )}
                   </div>
                 );
               })
@@ -572,15 +669,13 @@ function TeamBuildPage({ round = 1 }) {
                 순위까지)
               </li>
               <li>3. capacity가 0이면 우선순위를 설정할 수 없습니다.</li>
-              <li>
-                4. 지원자가 4명 미만이면 전원의 우선순위를 지정해야 합니다.
-              </li>
-              <li>
-                5. 지원자가 4명 이상이면 최소 4명의 우선순위를 지정해야 합니다.
-              </li>
-              <li>
-                6. 팀 최소 인원은 4명이며 최대 인원은 6명입니다. (디자이너 포함)
-              </li>
+              {round === 1 && (
+                <li>
+                  4. 최소 {FIRST_ROUND_MIN_SELECTED_APPLICANTS}명의 우선순위를
+                  지정해야 합니다. 지원자가 {FIRST_ROUND_MIN_SELECTED_APPLICANTS}명 미만이면
+                  모두 선택해야 합니다.
+                </li>
+              )}
             </ul>
           </div>
 
@@ -769,7 +864,7 @@ function TeamBuildPage({ round = 1 }) {
               type="button"
               className={styles.submitButton}
               onClick={handleSubmit}
-              disabled={isSubmitting || !currentProjectId}
+              disabled={isSubmitting || isLoading || projectsLoading || !currentProjectId}
             >
               {isSubmitting ? "제출 중..." : "희망 팀 제출하기"}
             </button>

@@ -26,6 +26,7 @@ import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.entity.Project;
+import wap.web2.server.project.entity.RecruitmentPosition;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.teambuild.dto.RecruitmentDto;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest;
@@ -43,6 +44,7 @@ class ApplyRoundTest {
     @Mock ProjectApplyRepository applyRepository;
     @Mock ProjectRepository projectRepository;
     @Mock UserRepository userRepository;
+    @Mock wap.web2.server.teambuild.repository.TeamRepository teamRepository;
     @InjectMocks ApplyService service;
 
     UserPrincipal principal;
@@ -74,7 +76,7 @@ class ApplyRoundTest {
         user.setId(1L);
         when(principal.getId()).thenReturn(1L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
-        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).recruitmentPositions(round == 1 ? List.of(new RecruitmentPosition("백엔드", 2)) : List.of()).build()));
         status(TeamBuildingStatus.APPLY, round);
         service.apply(principal, new ProjectAppliesRequest(List.of(
             new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), round);
@@ -82,6 +84,29 @@ class ApplyRoundTest {
         verify(applyRepository).save(captor.capture());
         assertThat(captor.getValue().getRound()).isEqualTo(round);
         assertThat(captor.getValue().getSemester()).isEqualTo(generateSemester());
+    }
+
+    @Test
+    void rejectsAssignedMemberBeforeSavingSecondRoundApplications() {
+        User user = new User();
+        user.setId(1L);
+        when(principal.getId()).thenReturn(1L);
+        when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
+        when(teamRepository.existsByMemberIdAndSemester(1L, generateSemester())).thenReturn(true);
+        status(TeamBuildingStatus.APPLY, 2);
+
+        assertThatThrownBy(() -> service.apply(principal, new ProjectAppliesRequest(List.of(
+            new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), 2))
+            .isInstanceOf(ConflictException.class)
+            .hasMessage("이미 팀 배정이 완료되어 2차 팀빌딩에 지원할 수 없습니다.");
+        verifyNoInteractions(applyRepository, projectRepository);
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {true, false})
+    void assignmentStatusUsesCurrentSemester(boolean assigned) {
+        when(teamRepository.existsByMemberIdAndSemester(1L, generateSemester())).thenReturn(assigned);
+        assertThat(service.isAssignedThisSemester(1L)).isEqualTo(assigned);
     }
 
     @ParameterizedTest
@@ -146,11 +171,34 @@ class ApplyRoundTest {
     }
 
     @Test
+    void secondRoundPageIncludesConfirmedFirstRoundMembersWithoutApplicants() {
+        owner();
+        User member = new User();
+        member.setId(2L);
+        member.setName("기존 팀원");
+        when(teamRepository.findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(10L, generateSemester(), 1))
+            .thenReturn(List.of(wap.web2.server.teambuild.entity.Team.builder()
+                .projectId(10L).memberId(2L).position(wap.web2.server.teambuild.entity.Position.BACKEND)
+                .round(1).semester(generateSemester()).build()));
+        when(userRepository.findAllById(List.of(2L))).thenReturn(List.of(member));
+
+        var response = service.getRecruitPageData(principal, 10L, 2);
+
+        assertThat(response.getApplies()).isEmpty();
+        assertThat(response.getRecruitedMembers()).singleElement().satisfies(recruited -> {
+            assertThat(recruited.getMemberId()).isEqualTo(2L);
+            assertThat(recruited.getMemberName()).isEqualTo("기존 팀원");
+            assertThat(recruited.getPosition()).isEqualTo("BACKEND");
+        });
+    }
+
+    @Test
     void legacyPageUsesFirstRound() {
         owner();
         when(applyRepository.findAllByProjectAndSemesterAndRound(project, generateSemester(), 1))
             .thenReturn(List.of());
-        service.getRecruitPageData(principal, 10L);
+        assertThat(service.getRecruitPageData(principal, 10L).getRecruitedMembers()).isEmpty();
+        verifyNoInteractions(teamRepository);
         verify(recruitRepository).existsByProjectIdAndSemesterAndRound(10L, generateSemester(), 1);
         verify(applyRepository).findAllByProjectAndSemesterAndRound(project, generateSemester(), 1);
         assertThat(ProjectApply.builder().build().getRound()).isEqualTo(1);

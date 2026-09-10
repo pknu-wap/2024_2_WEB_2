@@ -77,7 +77,7 @@ const TeamBuildResultPage = () => {
 
   // 팀 명단 복사 이벤트 헨들러
   const handleCopyRoster = (team) => {
-    const rosterText = `팀명: ${team.teamName} / 팀장: ${team.leader.name}${team.leader.position ? `·${team.leader.position}` : ""} / 팀원: ${team.members.map((m) => `${m.name}${m.position ? `·${m.position}` : ""}`).join(", ")}`;
+    const rosterText = `팀명: ${team.teamName} / 팀장: ${team.leader?.name || "미지정"}${team.leader?.position ? `·${team.leader.position}` : ""} / 팀원: ${team.members.map((m) => `${m.name}${m.position ? `·${m.position}` : ""}`).join(", ")}`;
 
     navigator.clipboard
       .writeText(rosterText)
@@ -119,7 +119,14 @@ const TeamBuildResultPage = () => {
         ) : (
           <div className={styles.grid}>
             {filteredAndSortedTeams.map((team) => (
-              <div className={styles.card} key={team.projectId}>
+              <div
+                className={styles.card}
+                key={
+                  team.planTeamId
+                    ? `plan-${team.planTeamId}`
+                    : `project-${team.projectId}`
+                }
+              >
                 <div className={styles.cardHeader}>
                   <div className={styles.nameSpace}>
                     <span className={styles.teamName}>{team.teamName}</span>
@@ -128,14 +135,16 @@ const TeamBuildResultPage = () => {
                     </span>
                   </div>
 
-                  <div className={styles.muted}>ID #{team.projectId}</div>
+                  <div className={styles.muted}>
+                    {team.projectId ? `ID #${team.projectId}` : "3차 생성 팀"}
+                  </div>
                 </div>
 
                 <div className={styles.members}>
                   <div>
                     <strong>팀장 |</strong>
-                    <span> {team.leader.name}</span>
-                    {team.leader.position && (
+                    <span> {team.leader?.name || "미지정"}</span>
+                    {team.leader?.position && (
                       <span className={styles.muted}>
                         · {team.leader.position}
                       </span>
@@ -144,7 +153,7 @@ const TeamBuildResultPage = () => {
                   <div>
                     <strong>팀원 |</strong>
                     {team.members.map((m) => (
-                      <span key={m.name}>
+                      <span key={m.id}>
                         <span> {m.name}</span>
                         {m.position && (
                           <span className={styles.roll}> {m.position}</span>
@@ -155,12 +164,14 @@ const TeamBuildResultPage = () => {
                 </div>
 
                 <div className={styles.footer}>
-                  <div div className={styles.summary}>
+                  <div className={styles.summary}>
                     {team.summary && (
                       <div className={styles.muted}>{team.summary}</div>
                     )}
                     <div className={styles.muted}>
-                      총 인원: <b>{1 + team.members.length}</b>명 (팀장 포함)
+                      총 인원:{" "}
+                      <b>{(team.leader ? 1 : 0) + team.members.length}</b>명
+                      {team.leader && " (팀장 포함)"}
                     </div>
                   </div>
 
@@ -193,7 +204,7 @@ const TeamBuildResultPage = () => {
         ) : (
           <div className={styles.grid}>
             {filteredUnassigned.map((m) => (
-              <div className={styles.card} key={m.name}>
+              <div className={styles.card} key={m.id}>
                 <div className={styles.cardHeader}>
                   <div className={styles.notMatched}>
                     <span>{m.name}</span>

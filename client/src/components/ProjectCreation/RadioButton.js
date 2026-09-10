@@ -1,4 +1,4 @@
-import { React } from "react";
+import React from "react";
 import styles from "../../assets/ProjectCreation/RadioButton.module.css"; // CSS 파일 경로 추가
 
 const RadioButton = ({ labelname, name, options, selected, setSelected }) => {

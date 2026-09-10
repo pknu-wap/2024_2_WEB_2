@@ -8,4 +8,10 @@ import wap.web2.server.teambuild.entity.Team;
 @Repository
 public interface TeamRepository extends JpaRepository<Team, Long> {
     List<Team> findAllBySemester(String semester);
+
+    List<Team> findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(Long projectId, String semester, int round);
+
+    boolean existsByMemberIdAndSemester(Long memberId, String semester);
+
+    void deleteBySemester(String semester);
 }

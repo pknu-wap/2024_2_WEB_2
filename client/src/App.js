@@ -28,6 +28,7 @@ import AdminRoute from "./components/Login/PrivateRoute";
 import ManagePermissionPage from "./pages/adminPages/ManagePermissionPage";
 import ManagePlanPage from "./pages/adminPages/ManagePlanPage";
 import ManageTeamBuildPage from "./pages/adminPages/ManageTeamBuildPage";
+import ManageThirdTeamBuildPage from "./pages/adminPages/ManageThirdTeamBuildPage";
 import ManageVotePage from "./pages/adminPages/ManageVotePage";
 import MainLayout from "./components/MainLayout";
 
@@ -77,10 +78,22 @@ function App() {
           />
           <Route path="/select/role" element={<RoleSelectPage />} />
           <Route path="/team-build" element={<TeamBuildEntryPage />} />
-          <Route path="/team-build/projects" element={<TeamBuildApplyPage key="first" round={1} />} />
-          <Route path="/team-build/projects/2nd" element={<TeamBuildApplyPage key="second" round={2} />} />
-          <Route path="/team-build/recruit" element={<TeamBuildPage key="recruit-first" round={1} />} />
-          <Route path="/team-build/recruit/2nd" element={<TeamBuildPage key="recruit-second" round={2} />} />
+          <Route
+            path="/team-build/projects"
+            element={<TeamBuildApplyPage key="first" round={1} />}
+          />
+          <Route
+            path="/team-build/projects/2nd"
+            element={<TeamBuildApplyPage key="second" round={2} />}
+          />
+          <Route
+            path="/team-build/recruit"
+            element={<TeamBuildPage key="recruit-first" round={1} />}
+          />
+          <Route
+            path="/team-build/recruit/2nd"
+            element={<TeamBuildPage key="recruit-second" round={2} />}
+          />
           <Route path="/team-build/result" element={<TeamBuildResultPage />} />
           <Route path="/calendar" element={<CalendarPage />} />
           {/* 보호된 페이지 */}
@@ -98,6 +111,10 @@ function App() {
               <Route index element={<Navigate to="vote" replace />}></Route>
               <Route path="vote" element={<ManageVotePage />} />
               <Route path="teambuild" element={<ManageTeamBuildPage />} />
+              <Route
+                path="teambuild/3rd"
+                element={<ManageThirdTeamBuildPage />}
+              />
               <Route path="permission" element={<ManagePermissionPage />} />
               <Route path="plan" element={<ManagePlanPage />} />
             </Route>

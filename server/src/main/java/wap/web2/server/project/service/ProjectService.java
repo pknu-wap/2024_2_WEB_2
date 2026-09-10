@@ -16,12 +16,15 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import wap.web2.server.exception.BadRequestException;
 import wap.web2.server.exception.ForbiddenException;
 import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.exception.ResourceNotFoundException;
 import wap.web2.server.global.security.UserPrincipal;
+import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.request.ProjectRequest;
 import wap.web2.server.project.dto.response.ProjectDetailsResponse;
 import wap.web2.server.project.dto.response.ProjectInfoResponse;
@@ -30,6 +33,7 @@ import wap.web2.server.project.entity.Project;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.storage.ObjectStorageService;
 import wap.web2.server.teambuild.dto.response.ProjectTemplate;
+import wap.web2.server.teambuild.dto.response.RecruitProjectResponse;
 
 @Slf4j
 @Service
@@ -56,6 +60,10 @@ public class ProjectService {
             throw new ProjectPasswordInvalidException();
         }
 
+        if (request.getRecruitmentPositions() == null || request.getRecruitmentPositions().isEmpty()) {
+            throw new BadRequestException("모집 직무와 인원을 최소 한 개 입력해 주세요.");
+        }
+        RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
         User user = findUser(userPrincipal.getId());
         String semester = getCurrentSemester();
 
@@ -109,6 +117,7 @@ public class ProjectService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectTemplate> getCurrentProjectRecruits() {
         return projectRepository
             .findProjectsBySemester(generateSemester())
@@ -117,25 +126,23 @@ public class ProjectService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetails(Long projectId, UserPrincipal userPrincipal) {
         Project project = findProject(projectId);
 
-        // response는 isOwner 플랙그가 false인 채로 생성된다.
         ProjectDetailsResponse projectDetailsResponse = ProjectDetailsResponse.from(project);
 
         if (userPrincipal != null) {
             User user = findUser(userPrincipal.getId());
-
-            if (project.isOwner(user)) {
-                // 로그인한 사용자이고, 프로젝트의 주인이면 isOwner 플래그를 true로 바꾸고 리턴한다.
-                return projectDetailsResponse.changeIsOwner(true);
-            }
+            projectDetailsResponse.changeIsOwner(project.isOwner(user));
+            projectDetailsResponse.changeCanManage(canManage(project, user));
         }
 
         return projectDetailsResponse;
     }
 
     @CacheEvict(value = "projectList", allEntries = true)
+    @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetailsForUpdate(
         Long projectId,
         UserPrincipal userPrincipal
@@ -153,11 +160,13 @@ public class ProjectService {
         );
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 수정 권한이 없습니다.");
         }
 
-        return ProjectDetailsResponse.from(project);
+        return ProjectDetailsResponse.from(project)
+            .changeIsOwner(project.isOwner(user))
+            .changeCanManage(true);
     }
 
     @CacheEvict(value = "projectList", allEntries = true)
@@ -171,9 +180,11 @@ public class ProjectService {
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 수정 권한이 없습니다.");
         }
+
+        RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
 
         // 썸네일 이미지가 없으면 유지 or 있으면 변경
         if (hasFile(request.getThumbnailFiles())) {
@@ -230,10 +241,19 @@ public class ProjectService {
         User user = findUser(userPrincipal.getId());
         Project project = findProject(projectId);
 
-        if (!project.isOwner(user)) {
+        if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 삭제 권한이 없습니다.");
         }
         projectRepository.delete(project);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RecruitProjectResponse> getMyRecruitProjects(Long userId) {
+        return projectRepository.findAllByUser_IdAndSemesterOrderByProjectIdDesc(userId, generateSemester())
+            .stream()
+            .map(project -> new RecruitProjectResponse(
+                project.getProjectId(), project.getTitle()))
+            .toList();
     }
 
     public boolean isLeader(Long userId) {
@@ -244,6 +264,10 @@ public class ProjectService {
             .findProjectsBySemester(generateSemester())
             .stream()
             .anyMatch(project -> project.isOwner(user));
+    }
+
+    private boolean canManage(Project project, User user) {
+        return user.getRole() == Role.ROLE_ADMIN || project.isOwner(user);
     }
 
     private User findUser(Long userId) {

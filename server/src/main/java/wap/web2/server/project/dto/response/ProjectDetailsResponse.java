@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import wap.web2.server.comment.dto.CommentDto;
 import wap.web2.server.project.dto.ImageDto;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.dto.TechStackDto;
 import wap.web2.server.project.entity.Project;
@@ -16,6 +17,7 @@ import wap.web2.server.project.entity.Project;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class ProjectDetailsResponse {
 
+    private List<RecruitmentPositionDto> recruitmentPositions;
     private Long projectId;
     private String title;
     private String projectType;
@@ -28,6 +30,7 @@ public class ProjectDetailsResponse {
     private List<ImageDto> images;
     private List<CommentDto> comments;
     private Boolean isOwner;
+    private Boolean canManage;
 
     public static ProjectDetailsResponse from(Project project) {
         List<TeamMemberDto> teamMembers = project
@@ -44,6 +47,7 @@ public class ProjectDetailsResponse {
         List<CommentDto> comments = project.getComments().stream().map(CommentDto::from).toList();
 
         return ProjectDetailsResponse.builder()
+            .recruitmentPositions(project.getRecruitmentPositions().stream().map(RecruitmentPositionDto::from).toList())
             .projectId(project.getProjectId())
             .title(project.getTitle())
             .projectType(project.getProjectType())
@@ -56,7 +60,13 @@ public class ProjectDetailsResponse {
             .images(images)
             .comments(comments)
             .isOwner(false)
+            .canManage(false)
             .build();
+    }
+
+    public ProjectDetailsResponse changeCanManage(boolean canManage) {
+        this.canManage = canManage;
+        return this;
     }
 
     public ProjectDetailsResponse changeIsOwner(boolean isOwner) {

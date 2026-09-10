@@ -10,4 +10,5 @@ import lombok.NoArgsConstructor;
 public class ApplyStatusResponse {
 
     private boolean hasApplied;
+    private boolean assigned;
 }

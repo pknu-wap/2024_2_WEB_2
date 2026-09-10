@@ -31,6 +31,24 @@ class DevLoginControllerTest {
     }
 
     @Test
+    void acceptsAccountNumberAndRejectsOutOfRangeNumbers() throws Exception {
+        var mvc = MockMvcBuilders.standaloneSetup(new DevLoginController(service)).build();
+        UUID session = UUID.randomUUID();
+        for (int number : new int[] {0, -1, 101}) {
+            mvc.perform(post("/auth/login-dev").contentType("application/json")
+                .content("{\"sessionId\":\"" + session + "\",\"accountNumber\":" + number + "}"))
+                .andExpect(status().isBadRequest());
+        }
+        verifyNoInteractions(service);
+        for (int number : new int[] {1, 100}) {
+            mvc.perform(post("/auth/login-dev").contentType("application/json")
+                .content("{\"sessionId\":\"" + session + "\",\"accountNumber\":" + number + "}"))
+                .andExpect(status().isOk());
+            verify(service).login(session, number);
+        }
+    }
+
+    @Test
     void requiresValidSessionIdentifier() throws Exception {
         var mvc = MockMvcBuilders.standaloneSetup(new DevLoginController(service)).build();
         for (String body : new String[] {"{}", "{\"sessionId\":\"invalid\"}"}) {
@@ -41,6 +59,6 @@ class DevLoginControllerTest {
         UUID id = UUID.randomUUID();
         mvc.perform(post("/auth/login-dev").contentType("application/json")
             .content("{\"sessionId\":\"" + id + "\"}")).andExpect(status().isOk());
-        verify(service).login(id);
+        verify(service).login(id, null);
     }
 }

@@ -78,4 +78,9 @@ export const adminTeamBuildApi = {
 
   // 현재 학기 팀빌딩 기능 생성
   createTeamBuild: () => apiClient.post("/admin/team/building/open/current"),
+
+  // 현재 학기 배정 결과와 진행 단계 초기화
+  resetTeamBuild: () => apiClient.post("/admin/team/building/reset/current"),
+  // 현재 학기의 모든 차수 지원·모집을 포함한 완전 초기화
+  resetTeamBuildCompletely: () => apiClient.post("/admin/team/building/reset/current/complete"),
 };

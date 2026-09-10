@@ -1,7 +1,11 @@
 package wap.web2.server.auth;
 
+import static wap.web2.server.auth.DevLoginPolicy.*;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -17,8 +21,8 @@ public class DevLoginController {
     private final DevLoginService service;
 
     @PostMapping("/auth/login-dev")
-    public DevLoginService.DevLoginResponse login(@Valid @RequestBody SessionRequest request) {
-        return service.login(request.sessionId());
+    public DevLoginService.DevLoginResponse login(@Valid @RequestBody LoginRequest request) {
+        return service.login(request.sessionId(), request.accountNumber());
     }
 
     @PostMapping("/auth/login-dev/release")
@@ -26,6 +30,8 @@ public class DevLoginController {
         service.release(request.sessionId());
         return ResponseEntity.noContent().build();
     }
+
+    public record LoginRequest(@NotNull UUID sessionId, @Min(MIN_DEV_ACCOUNT_NUMBER) @Max(MAX_DEV_ACCOUNT_NUMBER) Integer accountNumber) {}
 
     public record SessionRequest(@NotNull UUID sessionId) {}
 }

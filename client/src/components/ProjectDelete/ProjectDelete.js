@@ -8,10 +8,9 @@ const ProjectDelete = () => {
   const { projectId } = useParams(); // URL에서 projectId 가져오기
   const navigate = useNavigate();
   const token = Cookies.get("authToken"); // 로그인한 사용자 토큰 가져오기
-  const userId = Cookies.get("userId"); // 로그인한 사용자 ID 가져오기
   const [project, setProject] = useState(null); // 프로젝트 데이터
-  const [isOwner, setIsOwner] = useState(false); // 소유자인지 확인
-  const [isLoggedIn, setIsLoggedIn] = useState(!!token); // 로그인 여부 확인
+  const [canManage, setCanManage] = useState(false);
+  const [isLoggedIn] = useState(!!token); // 로그인 여부 확인
 
   // API URL
   const apiUrl = `${process.env.REACT_APP_API_BASE_URL}/project/${projectId}`;
@@ -24,10 +23,7 @@ const ProjectDelete = () => {
 
         setProject(data); // 프로젝트 데이터 설정
 
-        // 로그인한 사용자와 작성자 비교
-        if (token && data.ownerId === parseInt(userId)) {
-          setIsOwner(true);
-        }
+        setCanManage(data.canManage === true);
       } catch (error) {
         console.error("프로젝트 정보 가져오기 실패:", error);
         alert("프로젝트 정보를 불러오는 데 실패했습니다.");
@@ -36,7 +32,7 @@ const ProjectDelete = () => {
     };
 
     fetchProjectDetails();
-  }, [apiUrl, token, userId, navigate, projectId]);
+  }, [apiUrl, token, navigate, projectId]);
 
   // 프로젝트 삭제 요청
   const handleDelete = async () => {
@@ -45,14 +41,9 @@ const ProjectDelete = () => {
     }
 
     try {
-      const data = await projectApi.deleteProject(projectId);
-
-      if (data.status === 204) {
-        alert("프로젝트가 성공적으로 삭제되었습니다.");
-        navigate("/"); // 삭제 후 메인 페이지로 이동
-      } else {
-        alert("프로젝트 삭제에 실패했습니다.");
-      }
+      await projectApi.deleteProject(projectId);
+      alert("프로젝트가 성공적으로 삭제되었습니다.");
+      navigate("/"); // 삭제 후 메인 페이지로 이동
     } catch (error) {
       console.error("프로젝트 삭제 중 오류 발생:", error);
       alert("프로젝트 삭제에 실패했습니다. 다시 시도해주세요.");
@@ -69,7 +60,7 @@ const ProjectDelete = () => {
       <h1>{project.title}</h1>
       <p>{project.content}</p>
       <p>작성자: {project.ownerName}</p>
-      {isLoggedIn && isOwner ? (
+      {isLoggedIn && canManage ? (
         <button
           onClick={handleDelete}
           style={{

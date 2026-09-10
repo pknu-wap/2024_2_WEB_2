@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import wap.web2.server.admin.dto.request.TeamBuildingStatusRequest;
 import wap.web2.server.admin.entity.*;
-import wap.web2.server.admin.repository.TeamBuildingMetaRepository;
+import wap.web2.server.admin.repository.*;
 import wap.web2.server.exception.*;
 import wap.web2.server.project.entity.Project;
 import wap.web2.server.project.repository.ProjectRepository;
@@ -23,12 +23,22 @@ public class AdminTeamBuildingService {
     private final ProjectApplyRepository applyRepository;
     private final ProjectRepository projectRepository;
     private final TeamRepository teamRepository;
+    private final FieldClusterMemberRepository clusterRepository;
     private final PositionTeamBuilder teamBuilder;
+    private final ThirdRoundPlanRepository plans;
+    private final ThirdRoundPlanTeamRepository planTeams;
+    private final ThirdRoundPositionSlotRepository slots;
 
     @Transactional(readOnly = true)
     public TeamBuildingStatus getStatus() {
         return teamBuildingMetaRepository.findBySemester(generateSemester())
             .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다.")).getStatus();
+    }
+
+    @Transactional(readOnly = true)
+    public TeamBuildingMeta getMeta() {
+        return teamBuildingMetaRepository.findBySemester(generateSemester())
+            .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 초기화되지 않았습니다."));
     }
 
     @Transactional
@@ -45,6 +55,33 @@ public class AdminTeamBuildingService {
             throw new ConflictException("해당 학기의 팀빌딩이 이미 생성되었습니다.");
         }
         teamBuildingMetaRepository.save(new TeamBuildingMeta(semester));
+    }
+
+    @Transactional
+    public void resetTeamBuilding() {
+        resetTeamBuilding(false);
+    }
+
+    @Transactional
+    public void resetTeamBuildingCompletely() {
+        resetTeamBuilding(true);
+    }
+
+    private void resetTeamBuilding(boolean includeSubmissions) {
+        String semester = generateSemester();
+        TeamBuildingMeta meta = teamBuildingMetaRepository.findBySemesterForUpdate(semester)
+            .orElseThrow(() -> new ConflictException("현재 학기의 팀빌딩이 생성되지 않았습니다."));
+        slots.deleteAllInBatch(slots.findAllBySemesterOrderById(semester));
+        planTeams.deleteAllInBatch(planTeams.findAllBySemesterOrderById(semester));
+        plans.deleteById(semester);
+        teamRepository.deleteBySemester(semester);
+        clusterRepository.deleteBySemester(semester);
+        if (includeSubmissions) {
+            // Derived deletes remove entities so recruitment wishes cascade with their parent.
+            recruitRepository.deleteBySemester(semester);
+            applyRepository.deleteBySemester(semester);
+        }
+        meta.reset();
     }
 
     @Transactional

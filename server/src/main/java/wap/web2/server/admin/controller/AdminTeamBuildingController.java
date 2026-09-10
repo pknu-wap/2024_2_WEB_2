@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import wap.web2.server.admin.dto.request.TeamBuildingStatusRequest;
 import wap.web2.server.admin.dto.response.TeamBuildingMetaStatusResponse;
-import wap.web2.server.admin.entity.TeamBuildingStatus;
 import wap.web2.server.admin.service.AdminTeamBuildingService;
 import wap.web2.server.admin.service.TeamBuildingExportService;
 
@@ -38,8 +37,7 @@ public class AdminTeamBuildingController {
     @GetMapping("/building/status")
     @Operation(summary = "팀빌딩 상태 조회", description = "현재 팀빌딩 기능의 상태를 조회합니다.")
     public ResponseEntity<TeamBuildingMetaStatusResponse> getStatus() {
-        TeamBuildingStatus status = adminTeamBuildingService.getStatus();
-        return ResponseEntity.ok(TeamBuildingMetaStatusResponse.of(status));
+        return ResponseEntity.ok(TeamBuildingMetaStatusResponse.of(adminTeamBuildingService.getMeta()));
     }
 
     // TODO: status request를 직렬화했을 때 예외가 발생한다면?
@@ -57,6 +55,22 @@ public class AdminTeamBuildingController {
     )
     public ResponseEntity<Void> openTeamBuilding() {
         adminTeamBuildingService.openTeamBuilding(generateSemester());
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/building/reset/current")
+    @Operation(summary = "현재 학기 팀빌딩 초기화",
+        description = "지원·모집 데이터는 유지하고 배정 결과와 3차 분류 정보를 삭제한 뒤 시작 단계로 되돌립니다.")
+    public ResponseEntity<Void> resetTeamBuilding() {
+        adminTeamBuildingService.resetTeamBuilding();
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/building/reset/current/complete")
+    @Operation(summary = "현재 학기 팀빌딩 완전 초기화",
+        description = "현재 학기의 모든 차수 지원·모집·희망 지원자, 배정 결과와 3차 분류 정보를 삭제한 뒤 시작 단계로 되돌립니다.")
+    public ResponseEntity<Void> resetTeamBuildingCompletely() {
+        adminTeamBuildingService.resetTeamBuildingCompletely();
         return ResponseEntity.ok().build();
     }
 

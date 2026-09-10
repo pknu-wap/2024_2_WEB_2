@@ -1,12 +1,18 @@
 package wap.web2.server.teambuild.service;
 
 import static wap.web2.server.util.SemesterGenerator.generateSemester;
+import static wap.web2.server.teambuild.service.ApplicationPolicy.*;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Locale;
+import java.util.Map;
+import java.util.stream.Collectors;
+import wap.web2.server.teambuild.entity.Team;
+import wap.web2.server.teambuild.repository.TeamRepository;
+import wap.web2.server.teambuild.dto.response.ProjectAppliesResponse.RecruitedMemberResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,6 +53,7 @@ public class ApplyService {
     private final ProjectApplyRepository applyRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final TeamRepository teamRepository;
 
     @Transactional
     public void apply(UserPrincipal userPrincipal, ProjectAppliesRequest request) {
@@ -63,11 +70,15 @@ public class ApplyService {
         // Serialize submissions by the same applicant so concurrent requests cannot exceed five.
         User user = userRepository.findByIdForUpdate(userPrincipal.getId())
             .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        if (round == 2 && teamRepository.existsByMemberIdAndSemester(user.getId(), semester)) {
+            throw new ConflictException("이미 팀 배정이 완료되어 2차 팀빌딩에 지원할 수 없습니다.");
+        }
         List<ApplyRequest> applies = request.getApplies();
         List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
             user.getId(), semester, round);
-        if (applies == null || applies.isEmpty() || existing.size() + applies.size() > 5) {
-            throw new BadRequestException("차수별 지원은 1개 이상 5개 이하만 가능합니다.");
+        if (applies == null || applies.size() < MIN_APPLICATIONS_PER_REQUEST || existing.size() + applies.size() > MAX_APPLICATIONS_PER_ROUND) {
+            throw new BadRequestException(String.format("차수별 지원은 %d개 이상 %d개 이하만 가능합니다.",
+                MIN_APPLICATIONS_PER_REQUEST, MAX_APPLICATIONS_PER_ROUND));
         }
         Set<ApplicationChoice> choices = new HashSet<>();
         existing.forEach(a -> choices.add(new ApplicationChoice(a.getProject().getProjectId(), a.getPosition())));
@@ -77,10 +88,18 @@ public class ApplyService {
                 throw new BadRequestException("동일한 프로젝트와 직무에 중복 지원할 수 없습니다.");
             }
         }
+        Map<Long, Project> projects = new java.util.HashMap<>();
+        for (ApplyRequest entry : applies) {
+            Project project = projects.computeIfAbsent(entry.getProjectId(), this::findProject);
+            if (round == 1 && !ProjectApplicationPositions.firstRound(project)
+                .contains(parsePosition(entry.getPosition()))) {
+                throw new BadRequestException("프로젝트에서 모집하지 않는 직무로는 지원할 수 없습니다.");
+            }
+        }
         int priority = existing.stream().mapToInt(ProjectApply::getPriority).max().orElse(0) + 1;
 
         for (ApplyRequest applyRequest : applies) {
-            Project project = findProject(applyRequest.getProjectId());
+            Project project = projects.get(applyRequest.getProjectId());
             log.info(
                 "apply-user:{},priority:{},project:{}",
                 userPrincipal.getName(),
@@ -154,7 +173,20 @@ public class ApplyService {
             throw new ConflictException("이미 제출된 모집이 존재합니다.");
         }
 
-        return getApplies(userPrincipal, projectId, round);
+        ProjectAppliesResponse response = getApplies(userPrincipal, projectId, round);
+        if (round == 1) return response;
+
+        List<Team> teams = teamRepository.findAllByProjectIdAndSemesterAndRoundOrderByIdAsc(
+            projectId, generateSemester(), 1);
+        Map<Long, User> members = userRepository.findAllById(
+            teams.stream().map(Team::getMemberId).distinct().toList()).stream()
+            .collect(Collectors.toMap(User::getId, member -> member));
+        List<RecruitedMemberResponse> recruitedMembers = teams.stream()
+            .map(team -> new RecruitedMemberResponse(team.getMemberId(),
+                members.containsKey(team.getMemberId()) ? members.get(team.getMemberId()).getName() : "알 수 없는 사용자",
+                team.getPosition().name()))
+            .toList();
+        return new ProjectAppliesResponse(response.getApplies(), recruitedMembers);
     }
 
     @Transactional
@@ -216,6 +248,11 @@ public class ApplyService {
         int round = teamBuildingMetaRepository.findBySemester(generateSemester())
             .map(TeamBuildingMeta::getRound).orElse(1);
         return !applyRepository.findAllByUserIdAndSemesterAndRound(userId, generateSemester(), round).isEmpty();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isAssignedThisSemester(Long userId) {
+        return teamRepository.existsByMemberIdAndSemester(userId, generateSemester());
     }
 
     private void validateRound(int round) {

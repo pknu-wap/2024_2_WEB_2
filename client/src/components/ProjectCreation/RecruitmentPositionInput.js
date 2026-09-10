@@ -15,7 +15,10 @@ const normalizeRole = (role) => {
   );
 };
 
-export const recruitmentPositionsError = (positions) => {
+export const recruitmentPositionsError = (positions, required = false) => {
+  if (required && positions.length === 0) {
+    return "모집 직무와 인원을 최소 한 개 입력해 주세요.";
+  }
   const roles = positions.map(({ role }) => normalizeRole(role));
   if (roles.some((role) => !role)) {
     return "존재하는 모집 직무를 선택해 주세요.";
@@ -36,7 +39,7 @@ export const recruitmentPositionsError = (positions) => {
   return "";
 };
 
-export default function RecruitmentPositionInput({ positions, onChange }) {
+export default function RecruitmentPositionInput({ positions, onChange, required = false }) {
   const update = (index, field, value) => {
     onChange(
       positions.map((position, i) =>
@@ -48,7 +51,9 @@ export default function RecruitmentPositionInput({ positions, onChange }) {
   return (
     <section className={styles.recruitment} aria-label="모집 인원 (팀장 제외)">
       <h3>모집 인원 (팀장 제외)</h3>
-      <p>모집할 직무와 인원을 추가해 주세요. (선택)</p>
+      <p>{required
+        ? "모집할 직무와 인원을 최소 한 개 입력해 주세요. (필수)"
+        : "모집할 직무와 인원을 추가해 주세요. (선택)"}</p>
       {positions.map((position, index) => (
         <div className={styles.recruitment_row} key={index}>
           <label>

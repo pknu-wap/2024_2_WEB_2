@@ -31,6 +31,7 @@ class ApplicationChoiceTest {
     @Mock UserRepository userRepository;
     @Mock ProjectRepository projectRepository;
     @Mock ProjectApplyRepository applyRepository;
+    @Mock wap.web2.server.teambuild.repository.TeamRepository teamRepository;
     @InjectMocks ApplyService service;
 
     private UserPrincipal applicant() {

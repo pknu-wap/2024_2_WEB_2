@@ -65,6 +65,7 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [hasApplied, setHasApplied] = useState(false);
+  const [assigned, setAssigned] = useState(false);
   const [projects, setProjects] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isNoticeOpen, setIsNoticeOpen] = useState(false);
@@ -114,6 +115,8 @@ function TeamBuildApplyPage({ round = 1 }) {
         if (!active) return;
         const applied = Boolean(status?.hasApplied);
         setHasApplied(applied);
+        setAssigned(Boolean(status?.assigned));
+        if (isSecondRound && status?.assigned) return;
 
         if (!applied) {
           const projectList = await teamBuildApi.getApplyProjects();
@@ -144,7 +147,7 @@ function TeamBuildApplyPage({ round = 1 }) {
     return () => {
       active = false;
     };
-  }, [isPreview]);
+  }, [isPreview, isSecondRound]);
 
   const projectTeamLabels = useMemo(
     () => getProjectTeamLabels(projects),
@@ -309,6 +312,26 @@ function TeamBuildApplyPage({ round = 1 }) {
               다시 시도
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isSecondRound && assigned) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.shell}>
+          <section className={styles.myApply}>
+            <h2>이미 팀 배정이 완료되었습니다.</h2>
+            <p>팀 배정이 완료된 팀원은 2차 팀빌딩에 지원할 수 없습니다.</p>
+            <button
+              type="button"
+              className={styles.primaryButton}
+              onClick={() => navigate("/")}
+            >
+              홈으로 이동
+            </button>
+          </section>
         </div>
       </div>
     );

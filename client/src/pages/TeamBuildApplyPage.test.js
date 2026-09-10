@@ -8,12 +8,14 @@ jest.mock("js-cookie", () => ({ get: () => "test-token" }));
 jest.mock("../api/team-build", () => ({
   teamBuildApi: {
     submitApply: jest.fn().mockResolvedValue({}),
-    getApplyStatus: async () => ({ hasApplied: false }),
+    getApplyStatus: jest.fn(),
     getApplyProjects: jest.fn(),
   },
 }));
 
 beforeEach(() => {
+  jest.clearAllMocks();
+  teamBuildApi.getApplyStatus.mockResolvedValue({ hasApplied: false, assigned: false });
   teamBuildApi.getApplyProjects.mockResolvedValue([
     {
       projectId: 1,
@@ -307,3 +309,20 @@ test.each([[[]], [["BACKEND"]]])(
     ]);
   },
 );
+
+
+test.each([false, true])("배정된 팀원은 2차 지원 화면에 진입할 수 없다 (지원 여부: %s)", async (hasApplied) => {
+  teamBuildApi.getApplyStatus.mockResolvedValue({ hasApplied, assigned: true });
+  render(<MemoryRouter><TeamBuildApplyPage round={2} /></MemoryRouter>);
+  await screen.findByRole("heading", { name: "이미 팀 배정이 완료되었습니다." });
+  expect(screen.queryByRole("button", { name: "지원서 작성하기" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "최종 제출하기" })).toBeNull();
+  expect(teamBuildApi.getApplyProjects).not.toHaveBeenCalled();
+  expect(teamBuildApi.submitApply).not.toHaveBeenCalled();
+});
+
+test("배정 여부로 1차 지원 화면을 차단하지 않는다", async () => {
+  teamBuildApi.getApplyStatus.mockResolvedValue({ hasApplied: false, assigned: true });
+  await renderApplyPage(1);
+  expect(teamBuildApi.getApplyProjects).toHaveBeenCalledTimes(1);
+});

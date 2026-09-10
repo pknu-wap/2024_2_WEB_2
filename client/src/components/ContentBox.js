@@ -21,7 +21,7 @@ const getTypeLabel = (type) => {
     web: "웹",
     app: "앱",
     game: "게임",
-    기타: "임베디드",
+    기타: "기타",
   };
   return typeMap[type?.toLowerCase?.()] || type;
 };

@@ -1509,6 +1509,39 @@
   align-items: center;
   gap: 8px;
   flex: 1;
+  overflow-wrap: anywhere;
+}
+
+.applicationOrderControls {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.applicationOrderButton {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid rgba(169, 205, 246, 0.35);
+  border-radius: 8px;
+  background: transparent;
+  color: #9ed0ff;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.applicationOrderButton:enabled:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.applicationOrderButton:focus-visible {
+  outline: 2px solid rgba(169, 205, 246, 0.8);
+  outline-offset: 2px;
+}
+
+.applicationOrderButton:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .myApplicationPriorityNumber {
@@ -2036,6 +2069,9 @@
   }
   .myApplicationItem {
     align-items: center;
+  }
+  .applicationOrderControls {
+    flex-direction: column;
   }
   .myApplicationName {
     align-items: center;

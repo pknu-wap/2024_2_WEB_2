@@ -210,7 +210,23 @@ function TeamBuildApplyPage({ round = 1 }) {
     setCancelTarget(null);
   };
 
+  const moveApplication = (applicationId, direction) => {
+    setProjectApplications((prev) => {
+      const index = prev.findIndex((item) => item.id === applicationId);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= prev.length) return prev;
+
+      const next = [...prev];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
   const handleApplicationDragStart = (applicationId) => (event) => {
+    if (event.target.closest("button")) {
+      event.preventDefault();
+      return;
+    }
     setApplicationDraggingId(applicationId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(applicationId));
@@ -449,7 +465,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                   </span>
                 )}
               </div>
-              <p>지원한 프로젝트를 확인하고, 드래그로 우선순위를 조정하세요</p>
+              <p>위·아래 버튼 또는 드래그로 우선순위를 조정하세요</p>
               <p>최소 {MIN_APPLICATIONS}개의 지원서를 작성해야합니다.</p>
             </div>
           </div>
@@ -527,6 +543,26 @@ function TeamBuildApplyPage({ round = 1 }) {
                         <strong>{application.projectTitle}</strong>
                         <span>·</span>
                         <span>{getPositionLabel(application.position)}</span>
+                      </div>
+                      <div className={styles.applicationOrderControls}>
+                        <button
+                          type="button"
+                          className={styles.applicationOrderButton}
+                          disabled={index === 0}
+                          onClick={() => moveApplication(application.id, -1)}
+                          aria-label={`${application.projectTitle} ${getPositionLabel(application.position)} 우선순위 올리기`}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.applicationOrderButton}
+                          disabled={index === projectApplications.length - 1}
+                          onClick={() => moveApplication(application.id, 1)}
+                          aria-label={`${application.projectTitle} ${getPositionLabel(application.position)} 우선순위 내리기`}
+                        >
+                          ↓
+                        </button>
                       </div>
                       <button
                         type="button"

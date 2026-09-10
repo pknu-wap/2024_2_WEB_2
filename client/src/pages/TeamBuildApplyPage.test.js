@@ -119,11 +119,19 @@ test.each([1, 2])(
 
     orderButton("백엔드", "올리기").focus();
     act(() => userEvent.keyboard("{Enter}"));
+    expect(document.activeElement).toBe(orderButton("백엔드", "내리기"));
+    expect(screen.getByRole("status").textContent).toBe(
+      "웹 프로젝트 백엔드 지원서가 1순위로 이동했습니다.",
+    );
     expect(order()).toEqual([
       "웹 프로젝트 백엔드 우선순위 올리기",
       "웹 프로젝트 앱 우선순위 올리기",
     ]);
-    fireEvent.click(orderButton("앱", "올리기"));
+    act(() => userEvent.keyboard("{Enter}"));
+    expect(document.activeElement).toBe(orderButton("백엔드", "올리기"));
+    expect(screen.getByRole("status").textContent).toBe(
+      "웹 프로젝트 백엔드 지원서가 2순위로 이동했습니다.",
+    );
 
     if (round === 1) {
       fireEvent.change(screen.getByRole("combobox", { name: "주요 직무" }), {
@@ -171,15 +179,25 @@ test("기존 드래그로 순위를 바꾸면 이동 버튼의 경계 상태도 
   }
   const first = screen.getByRole("button", {
     name: "웹 프로젝트 지원 취소",
-  }).parentElement;
+  }).closest('[draggable="true"]');
   const second = screen.getByRole("button", {
     name: "앱 프로젝트 지원 취소",
-  }).parentElement;
+  }).closest('[draggable="true"]');
   const dataTransfer = { setData: jest.fn() };
+  fireEvent.pointerDown(
+    screen.getByRole("button", { name: "앱 프로젝트 앱 우선순위 올리기" }),
+  );
+  expect(fireEvent.dragStart(second, { dataTransfer })).toBe(false);
+  expect(dataTransfer.setData).not.toHaveBeenCalled();
+  fireEvent.pointerUp(second);
+  fireEvent.pointerDown(second);
   fireEvent.dragStart(second, { dataTransfer });
   fireEvent.dragOver(first, { dataTransfer, clientY: 0 });
   fireEvent.drop(first, { dataTransfer });
   fireEvent.dragEnd(second, { dataTransfer });
+  expect(screen.getByRole("status").textContent).toBe(
+    "앱 프로젝트 앱 지원서가 1순위로 이동했습니다.",
+  );
   expect(
     screen
       .getAllByRole("button", { name: /우선순위 올리기$/ })
@@ -196,6 +214,17 @@ test("기존 드래그로 순위를 바꾸면 이동 버튼의 경계 상태도 
     screen.getByRole("button", { name: "웹 프로젝트 백엔드 우선순위 내리기" })
       .disabled,
   ).toBe(true);
+  fireEvent.click(
+    screen.getByRole("button", { name: "앱 프로젝트 앱 우선순위 내리기" }),
+  );
+  expect(
+    screen.getAllByRole("button", { name: /우선순위 올리기$/ }).map(
+      (button) => button.getAttribute("aria-label"),
+    ),
+  ).toEqual([
+    "웹 프로젝트 백엔드 우선순위 올리기",
+    "앱 프로젝트 앱 우선순위 올리기",
+  ]);
 });
 
 test.each([1, 2])(

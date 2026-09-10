@@ -97,14 +97,19 @@ public class ThirdRoundPlanService {
     public ThirdRoundBoardResponse complete(long revision) {
         ThirdRoundPlan plan = editable(revision);
         String semester = plan.getSemester();
-        List<ThirdRoundPositionSlot> positions = slots.findAllBySemesterOrderById(semester);
+        List<ThirdRoundPositionSlot> positions = new ArrayList<>(slots.findAllBySemesterOrderById(semester));
         List<Team> existing = teams.findAllBySemester(semester);
         identifyLegacySlots(semester, positions, existing);
         Map<Long, Project> currentProjects = projects.findProjectsBySemester(semester).stream()
             .collect(Collectors.toMap(Project::getProjectId, p -> p));
         Map<Long, ThirdRoundPlanTeam> cards = planTeams.findAllBySemesterOrderById(semester).stream()
             .collect(Collectors.toMap(ThirdRoundPlanTeam::getId, c -> c));
-        Set<Long> allocated = existing.stream().map(Team::getMemberId).collect(Collectors.toSet());
+        includeExistingMembers(semester, positions, existing, new ArrayList<>(cards.values()));
+        Set<Long> represented = positions.stream().map(ThirdRoundPositionSlot::getUserId)
+            .filter(Objects::nonNull).collect(Collectors.toSet());
+        Set<Long> allocated = existing.stream().map(Team::getMemberId)
+            .filter(id -> !represented.contains(id)).collect(Collectors.toSet());
+        Set<Team> retained = new HashSet<>();
         currentProjects.values().forEach(p -> allocated.add(p.getUser().getId()));
         List<ThirdRoundPositionSlot> assigned = positions.stream().filter(s -> s.getTeamId() != null).toList();
         Set<Long> validUsers = users.findAllById(assigned.stream().map(ThirdRoundPositionSlot::getUserId)
@@ -120,11 +125,21 @@ public class ThirdRoundPlanService {
             if (card.getProjectId() != null) {
                 Project project = currentProjects.get(card.getProjectId());
                 if (project == null) throw new ConflictException("기존 프로젝트를 찾을 수 없습니다.");
+                Team unchanged = existing.stream().filter(t -> t.getMemberId().equals(slot.getUserId())
+                    && t.getProjectId().equals(project.getProjectId()) && t.getPosition() == slot.getPosition())
+                    .findFirst().orElse(null);
+                if (unchanged != null) {
+                    retained.add(unchanged);
+                    continue;
+                }
                 allocation.add(Team.builder().projectId(project.getProjectId())
                     .leaderId(project.getUser().getId()).memberId(slot.getUserId())
                     .position(slot.getPosition()).round(3).semester(semester).build());
             }
         }
+        teams.deleteAll(existing.stream().filter(t -> represented.contains(t.getMemberId())
+            && !retained.contains(t)).toList());
+        teams.flush();
         teams.saveAll(allocation);
         plan.complete();
         lockMeta(semester).completeThirdRound();
@@ -137,7 +152,9 @@ public class ThirdRoundPlanService {
 
     ThirdRoundBoardResponse shuffle(long revision, Random random) {
         ThirdRoundPlan plan = editable(revision);
-        List<ThirdRoundPositionSlot> positions = slots.findAllBySemesterOrderById(plan.getSemester());
+        List<ThirdRoundPositionSlot> positions = new ArrayList<>(slots.findAllBySemesterOrderById(plan.getSemester()));
+        includeExistingMembers(plan.getSemester(), positions, teams.findAllBySemester(plan.getSemester()),
+            planTeams.findAllBySemesterOrderById(plan.getSemester()));
         identifyLegacySlots(plan.getSemester(), positions, teams.findAllBySemester(plan.getSemester()));
         Map<Position, List<ThirdRoundPositionSlot>> groups = positions.stream()
             .filter(slot -> slot.getUserId() != null)
@@ -204,9 +221,14 @@ public class ThirdRoundPlanService {
     private ThirdRoundBoardResponse board(ThirdRoundPlan plan) {
         String semester = plan.getSemester();
         List<ThirdRoundPlanTeam> cards = planTeams.findAllBySemesterOrderById(semester);
-        List<ThirdRoundPositionSlot> positions = slots.findAllBySemesterOrderById(semester);
+        List<ThirdRoundPositionSlot> positions = new ArrayList<>(slots.findAllBySemesterOrderById(semester));
         List<Team> existing = teams.findAllBySemester(semester);
-        if (!plan.isCompleted()) identifyLegacySlots(semester, positions, existing);
+        if (!plan.isCompleted()) {
+            identifyLegacySlots(semester, positions, existing);
+            includeExistingMembers(semester, positions, existing, cards);
+        }
+        Set<Long> represented = positions.stream().map(ThirdRoundPositionSlot::getUserId)
+            .filter(Objects::nonNull).collect(Collectors.toSet());
         Set<Long> userIds = existing.stream().map(Team::getMemberId).collect(Collectors.toSet());
         positions.stream().map(ThirdRoundPositionSlot::getUserId).filter(Objects::nonNull).forEach(userIds::add);
         Map<Long, User> members = users.findAllById(new ArrayList<>(userIds))
@@ -218,7 +240,7 @@ public class ThirdRoundPlanService {
             List<Member> roster = new ArrayList<>();
             if (card.getProjectId() != null) {
                 existing.stream().filter(t -> t.getProjectId().equals(card.getProjectId()))
-                    .filter(t -> !plan.isCompleted() || t.getRound() != 3).forEach(t -> {
+                    .filter(t -> !represented.contains(t.getMemberId())).forEach(t -> {
                     User user = members.get(t.getMemberId());
                     if (user == null) throw new ResourceNotFoundException("배정된 사용자를 찾을 수 없습니다.");
                     roster.add(new Member("member-" + user.getId(), "MEMBER", user.getName(), t.getPosition()));
@@ -234,6 +256,23 @@ public class ThirdRoundPlanService {
         }
         return new ThirdRoundBoardResponse(semester, plan.getRevision(), result,
             positions.stream().filter(s -> s.getTeamId() == null).map(s -> slotView(s, members)).toList(), plan.isCompleted());
+    }
+
+    /** Upgrade existing drafts without resetting any saved moves or unassignments. */
+    private void includeExistingMembers(String semester, List<ThirdRoundPositionSlot> positions,
+                                        List<Team> existing, List<ThirdRoundPlanTeam> cards) {
+        Set<Long> represented = positions.stream().map(ThirdRoundPositionSlot::getUserId)
+            .filter(Objects::nonNull).collect(Collectors.toSet());
+        Map<Long, Long> cardIds = cards.stream().filter(c -> c.getProjectId() != null)
+            .collect(Collectors.toMap(ThirdRoundPlanTeam::getProjectId, ThirdRoundPlanTeam::getId));
+        for (Team member : existing) {
+            Long cardId = cardIds.get(member.getProjectId());
+            if (cardId == null || !represented.add(member.getMemberId())) continue;
+            ThirdRoundPositionSlot slot = new ThirdRoundPositionSlot(semester, member.getPosition());
+            slot.identify(member.getMemberId());
+            slot.moveTo(cardId);
+            positions.add(slots.save(slot));
+        }
     }
 
     private void identifyLegacySlots(String semester, List<ThirdRoundPositionSlot> positions, List<Team> existing) {

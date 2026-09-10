@@ -53,7 +53,7 @@ export default function RecruitmentPositionInput({ positions, onChange, required
       <h3>모집 인원 (팀장 제외)</h3>
       <p>{required
         ? "모집할 직무와 인원을 최소 한 개 입력해 주세요. (필수)"
-        : "모집할 직무와 인원을 추가해 주세요. (선택)"}</p>
+        : "모집할 직무와 인원을 추가해 주세요."}</p>
       {positions.map((position, index) => (
         <div className={styles.recruitment_row} key={index}>
           <label>

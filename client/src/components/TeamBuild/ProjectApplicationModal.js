@@ -23,7 +23,7 @@ export default function ProjectApplicationModal({
   );
 
   const handleSave = () => {
-    if (!projectFormPosition) {
+    if (!project.recruitPositions.includes(projectFormPosition)) {
       alert("지원 직무를 선택해주세요.");
       return;
     }
@@ -67,6 +67,9 @@ export default function ProjectApplicationModal({
         <p className={styles.applicationModalDescription}>
           이 지원서로 {project.title}에 지원하게 됩니다.
         </p>
+        {project.recruitPositions.length === 0 && (
+          <p role="status">등록된 모집 직무가 없어 지원할 수 없습니다.</p>
+        )}
         <div className={styles.formGroup}>
           <label htmlFor="projectPosition">지원 직무</label>
           <select
@@ -96,7 +99,8 @@ export default function ProjectApplicationModal({
             className={styles.applicationModalDescription}
           >
             저장한 경력은 새 지원서에 자동 입력되며, 지원서마다 수정할 수
-            있습니다.<br />
+            있습니다.
+            <br />
             없다면 '없음'이라고 작성해주세요
           </p>
         </div>
@@ -121,6 +125,7 @@ export default function ProjectApplicationModal({
           type="button"
           className={styles.modalSubmit}
           onClick={handleSave}
+          disabled={project.recruitPositions.length === 0}
         >
           지원서 저장하기
         </button>

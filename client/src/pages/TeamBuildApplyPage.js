@@ -450,6 +450,22 @@ function TeamBuildApplyPage({ round = 1 }) {
                 </div>
               ))}
             </div>
+            <div className={styles.completedActions}>
+              <button
+                type="button"
+                className={styles.keepApplicationButton}
+                onClick={() => navigate(-1)}
+              >
+                돌아가기
+              </button>
+              <button
+                type="button"
+                className={styles.primaryButton}
+                onClick={() => navigate("/team-build/result")}
+              >
+                팀 빌딩 결과 확인
+              </button>
+            </div>
           </section>
         </div>
       </div>

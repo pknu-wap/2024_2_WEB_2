@@ -193,7 +193,13 @@
 }
 
 .completedApply {
-  margin-top: 120px;
+  margin-top: 0;
+}
+
+.completedActions {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
 }
 
 .completedActions {
@@ -1571,6 +1577,9 @@
 }
 
 .myApplicationPriorityNumber {
+  width: auto;
+  min-width: 48px;
+  white-space: nowrap;
   flex-shrink: 0;
   align-self: center;
   background: transparent;

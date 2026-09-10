@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams } from "react-router-dom";
 import Header from "../components/Header";
 import Menu from "../components/Menu";
 import FloatingButton from "../components/FloatingButton";
@@ -6,7 +7,51 @@ import { teamBuildApi } from "../api/team-build";
 import styles from "../assets/TeamBuildResult.module.css";
 import LoadingPage from "../components/LoadingPage";
 
+const PREVIEW_TEAMS = [
+  {
+    projectId: 1,
+    teamName: "캠퍼스 모임 찾기",
+    leader: { name: "김하늘", position: "프론트엔드" },
+    members: [
+      { name: "이서준", position: "백엔드" },
+      { name: "박지우", position: "디자인" },
+      { name: "최도윤", position: "프론트엔드" },
+    ],
+    summary: "관심사가 같은 학우들과 모임을 만드는 웹 서비스",
+  },
+  {
+    projectId: 2,
+    teamName: "나의 하루 기록",
+    leader: { name: "정수아", position: "앱" },
+    members: [
+      { name: "강민준", position: "백엔드" },
+      { name: "윤서연", position: "디자인" },
+    ],
+    summary: "일상과 목표를 기록하는 모바일 앱",
+  },
+  {
+    projectId: 3,
+    teamName: "작은 숲의 모험",
+    leader: { name: "한유진", position: "게임" },
+    members: [
+      { name: "임시우", position: "게임" },
+      { name: "오채원", position: "디자인" },
+      { name: "신예준", position: "기획" },
+      { name: "서다은", position: "게임" },
+    ],
+    summary: "숲을 탐험하며 퍼즐을 해결하는 게임",
+  },
+];
+
+const PREVIEW_UNASSIGNED = [
+  { name: "조현우", position: "프론트엔드" },
+  { name: "문소율", position: "백엔드" },
+];
+
 const TeamBuildResultPage = () => {
+  const [searchParams] = useSearchParams();
+  const isPreview =
+    process.env.NODE_ENV === "development" && searchParams.get("preview") === "1";
   // 상태 관리
   const [teams, setTeams] = useState([]); // 팀 상태
   const [unassigned, setUnassigned] = useState([]); // 미배정자 상태
@@ -25,6 +70,12 @@ const TeamBuildResultPage = () => {
     const fetchTeamBuildResult = async () => {
       setIsLoading(true);
       setError(null);
+      if (isPreview) {
+        setTeams(PREVIEW_TEAMS);
+        setUnassigned(PREVIEW_UNASSIGNED);
+        setIsLoading(false);
+        return;
+      }
       try {
         const response = await teamBuildApi.getTeamBuildResults();
         setTeams(response.results || []);
@@ -41,7 +92,7 @@ const TeamBuildResultPage = () => {
       }
     };
     fetchTeamBuildResult();
-  }, []);
+  }, [isPreview]);
 
   // 검색 및 정렬 로직
   const filteredAndSortedTeams = useMemo(() => {

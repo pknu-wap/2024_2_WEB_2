@@ -196,6 +196,20 @@
   margin-top: 120px;
 }
 
+.completedActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.completedActions button {
+  flex: 1 1 160px;
+  min-height: 48px;
+  border-radius: 12px;
+  font-size: 14px;
+}
+
 .emptyApply {
   min-height: 240px;
   display: flex;

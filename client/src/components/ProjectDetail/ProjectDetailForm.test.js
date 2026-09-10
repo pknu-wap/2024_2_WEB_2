@@ -115,3 +115,22 @@ test("버튼 표시 후 서버가 수정 권한을 거절하면 이동하지 않
   );
   expect(screen.queryByText("Edit page")).toBeNull();
 });
+
+test("상세 화면에 직무별 모집 인원을 표시한다", async () => {
+  projectApi.getProjectDetail.mockResolvedValue({
+    title: "Project title",
+    recruitmentPositions: [
+      { role: "프론트엔드", count: 3 },
+      { role: "백엔드", count: 2 },
+    ],
+  });
+  openPage(ProjectDetailForm);
+  expect(await screen.findByText("프론트엔드 3명, 백엔드 2명")).toBeTruthy();
+});
+
+test("기존 게시글에는 모집 정보가 없음을 표시한다", async () => {
+  openPage(ProjectDetailForm);
+  expect(
+    await screen.findByText("등록된 모집 인원 정보가 없습니다."),
+  ).toBeTruthy();
+});

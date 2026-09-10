@@ -163,7 +163,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
       return;
     }
 
-    const recruitmentError = recruitmentPositionsError(recruitmentPositions);
+    const recruitmentError = recruitmentPositionsError(recruitmentPositions, !isEdit);
     if (recruitmentError) {
       alert(recruitmentError);
       return;
@@ -328,6 +328,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
         </div>
 
         <RecruitmentPositionInput
+          required={!isEdit}
           positions={recruitmentPositions}
           onChange={setRecruitmentPositions}
         />

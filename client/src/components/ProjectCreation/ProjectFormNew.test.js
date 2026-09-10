@@ -53,14 +53,14 @@ test("모집 직무를 추가하고 인원을 숫자로 저장한다", async () 
   await screen.findByText("2026년 2학기");
   fireEvent.click(screen.getByRole("button", { name: "모집 직무 추가" }));
   fireEvent.change(screen.getByLabelText("직무 1"), {
-    target: { value: " 프론트엔드 " },
+    target: { value: "FRONTEND" },
   });
   fireEvent.change(screen.getByLabelText("모집 인원 1 (명)"), {
     target: { value: "3" },
   });
   fireEvent.click(screen.getByRole("button", { name: "모집 직무 추가" }));
   fireEvent.change(screen.getByLabelText("직무 2"), {
-    target: { value: "백엔드" },
+    target: { value: "BACKEND" },
   });
   fireEvent.change(screen.getByLabelText("모집 인원 2 (명)"), {
     target: { value: "2" },
@@ -97,7 +97,7 @@ test("수정 화면에서 기존 모집 정보를 불러오고 모두 삭제할 
       />
     </MemoryRouter>,
   );
-  expect(screen.getByLabelText("직무 1").value).toBe("백엔드");
+  expect(screen.getByLabelText("직무 1").value).toBe("BACKEND");
   expect(screen.getByLabelText("모집 인원 1 (명)").value).toBe("2");
   fireEvent.click(screen.getByRole("button", { name: "모집 직무 1 삭제" }));
   fireEvent.change(screen.getByLabelText("비밀번호"), {
@@ -128,7 +128,7 @@ test.each([0, -1, 1.5, ""])(
     await screen.findByText("2026년 2학기");
     fireEvent.click(screen.getByRole("button", { name: "모집 직무 추가" }));
     fireEvent.change(screen.getByLabelText("직무 1"), {
-      target: { value: "백엔드" },
+      target: { value: "BACKEND" },
     });
     fireEvent.change(screen.getByLabelText("모집 인원 1 (명)"), {
       target: { value: count },
@@ -145,3 +145,17 @@ test.each([0, -1, 1.5, ""])(
     );
   },
 );
+
+ test.each([false, true])("신규 작성은 모집 정보가 비어 있으면 제출하지 않는다 (추가 후 삭제: %s)", async (remove) => {
+  render(<MemoryRouter><ProjectFormNew /></MemoryRouter>);
+  await screen.findByText("2026년 2학기");
+  expect(screen.getByText("모집할 직무와 인원을 최소 한 개 입력해 주세요. (필수)")).toBeTruthy();
+  if (remove) {
+    fireEvent.click(screen.getByRole("button", { name: "모집 직무 추가" }));
+    fireEvent.click(screen.getByRole("button", { name: "모집 직무 1 삭제" }));
+  }
+  fireEvent.change(screen.getByLabelText("비밀번호"), { target: { value: "pw" } });
+  fireEvent.submit(screen.getByRole("button", { name: "프로젝트 생성" }).closest("form"));
+  expect(projectApi.createProject).not.toHaveBeenCalled();
+  expect(window.alert).toHaveBeenCalledWith("모집 직무와 인원을 최소 한 개 입력해 주세요.");
+});

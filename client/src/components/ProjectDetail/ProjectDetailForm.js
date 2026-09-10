@@ -118,8 +118,8 @@ const ProjectDetailForm = () => {
         </div>
       </div>
 
-      <section aria-label="직무별 모집 인원">
-        <h3>직무별 모집 인원</h3>
+      <section aria-label="모집 인원 (팀장 제외)">
+        <h3>모집 인원 (팀장 제외)</h3>
         {projectData.recruitmentPositions?.length > 0 ? (
           <p>
             {projectData.recruitmentPositions

@@ -12,6 +12,8 @@ import wap.web2.server.teambuild.entity.ProjectApply;
 
 @Repository
 public interface ProjectApplyRepository extends JpaRepository<ProjectApply, Long> {
+    void deleteBySemester(String semester);
+
     List<ProjectApply> findAllByProject(Project project);
 
     List<ProjectApply> findAllByUserIdAndSemesterAndRound(Long userId, String semester, int round);

@@ -61,6 +61,36 @@ class AdminTeamBuildingRoundTest {
         verifyNoInteractions(teamRepository, clusterRepository, applyRepository, recruitRepository);
     }
 
+    @Test void completeResetDeletesAllCurrentSemesterSubmissionsAndRestarts() {
+        String semester = generateSemester();
+        TeamBuildingMeta meta = new TeamBuildingMeta(3, 3, 1L, semester, TeamBuildingStatus.CLOSED);
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(semester)).thenReturn(Optional.of(meta));
+
+        service.resetTeamBuildingCompletely();
+
+        verify(slots).deleteAllInBatch(any());
+        verify(planTeams).deleteAllInBatch(any());
+        verify(plans).deleteById(semester);
+        verify(teamRepository).deleteBySemester(semester);
+        verify(clusterRepository).deleteBySemester(semester);
+        var order = inOrder(recruitRepository, applyRepository);
+        order.verify(recruitRepository).deleteBySemester(semester);
+        order.verify(applyRepository).deleteBySemester(semester);
+        verifyNoInteractions(projectRepository, teamBuilder);
+        assertThat(meta.getStatus()).isEqualTo(TeamBuildingStatus.OPEN);
+        assertThat(meta.getRound()).isEqualTo(1);
+        assertThat(meta.getCompletedRound()).isZero();
+    }
+
+    @Test void completeResetWithoutTeamBuildingDoesNotDeleteData() {
+        when(teamBuildingMetaRepository.findBySemesterForUpdate(generateSemester())).thenReturn(Optional.empty());
+
+        assertThatThrownBy(service::resetTeamBuildingCompletely).isInstanceOf(ConflictException.class);
+
+        verifyNoInteractions(slots, planTeams, plans, teamRepository, clusterRepository,
+            applyRepository, recruitRepository, projectRepository);
+    }
+
     @Test void secondRoundPreservesExistingMembersAndCannotBeRunTwice() {
         String semester = generateSemester();
         TeamBuildingMeta meta = new TeamBuildingMeta(2, 1, 1L, semester, TeamBuildingStatus.CLOSED);

@@ -59,7 +59,8 @@ const reorderProjectIds = (
 function TeamBuildApplyPage({ round = 1 }) {
   const [searchParams] = useSearchParams();
   const isPreview =
-    process.env.NODE_ENV === "development" && searchParams.get("preview") === "1";
+    process.env.NODE_ENV === "development" &&
+    searchParams.get("preview") === "1";
   const isSecondRound = round === 2;
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
@@ -121,9 +122,33 @@ function TeamBuildApplyPage({ round = 1 }) {
     const fetchData = async () => {
       if (isPreview) {
         setProjects([
-          { projectId: 1, title: "캠퍼스 모임 찾기", projectType: "WEB", summary: "관심사가 같은 학우들과 모임을 만드는 웹 서비스", recruitPositions: [...POSITIONS], recruitCount: 4, requirements: "함께 배우며 꾸준히 참여할 팀원을 찾습니다." },
-          { projectId: 2, title: "나의 하루 기록", projectType: "APP", summary: "일상과 목표를 기록하는 모바일 앱", recruitPositions: [...POSITIONS], recruitCount: 3, requirements: "앱 개발에 관심 있는 분을 환영합니다." },
-          { projectId: 3, title: "작은 숲의 모험", projectType: "GAME", summary: "숲을 탐험하며 퍼즐을 해결하는 게임", recruitPositions: [...POSITIONS], recruitCount: 4, requirements: "게임 제작을 함께 경험할 팀원을 찾습니다." },
+          {
+            projectId: 1,
+            title: "캠퍼스 모임 찾기",
+            projectType: "WEB",
+            summary: "관심사가 같은 학우들과 모임을 만드는 웹 서비스",
+            recruitPositions: [...POSITIONS],
+            recruitCount: 4,
+            requirements: "함께 배우며 꾸준히 참여할 팀원을 찾습니다.",
+          },
+          {
+            projectId: 2,
+            title: "나의 하루 기록",
+            projectType: "APP",
+            summary: "일상과 목표를 기록하는 모바일 앱",
+            recruitPositions: [...POSITIONS],
+            recruitCount: 3,
+            requirements: "앱 개발에 관심 있는 분을 환영합니다.",
+          },
+          {
+            projectId: 3,
+            title: "작은 숲의 모험",
+            projectType: "GAME",
+            summary: "숲을 탐험하며 퍼즐을 해결하는 게임",
+            recruitPositions: [...POSITIONS],
+            recruitCount: 4,
+            requirements: "게임 제작을 함께 경험할 팀원을 찾습니다.",
+          },
         ]);
         setHasApplied(false);
         setIsLoading(false);
@@ -151,10 +176,13 @@ function TeamBuildApplyPage({ round = 1 }) {
             Array.isArray(projectList)
               ? projectList.map((project) => ({
                   ...project,
-                  // 현재 프로젝트 API는 모집 직무를 생략하므로 전체 직무를 기본값으로 사용한다.
-                  recruitPositions: Array.isArray(project.recruitPositions)
-                    ? project.recruitPositions
-                    : [...POSITIONS],
+                  recruitPositions: !isSecondRound
+                    ? Array.isArray(project.firstRoundRecruitPositions)
+                      ? project.firstRoundRecruitPositions
+                      : []
+                    : Array.isArray(project.recruitPositions)
+                      ? project.recruitPositions
+                      : [...POSITIONS],
                 }))
               : [],
           );
@@ -518,8 +546,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                   <span
                     id="application-count-hint"
                     className={styles.applicationCountHint}
-                  >
-                  </span>
+                  ></span>
                 )}
               </div>
               <p>위·아래 버튼 또는 드래그로 우선순위를 조정하세요</p>

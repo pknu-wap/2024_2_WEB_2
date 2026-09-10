@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.ToString;
 import org.springframework.web.multipart.MultipartFile;
 import wap.web2.server.member.entity.User;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.ImageDto;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.dto.TechStackDto;
@@ -26,6 +27,7 @@ import wap.web2.server.project.entity.TechStack;
 @AllArgsConstructor
 public class ProjectRequest {
 
+    private List<RecruitmentPositionDto> recruitmentPositions;
     private String title;
     private String projectType;
     private String content;
@@ -73,6 +75,7 @@ public class ProjectRequest {
         }
 
         return Project.builder()
+            .recruitmentPositions(RecruitmentPositionDto.toEntities(request.getRecruitmentPositions()))
             .user(user)
             .title(request.getTitle())
             .projectType(request.getProjectType())

@@ -23,6 +23,7 @@ import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.request.ProjectRequest;
 import wap.web2.server.project.dto.response.ProjectDetailsResponse;
 import wap.web2.server.project.dto.response.ProjectInfoResponse;
@@ -58,6 +59,7 @@ public class ProjectService {
             throw new ProjectPasswordInvalidException();
         }
 
+        RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
         User user = findUser(userPrincipal.getId());
         String semester = getCurrentSemester();
 
@@ -111,6 +113,7 @@ public class ProjectService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectTemplate> getCurrentProjectRecruits() {
         return projectRepository
             .findProjectsBySemester(generateSemester())
@@ -119,6 +122,7 @@ public class ProjectService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetails(Long projectId, UserPrincipal userPrincipal) {
         Project project = findProject(projectId);
 
@@ -134,6 +138,7 @@ public class ProjectService {
     }
 
     @CacheEvict(value = "projectList", allEntries = true)
+    @Transactional(readOnly = true)
     public ProjectDetailsResponse getProjectDetailsForUpdate(
         Long projectId,
         UserPrincipal userPrincipal
@@ -174,6 +179,8 @@ public class ProjectService {
         if (!canManage(project, user)) {
             throw new ForbiddenException("프로젝트 수정 권한이 없습니다.");
         }
+
+        RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
 
         // 썸네일 이미지가 없으면 유지 or 있으면 변경
         if (hasFile(request.getThumbnailFiles())) {

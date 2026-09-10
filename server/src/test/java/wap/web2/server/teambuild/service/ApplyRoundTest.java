@@ -26,6 +26,7 @@ import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.entity.Project;
+import wap.web2.server.project.entity.RecruitmentPosition;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.teambuild.dto.RecruitmentDto;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest;
@@ -75,7 +76,7 @@ class ApplyRoundTest {
         user.setId(1L);
         when(principal.getId()).thenReturn(1L);
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
-        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).recruitmentPositions(round == 1 ? List.of(new RecruitmentPosition("백엔드", 2)) : List.of()).build()));
         status(TeamBuildingStatus.APPLY, round);
         service.apply(principal, new ProjectAppliesRequest(List.of(
             new ProjectAppliesRequest.ApplyRequest(10L, "BACKEND", "comment"))), round);

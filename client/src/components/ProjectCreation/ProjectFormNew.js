@@ -1,4 +1,8 @@
-import { MAX_PROJECT_TITLE_LENGTH, MAX_PROJECT_SUMMARY_LENGTH, MAX_PROJECT_CONTENT_LENGTH } from "../../constants/project";
+import {
+  MAX_PROJECT_TITLE_LENGTH,
+  MAX_PROJECT_SUMMARY_LENGTH,
+  MAX_PROJECT_CONTENT_LENGTH,
+} from "../../constants/project";
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 
@@ -11,6 +15,9 @@ import TextInputForm from "./TextInputForm";
 import TechStackSelector from "./TechStackSelector";
 import TeamMemberInputForm from "./TeamMemberInputForm";
 import InputPin from "./InputPin";
+import RecruitmentPositionInput, {
+  recruitmentPositionsError,
+} from "./RecruitmentPositionInput";
 
 // 사용성을 높인 버전의 프로젝트 생성 폼
 
@@ -40,6 +47,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
   const { projectId } = useParams();
   const maxImageCount = 4; // 최대 이미지 업로드 개수
   const navigate = useNavigate(); // navigate 함수
+  const [recruitmentPositions, setRecruitmentPositions] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSemesterLoading, setIsSemesterLoading] = useState(!isEdit);
   const [semesterError, setSemesterError] = useState("");
@@ -120,6 +128,7 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
   // 기존 데이터 초기화
   useEffect(() => {
     if (isEdit && existingProject) {
+      setRecruitmentPositions(existingProject.recruitmentPositions || []);
       setThumbnail(existingProject.thumbnail || null);
       setSemester(existingProject.semester || "");
       setProjectType(existingProject.projectType || "");
@@ -154,10 +163,20 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
       return;
     }
 
+    const recruitmentError = recruitmentPositionsError(recruitmentPositions);
+    if (recruitmentError) {
+      alert(recruitmentError);
+      return;
+    }
+
     setIsSubmitting(true);
 
     const formData = new FormData();
     const projectData = {
+      recruitmentPositions: recruitmentPositions.map(({ role, count }) => ({
+        role: role.trim(),
+        count: Number(count),
+      })),
       title,
       projectType,
       content,
@@ -308,6 +327,10 @@ const ProjectFormNew = ({ isEdit = false, existingProject = null }) => {
           ))}
         </div>
 
+        <RecruitmentPositionInput
+          positions={recruitmentPositions}
+          onChange={setRecruitmentPositions}
+        />
         <TechStackSelector
           selectedTechStacks={selectedTechStacks}
           toggleTechStack={toggleTechStack}

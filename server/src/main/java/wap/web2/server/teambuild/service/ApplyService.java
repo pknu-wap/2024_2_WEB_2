@@ -88,10 +88,18 @@ public class ApplyService {
                 throw new BadRequestException("동일한 프로젝트와 직무에 중복 지원할 수 없습니다.");
             }
         }
+        Map<Long, Project> projects = new java.util.HashMap<>();
+        for (ApplyRequest entry : applies) {
+            Project project = projects.computeIfAbsent(entry.getProjectId(), this::findProject);
+            if (round == 1 && !ProjectApplicationPositions.firstRound(project)
+                .contains(parsePosition(entry.getPosition()))) {
+                throw new BadRequestException("프로젝트에서 모집하지 않는 직무로는 지원할 수 없습니다.");
+            }
+        }
         int priority = existing.stream().mapToInt(ProjectApply::getPriority).max().orElse(0) + 1;
 
         for (ApplyRequest applyRequest : applies) {
-            Project project = findProject(applyRequest.getProjectId());
+            Project project = projects.get(applyRequest.getProjectId());
             log.info(
                 "apply-user:{},priority:{},project:{}",
                 userPrincipal.getName(),

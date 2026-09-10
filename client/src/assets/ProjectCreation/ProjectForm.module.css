@@ -193,3 +193,45 @@
   z-index: 1; /* 텍스트가 이미지보다 위에 표시되도록 */
   font-family: "Pretendard-Regular";
 }
+
+.recruitment {
+  margin: 24px 0;
+  color: #ebebeb;
+  text-align: left;
+}
+
+.recruitment p {
+  color: #b5b5b5;
+  font-size: 14px;
+}
+
+.recruitment_row {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.recruitment_row label {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+}
+
+.recruitment_row input {
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px;
+  border: 1px solid #666;
+  border-radius: 4px;
+  background: #1f1f1f;
+  color: #ebebeb;
+}
+
+.recruitment button {
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+}

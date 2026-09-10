@@ -77,6 +77,7 @@ public class ProjectController {
     ) throws IOException {
         // RequestPart 중 ContentType 형식이 서로 다른 file 2종류를 ProjectCreateRequest 에 할당하여 새로운 RequestDto 객체 생성
         ProjectRequest fullRequest = ProjectRequest.builder()
+            .recruitmentPositions(request.getRecruitmentPositions())
             .title(request.getTitle())
             .projectType(request.getProjectType())
             .content(request.getContent())

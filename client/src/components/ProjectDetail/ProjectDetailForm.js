@@ -118,6 +118,19 @@ const ProjectDetailForm = () => {
         </div>
       </div>
 
+      <section aria-label="직무별 모집 인원">
+        <h3>직무별 모집 인원</h3>
+        {projectData.recruitmentPositions?.length > 0 ? (
+          <p>
+            {projectData.recruitmentPositions
+              .map(({ role, count }) => `${role} ${count}명`)
+              .join(", ")}
+          </p>
+        ) : (
+          <p>등록된 모집 인원 정보가 없습니다.</p>
+        )}
+      </section>
+
       {/* 이미지 섹션 */}
       <div className={styles.images}>
         {projectData.images && projectData.images.length > 0 ? (

@@ -21,12 +21,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.util.ReflectionTestUtils;
+import wap.web2.server.exception.BadRequestException;
 import wap.web2.server.exception.ForbiddenException;
 import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.Role;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
+import wap.web2.server.project.dto.response.ProjectDetailsResponse;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.dto.TechStackDto;
 import wap.web2.server.project.dto.request.ProjectRequest;
@@ -252,6 +255,55 @@ class ProjectServiceTest {
         assertThatThrownBy(() -> projectService.update(10L, request, principal))
             .isInstanceOf(ProjectPasswordInvalidException.class);
         verifyNoInteractions(projectRepository, objectStorageService);
+    }
+
+    @Test
+    void 모집_인원을_생성_조회_수정_삭제한다() {
+        var positions = List.of(
+            new RecruitmentPositionDto("프론트엔드", 3),
+            new RecruitmentPositionDto("백엔드", 2));
+        ProjectRequest request = baseRequestBuilder().recruitmentPositions(positions).build();
+        Project project = request.toEntity(request, "2026-02", List.of(), "", owner());
+        assertThat(ProjectDetailsResponse.from(project)
+            .getRecruitmentPositions()).containsExactlyElementsOf(positions);
+        project.update(baseRequestBuilder().build());
+        assertThat(project.getRecruitmentPositions()).hasSize(2);
+        project.update(baseRequestBuilder().recruitmentPositions(List.of(positions.get(1))).build());
+        assertThat(project.getRecruitmentPositions()).singleElement().satisfies(position -> {
+            assertThat(position.getRole()).isEqualTo("백엔드");
+            assertThat(position.getCount()).isEqualTo(2);
+        });
+        project.update(baseRequestBuilder().recruitmentPositions(List.of()).build());
+        assertThat(project.getRecruitmentPositions()).isEmpty();
+        assertThat(baseRequestBuilder().build().toEntity(baseRequestBuilder().build(), "2026-02", List.of(), "", owner())
+            .getRecruitmentPositions()).isEmpty();
+    }
+
+    @Test
+    void 잘못된_모집_정보는_거절한다() {
+        var invalid = java.util.Arrays.asList(
+            new RecruitmentPositionDto(" ", 1),
+            new RecruitmentPositionDto("개발", 0),
+            new RecruitmentPositionDto("개발", -1),
+            new RecruitmentPositionDto("개발", null),
+            new RecruitmentPositionDto("가".repeat(51), 1), null);
+        for (var position : invalid) {
+            assertThatThrownBy(() -> RecruitmentPositionDto.toEntities(
+                java.util.Arrays.asList(position)))
+                .isInstanceOf(BadRequestException.class);
+        }
+        assertThatThrownBy(() -> RecruitmentPositionDto.toEntities(List.of(
+            new RecruitmentPositionDto("개발", 1),
+            new RecruitmentPositionDto(" 개발 ", 2))))
+            .isInstanceOf(BadRequestException.class);
+    }
+
+    @Test
+    void 소수_모집_인원은_JSON_변환에서_거절한다() {
+        var mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        assertThatThrownBy(() -> mapper.readValue(
+            "{\"recruitmentPositions\":[{\"role\":\"백엔드\",\"count\":1.5}]}", ProjectRequest.class))
+            .isInstanceOf(com.fasterxml.jackson.core.JsonProcessingException.class);
     }
 
     private ProjectRequest.ProjectRequestBuilder baseRequestBuilder() {

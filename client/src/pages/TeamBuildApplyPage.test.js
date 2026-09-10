@@ -23,18 +23,21 @@ beforeEach(() => {
       title: "웹 프로젝트",
       projectType: "WEB",
       recruitPositions: ["BACKEND"],
+      firstRoundRecruitPositions: ["BACKEND"],
     },
     {
       projectId: 2,
       title: "앱 프로젝트",
       projectType: "APP",
       recruitPositions: ["APP"],
+      firstRoundRecruitPositions: ["APP"],
     },
     {
       projectId: 3,
       title: "게임 프로젝트",
       projectType: "GAME",
       recruitPositions: ["GAME"],
+      firstRoundRecruitPositions: ["GAME"],
     },
   ]);
 });
@@ -81,6 +84,7 @@ test.each([1, 2])(
         title: "웹 프로젝트",
         projectType: "WEB",
         recruitPositions: ["BACKEND", "APP"],
+        firstRoundRecruitPositions: ["BACKEND", "APP"],
       },
     ]);
     await renderApplyPage(round);
@@ -404,11 +408,8 @@ test.each([1, 2])(
 );
 
 test.each([
-  [1, undefined],
   [2, undefined],
-  [1, null],
   [2, null],
-  [1, "BACKEND"],
   [2, "BACKEND"],
 ])(
   "%i차 프로젝트의 직무 목록 %s를 기본 직무로 보완하고 지원서를 저장한다",
@@ -457,7 +458,7 @@ test.each([[[]], [["BACKEND"]]])(
         projectId: 10,
         title: "직무 지정 프로젝트",
         projectType: "WEB",
-        recruitPositions,
+        firstRoundRecruitPositions: recruitPositions,
       },
     ]);
     await renderApplyPage(1);
@@ -470,6 +471,47 @@ test.each([[[]], [["BACKEND"]]])(
   },
 );
 
+test.each([undefined, null, "BACKEND", []])(
+  "1차에서 모집 직무 정보 %j가 없으면 지원을 막는다",
+  async (firstRoundRecruitPositions) => {
+    teamBuildApi.getApplyProjects.mockResolvedValueOnce([
+      { projectId: 10, title: "모집 미등록", firstRoundRecruitPositions },
+    ]);
+    await renderApplyPage(1);
+    openNewApplication();
+    const form = within(screen.getByRole("dialog"));
+    expect(form.getAllByRole("option").map((option) => option.value)).toEqual([
+      "",
+    ]);
+    expect(form.getByRole("button", { name: "지원서 저장하기" }).disabled).toBe(
+      true,
+    );
+    expect(
+      form.getByText("등록된 모집 직무가 없어 지원할 수 없습니다."),
+    ).toBeTruthy();
+  },
+);
+
+test("1차 지원에는 서버가 게시글에서 계산한 모집 직무만 표시한다", async () => {
+  teamBuildApi.getApplyProjects.mockResolvedValueOnce([
+    {
+      projectId: 10,
+      title: "백엔드 모집",
+      firstRoundRecruitPositions: ["BACKEND"],
+      recruitPositions: ["FRONTEND", "BACKEND"],
+    },
+  ]);
+  await renderApplyPage(1);
+  openNewApplication();
+  const form = within(screen.getByRole("dialog"));
+  expect(form.getAllByRole("option").map((option) => option.value)).toEqual([
+    "",
+    "BACKEND",
+  ]);
+  fillApplication({ position: "BACKEND", message: "함께 개발하고 싶습니다" });
+  saveApplication();
+  expect(screen.getByLabelText("현재 지원서 1개")).toBeTruthy();
+});
 
 test.each([false, true])("배정된 팀원은 2차 지원 화면에 진입할 수 없다 (지원 여부: %s)", async (hasApplied) => {
   teamBuildApi.getApplyStatus.mockResolvedValue({ hasApplied, assigned: true });

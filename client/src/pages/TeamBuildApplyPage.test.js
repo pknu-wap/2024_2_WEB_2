@@ -1,5 +1,6 @@
 import React from "react";
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
 import TeamBuildApplyPage from "./TeamBuildApplyPage";
@@ -69,6 +70,135 @@ function saveApplication() {
 }
 
 test.each([1, 2])(
+  "%i차 이동 버튼으로 같은 프로젝트의 지원서를 정렬하고 해당 순서로 제출한다",
+  async (round) => {
+    teamBuildApi.submitApply.mockClear();
+    teamBuildApi.getApplyProjects.mockResolvedValueOnce([
+      {
+        projectId: 1,
+        title: "웹 프로젝트",
+        projectType: "WEB",
+        recruitPositions: ["BACKEND", "APP"],
+      },
+    ]);
+    await renderApplyPage(round);
+    const orderButton = (position, direction) =>
+      screen.getByRole("button", {
+        name: `웹 프로젝트 ${position} 우선순위 ${direction}`,
+      });
+    const order = () =>
+      screen
+        .getAllByRole("button", { name: /우선순위 올리기$/ })
+        .map((button) => button.getAttribute("aria-label"));
+
+    openNewApplication();
+    fillApplication({
+      position: "BACKEND",
+      career: "백엔드 경력",
+      message: "백엔드 지원",
+    });
+    saveApplication();
+    expect(orderButton("백엔드", "올리기").disabled).toBe(true);
+    expect(orderButton("백엔드", "내리기").disabled).toBe(true);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "+ 지원서 추가 작성하기" }),
+    );
+    fillApplication({ position: "APP", career: "앱 경력", message: "앱 지원" });
+    saveApplication();
+    expect(orderButton("백엔드", "올리기").disabled).toBe(true);
+    expect(orderButton("앱", "내리기").disabled).toBe(true);
+
+    fireEvent.click(orderButton("백엔드", "내리기"));
+    expect(order()).toEqual([
+      "웹 프로젝트 앱 우선순위 올리기",
+      "웹 프로젝트 백엔드 우선순위 올리기",
+    ]);
+    expect(orderButton("앱", "올리기").disabled).toBe(true);
+    expect(orderButton("백엔드", "내리기").disabled).toBe(true);
+
+    orderButton("백엔드", "올리기").focus();
+    act(() => userEvent.keyboard("{Enter}"));
+    expect(order()).toEqual([
+      "웹 프로젝트 백엔드 우선순위 올리기",
+      "웹 프로젝트 앱 우선순위 올리기",
+    ]);
+    fireEvent.click(orderButton("앱", "올리기"));
+
+    if (round === 1) {
+      fireEvent.change(screen.getByRole("combobox", { name: "주요 직무" }), {
+        target: { value: "BACKEND" },
+      });
+    }
+    fireEvent.click(screen.getByRole("button", { name: "최종 제출하기" }));
+    const confirmation = within(screen.getByRole("alertdialog"));
+    expect(
+      confirmation.getAllByRole("listitem").map((item) => item.textContent),
+    ).toEqual(["1웹 프로젝트·앱", "2웹 프로젝트·백엔드"]);
+    fireEvent.click(
+      confirmation.getByRole("button", { name: "최종 제출하기" }),
+    );
+    await screen.findByRole("heading", { name: "지원이 완료되었습니다." });
+    expect(teamBuildApi.submitApply).toHaveBeenCalledTimes(1);
+    expect(teamBuildApi.submitApply).toHaveBeenCalledWith(
+      {
+        applies: [
+          {
+            projectId: 1,
+            position: "APP",
+            career: "앱 경력",
+            comment: "앱 지원",
+          },
+          {
+            projectId: 1,
+            position: "BACKEND",
+            career: "백엔드 경력",
+            comment: "백엔드 지원",
+          },
+        ],
+      },
+      round,
+    );
+  },
+);
+
+test("기존 드래그로 순위를 바꾸면 이동 버튼의 경계 상태도 갱신된다", async () => {
+  await renderApplyPage(1);
+  for (const position of ["BACKEND", "APP"]) {
+    openNewApplication();
+    fillApplication({ position, message: "지원합니다" });
+    saveApplication();
+  }
+  const first = screen.getByRole("button", {
+    name: "웹 프로젝트 지원 취소",
+  }).parentElement;
+  const second = screen.getByRole("button", {
+    name: "앱 프로젝트 지원 취소",
+  }).parentElement;
+  const dataTransfer = { setData: jest.fn() };
+  fireEvent.dragStart(second, { dataTransfer });
+  fireEvent.dragOver(first, { dataTransfer, clientY: 0 });
+  fireEvent.drop(first, { dataTransfer });
+  fireEvent.dragEnd(second, { dataTransfer });
+  expect(
+    screen
+      .getAllByRole("button", { name: /우선순위 올리기$/ })
+      .map((button) => button.getAttribute("aria-label")),
+  ).toEqual([
+    "앱 프로젝트 앱 우선순위 올리기",
+    "웹 프로젝트 백엔드 우선순위 올리기",
+  ]);
+  expect(
+    screen.getByRole("button", { name: "앱 프로젝트 앱 우선순위 올리기" })
+      .disabled,
+  ).toBe(true);
+  expect(
+    screen.getByRole("button", { name: "웹 프로젝트 백엔드 우선순위 내리기" })
+      .disabled,
+  ).toBe(true);
+});
+
+test.each([1, 2])(
   "%i차 경력 자동 입력과 개별 수정, 자기소개 60자 제한",
   async (round) => {
     await renderApplyPage(round);
@@ -129,9 +259,13 @@ test.each([1, 2])(
       });
       saveApplication();
       if (position === "BACKEND") {
-        expect(screen.queryByRole("button", { name: "최종 제출하기" })).toBeNull();
         expect(
-          screen.getByLabelText("현재 지원서 1개").getAttribute("aria-describedby"),
+          screen.queryByRole("button", { name: "최종 제출하기" }),
+        ).toBeNull();
+        expect(
+          screen
+            .getByLabelText("현재 지원서 1개")
+            .getAttribute("aria-describedby"),
         ).toBe("application-count-hint");
       }
     }
@@ -156,10 +290,7 @@ test.each([1, 2])(
     const confirmation = within(screen.getByRole("alertdialog"));
     expect(
       confirmation.getAllByRole("listitem").map((item) => item.textContent),
-    ).toEqual([
-      "1웹 프로젝트·백엔드",
-      "2앱 프로젝트·앱",
-    ]);
+    ).toEqual(["1웹 프로젝트·백엔드", "2앱 프로젝트·앱"]);
     expect(teamBuildApi.submitApply).not.toHaveBeenCalled();
     fireEvent.click(
       confirmation.getByRole("button", { name: "최종 제출하기" }),

@@ -230,7 +230,7 @@ const ManageThirdTeamBuildPage = () => {
     }
   };
 
-  const renderPositionSlot = (member) => (
+  const renderMember = (member) => (
     <button
       key={member.id}
       type="button"
@@ -309,7 +309,8 @@ const ManageThirdTeamBuildPage = () => {
           3차 팀빌딩
         </h1>
         <p className={styles.description}>
-          팀별 배정이 완료된 멤버와 담당 직무를 확인하세요.
+          기존 팀원을 포함한 전체 멤버의 담당 직무를 확인하고 팀 배치를
+          수정하세요.
         </p>
         <p className={styles.notice}>
           {completed
@@ -376,8 +377,9 @@ const ManageThirdTeamBuildPage = () => {
           팀 빌딩 완료
         </button>
         <p id="shuffle-help" className={styles.description}>
-          같은 직무 지원자를 미배정 목록과 팀 사이에서 무작위로 섞습니다. 팀별
-          직무 인원수는 유지되며, 결과가 기존 배치와 같을 수도 있습니다.
+          기존 팀원을 포함해 같은 직무의 멤버를 미배정 목록과 팀 사이에서
+          무작위로 섞습니다. 팀별 직무 인원수는 유지되며, 결과가 기존 배치와
+          같을 수도 있습니다.
         </p>
       </div>
 
@@ -404,12 +406,12 @@ const ManageThirdTeamBuildPage = () => {
           미배정 멤버
         </h2>
         <p id="assignment-help" className={styles.description}>
-          지원자를 팀 카드로 드래그하거나 선택 후 팀 카드를 클릭하세요. 각
-          항목은 지원자의 이름과 주요 직무를 나타냅니다. 배치한 지원자도 같은
-          방법으로 다른 팀이나 미배정 멤버 섹션으로 이동할 수 있습니다.
+          기존 팀원과 새로 배치한 멤버 모두 팀 카드로 드래그하거나 선택 후 팀
+          카드를 클릭해 이동할 수 있습니다. 각 항목은 이름과 담당 직무를
+          나타냅니다. 미배정 멤버 섹션으로 이동해 배정을 해제할 수도 있습니다.
         </p>
         <div className={styles.unassignedList}>
-          {unassigned.map((member) => renderPositionSlot(member))}
+          {unassigned.map((member) => renderMember(member))}
         </div>
         {!loading && revision !== null && unassigned.length === 0 && (
           <p className={styles.description}>
@@ -493,7 +495,7 @@ const ManageThirdTeamBuildPage = () => {
                   {team.members.map((member) => (
                     <tr key={member.id}>
                       {member.type === "POSITION_SLOT" ? (
-                        <td colSpan={2}>{renderPositionSlot(member)}</td>
+                        <td colSpan={2}>{renderMember(member)}</td>
                       ) : (
                         <>
                           <td>

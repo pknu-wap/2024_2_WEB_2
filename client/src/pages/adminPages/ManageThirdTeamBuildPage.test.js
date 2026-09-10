@@ -35,7 +35,11 @@ beforeEach(() => {
       ...team,
       id: team.projectId,
       isCreated: false,
-      members: [...team.members],
+      members: team.members.map((member) => ({
+        ...member,
+        id: `slot-existing-${member.id}`,
+        type: "POSITION_SLOT",
+      })),
     })),
     unassigned: [...thirdRoundPositionSlots],
   };
@@ -235,7 +239,7 @@ test("클릭으로 선택한 멤버를 기존 팀에 추가한다", async () => 
   const team = within(getTeam("WAPs"));
   expect(team.getByRole("row", { name: "BACKEND" })).toBeInTheDocument();
   expect(team.queryAllByRole("row").slice(1)).toHaveLength(5);
-  expect(team.getByText("김민준")).toBeInTheDocument();
+  expect(team.getByText("김민준(FRONTEND)")).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(8);
 });
 
@@ -399,7 +403,9 @@ test("팀을 생성하면 빈 카드가 추가되고 기존 명단과 미배정 
   expect(
     within(getTeam("팀 A")).getByText("아직 배정된 멤버가 없습니다."),
   ).toBeInTheDocument();
-  expect(within(getTeam("WAPs")).getByText("김민준")).toBeInTheDocument();
+  expect(
+    within(getTeam("WAPs")).getByText("김민준(FRONTEND)"),
+  ).toBeInTheDocument();
   expect(within(getUnassigned()).getAllByRole("button")).toHaveLength(9);
   expect(screen.queryByRole("textbox")).not.toBeInTheDocument();
 });
@@ -749,3 +755,57 @@ test("팀 카드에 배정 완료 인원 대신 프로젝트 분야를 표시한
     within(getTeam("팀 A")).queryByText(/WEB|배정 완료/),
   ).not.toBeInTheDocument();
 });
+
+test.each(["click", "Enter", " ", "drag"])(
+  "기존 팀원을 다른 팀과 미배정 목록으로 이동하고 재방문 시 복원한다 (%s)",
+  async (method) => {
+    const member = savedBoard.teams[0].members[0];
+    const label = `${member.name}(${member.position})`;
+    const originalTeam = savedBoard.teams[0].teamName;
+    const page = render(<ManageThirdTeamBuildPage />);
+    await settle();
+    const source = within(getTeam(originalTeam)).getByRole("button", {
+      name: label,
+    });
+    if (method === "drag") {
+      fireEvent.pointerDown(source, { button: 0, clientX: 10, clientY: 10 });
+      document.elementFromPoint = jest.fn(() => getTeam("오늘의 기록"));
+      fireEvent.pointerMove(source, { clientX: 100, clientY: 200 });
+      fireEvent.pointerUp(source, { clientX: 100, clientY: 200 });
+    } else {
+      fireEvent.click(source);
+      const target = screen.getByRole("button", { name: "오늘의 기록" });
+      if (method === "click") fireEvent.click(target);
+      else fireEvent.keyDown(target, { key: method });
+    }
+    await settle();
+    expect(thirdRoundApi.move).toHaveBeenLastCalledWith(
+      member.id,
+      Number(getTeam("오늘의 기록").dataset.teamId),
+      0,
+    );
+    expect(
+      within(getTeam(originalTeam)).queryByRole("button", { name: label }),
+    ).not.toBeInTheDocument();
+    const movedMember = within(getTeam("오늘의 기록")).getByRole("button", {
+      name: label,
+    });
+    fireEvent.pointerDown(movedMember, { button: 0, clientX: 10, clientY: 10 });
+    fireEvent.pointerUp(movedMember, { clientX: 10, clientY: 10 });
+    fireEvent.click(movedMember);
+    fireEvent.click(screen.getByRole("button", { name: "미배정 멤버" }));
+    await settle();
+    expect(thirdRoundApi.move).toHaveBeenLastCalledWith(member.id, null, 1);
+    page.unmount();
+    render(<ManageThirdTeamBuildPage />);
+    await settle();
+    fireEvent.click(
+      within(getUnassigned()).getByRole("button", { name: label }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: originalTeam }));
+    await settle();
+    expect(
+      within(getTeam(originalTeam)).getByRole("button", { name: label }),
+    ).toBeInTheDocument();
+  },
+);

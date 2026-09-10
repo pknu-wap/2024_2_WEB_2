@@ -18,6 +18,7 @@ import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.entity.Project;
+import wap.web2.server.project.entity.RecruitmentPosition;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest.ApplyRequest;
@@ -52,7 +53,7 @@ class ApplicationChoiceTest {
     void acceptsFiveProjectPositionPairsAcrossTwoProjects() {
         UserPrincipal principal = applicant();
         when(projectRepository.findById(anyLong())).thenAnswer(i -> Optional.of(
-            Project.builder().projectId(i.getArgument(0)).build()));
+            Project.builder().projectId(i.getArgument(0)).recruitmentPositions(List.of(new RecruitmentPosition("프론트엔드", 3), new RecruitmentPosition("백엔드", 2), new RecruitmentPosition("AI", 1))).build()));
         service.apply(principal, new ProjectAppliesRequest(List.of(
             new ApplyRequest(10L, "frontend", "a"), new ApplyRequest(10L, "backend", "b"),
             new ApplyRequest(20L, "frontend", "c"), new ApplyRequest(20L, "backend", "d"),
@@ -74,7 +75,7 @@ class ApplicationChoiceTest {
     @Test
     void countsPreviouslySubmittedApplicationsInSameRound() {
         UserPrincipal principal = applicant(2);
-        ProjectApply existing = ProjectApply.builder().project(Project.builder().projectId(10L).build())
+        ProjectApply existing = ProjectApply.builder().project(Project.builder().projectId(10L).recruitmentPositions(List.of(new RecruitmentPosition("프론트엔드", 3))).build())
             .priority(1).position(Position.AI).build();
         when(applyRepository.findAllByUserIdAndSemesterAndRound(1L, generateSemester(), 2))
             .thenReturn(java.util.Collections.nCopies(5, existing));
@@ -91,7 +92,7 @@ class ApplicationChoiceTest {
             { "applies": [{"projectId":10,"position":"frontend","comment":"a","experience":"React"}] }""",
             ProjectAppliesRequest.class);
         UserPrincipal principal = applicant();
-        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).recruitmentPositions(List.of(new RecruitmentPosition("프론트엔드", 3))).build()));
         service.apply(principal, request, 1);
         ArgumentCaptor<ProjectApply> saved = ArgumentCaptor.forClass(ProjectApply.class);
         verify(applyRepository).save(saved.capture());
@@ -101,4 +102,34 @@ class ApplicationChoiceTest {
         assertThat(json.at("/applies/0/career").asText()).isEqualTo("React");
         assertThat(new ApplyRequest(10L, "AI", "a", "legacy").getExperience()).isEqualTo("legacy");
     }
+    @Test
+    void rejectsUnrecruitedPositionBeforeSavingAnyApplication() {
+        UserPrincipal principal = applicant();
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L)
+            .recruitmentPositions(List.of(new RecruitmentPosition("백엔드", 2))).build()));
+        assertThatThrownBy(() -> service.apply(principal, new ProjectAppliesRequest(List.of(
+            new ApplyRequest(10L, "BACKEND", "a"), new ApplyRequest(10L, "FRONTEND", "b"))), 1))
+            .isInstanceOf(BadRequestException.class).hasMessageContaining("모집하지 않는 직무");
+        verify(applyRepository, never()).save(any());
+    }
+
+    @Test
+    void rejectsProjectWithoutRecruitmentPositionsInFirstRound() {
+        UserPrincipal principal = applicant();
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(Project.builder().projectId(10L).build()));
+        assertThatThrownBy(() -> service.apply(principal, new ProjectAppliesRequest(List.of(
+            new ApplyRequest(10L, "BACKEND", "a"))), 1)).isInstanceOf(BadRequestException.class);
+        verify(applyRepository, never()).save(any());
+    }
+
+    @Test
+    void projectListExposesOnlySupportedRecruitmentPositions() {
+        Project project = Project.builder().recruitmentPositions(List.of(
+            new RecruitmentPosition("프론트엔드", 3), new RecruitmentPosition("backend", 2),
+            new RecruitmentPosition("Server", 1), new RecruitmentPosition("PM", 1),
+            new RecruitmentPosition("GAME", 0))).build();
+        assertThat(wap.web2.server.teambuild.dto.response.ProjectTemplate.from(project)
+            .getFirstRoundRecruitPositions()).containsExactly("FRONTEND", "BACKEND");
+    }
+
 }

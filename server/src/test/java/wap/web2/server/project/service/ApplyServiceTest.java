@@ -24,6 +24,7 @@ import wap.web2.server.global.security.UserPrincipal;
 import wap.web2.server.member.entity.User;
 import wap.web2.server.member.repository.UserRepository;
 import wap.web2.server.project.entity.Project;
+import wap.web2.server.project.entity.RecruitmentPosition;
 import wap.web2.server.project.repository.ProjectRepository;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest;
 import wap.web2.server.teambuild.dto.request.ProjectAppliesRequest.ApplyRequest;
@@ -60,9 +61,9 @@ class ApplyServiceTest {
         User user = new User();
         when(userRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(user));
 
-        Project p1 = Project.builder().projectId(10L).title("A").build();
-        Project p2 = Project.builder().projectId(20L).title("B").build();
-        Project p3 = Project.builder().projectId(30L).title("C").build();
+        Project p1 = Project.builder().projectId(10L).title("A").recruitmentPositions(List.of(new RecruitmentPosition("백엔드", 1))).build();
+        Project p2 = Project.builder().projectId(20L).title("B").recruitmentPositions(List.of(new RecruitmentPosition("프론트엔드", 1))).build();
+        Project p3 = Project.builder().projectId(30L).title("C").recruitmentPositions(List.of(new RecruitmentPosition("AI", 1))).build();
         when(projectRepository.findById(10L)).thenReturn(Optional.of(p1));
         when(projectRepository.findById(20L)).thenReturn(Optional.of(p2));
         when(projectRepository.findById(30L)).thenReturn(Optional.of(p3));

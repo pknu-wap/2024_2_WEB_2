@@ -113,6 +113,7 @@ public class ProjectService {
             .toList();
     }
 
+    @Transactional(readOnly = true)
     public List<ProjectTemplate> getCurrentProjectRecruits() {
         return projectRepository
             .findProjectsBySemester(generateSemester())

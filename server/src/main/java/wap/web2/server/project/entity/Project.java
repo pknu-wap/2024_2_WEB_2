@@ -1,5 +1,8 @@
 package wap.web2.server.project.entity;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.OrderColumn;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -23,6 +26,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import wap.web2.server.comment.entity.Comment;
 import wap.web2.server.member.entity.User;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.dto.TechStackDto;
 import wap.web2.server.project.dto.request.ProjectRequest;
@@ -73,11 +77,24 @@ public class Project {
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     List<TechStack> techStacks = new ArrayList<>();
 
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(name = "project_recruitment_position", joinColumns = @JoinColumn(name = "project_id"))
+    @OrderColumn(name = "position_order")
+    private List<RecruitmentPosition> recruitmentPositions = new ArrayList<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user; // Owner
 
     public void update(ProjectRequest request) {
+        // 필드가 생략된 기존 클라이언트 요청은 모집 정보를 유지한다.
+        if (request.getRecruitmentPositions() != null) {
+            List<RecruitmentPosition> positions = RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
+            this.recruitmentPositions.clear();
+            this.recruitmentPositions.addAll(positions);
+        }
+
         // 기본 필드 업데이트
         this.title = request.getTitle();
         this.projectType = request.getProjectType();

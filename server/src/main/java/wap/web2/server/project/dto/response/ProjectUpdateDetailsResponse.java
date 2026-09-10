@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import wap.web2.server.comment.dto.CommentDto;
+import wap.web2.server.project.dto.RecruitmentPositionDto;
 import wap.web2.server.project.dto.TeamMemberDto;
 import wap.web2.server.project.entity.Project;
 
@@ -13,6 +14,7 @@ import wap.web2.server.project.entity.Project;
 @Getter
 public class ProjectUpdateDetailsResponse {
 
+    private List<RecruitmentPositionDto> recruitmentPositions;
     private Long projectId;
     private String title;
     private String projectType;
@@ -31,6 +33,7 @@ public class ProjectUpdateDetailsResponse {
         List<CommentDto> comments = project.getComments().stream().map(CommentDto::from).toList();
 
         return ProjectUpdateDetailsResponse.builder()
+            .recruitmentPositions(project.getRecruitmentPositions().stream().map(RecruitmentPositionDto::from).toList())
             .projectId(project.getProjectId())
             .title(project.getTitle())
             .projectType(project.getProjectType())

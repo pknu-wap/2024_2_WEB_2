@@ -55,7 +55,8 @@ public class TeamBuildingControllerV3 {
         @CurrentUser UserPrincipal userPrincipal
     ) {
         boolean hasApplied = applyService.hasAppliedThisSemester(userPrincipal.getId());
-        return ResponseEntity.ok(new ApplyStatusResponse(hasApplied));
+        return ResponseEntity.ok(new ApplyStatusResponse(hasApplied,
+            applyService.isAssignedThisSemester(userPrincipal.getId())));
     }
 
     @GetMapping("/projects")

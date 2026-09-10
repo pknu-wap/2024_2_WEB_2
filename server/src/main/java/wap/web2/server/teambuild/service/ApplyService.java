@@ -70,6 +70,9 @@ public class ApplyService {
         // Serialize submissions by the same applicant so concurrent requests cannot exceed five.
         User user = userRepository.findByIdForUpdate(userPrincipal.getId())
             .orElseThrow(() -> new ResourceNotFoundException("사용자를 찾을 수 없습니다."));
+        if (round == 2 && teamRepository.existsByMemberIdAndSemester(user.getId(), semester)) {
+            throw new ConflictException("이미 팀 배정이 완료되어 2차 팀빌딩에 지원할 수 없습니다.");
+        }
         List<ApplyRequest> applies = request.getApplies();
         List<ProjectApply> existing = applyRepository.findAllByUserIdAndSemesterAndRound(
             user.getId(), semester, round);
@@ -237,6 +240,11 @@ public class ApplyService {
         int round = teamBuildingMetaRepository.findBySemester(generateSemester())
             .map(TeamBuildingMeta::getRound).orElse(1);
         return !applyRepository.findAllByUserIdAndSemesterAndRound(userId, generateSemester(), round).isEmpty();
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isAssignedThisSemester(Long userId) {
+        return teamRepository.existsByMemberIdAndSemester(userId, generateSemester());
     }
 
     private void validateRound(int round) {

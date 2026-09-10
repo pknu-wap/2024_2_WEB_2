@@ -16,6 +16,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import wap.web2.server.exception.BadRequestException;
 import wap.web2.server.exception.ForbiddenException;
 import wap.web2.server.exception.ProjectPasswordInvalidException;
 import wap.web2.server.exception.ResourceNotFoundException;
@@ -59,6 +60,9 @@ public class ProjectService {
             throw new ProjectPasswordInvalidException();
         }
 
+        if (request.getRecruitmentPositions() == null || request.getRecruitmentPositions().isEmpty()) {
+            throw new BadRequestException("모집 직무와 인원을 최소 한 개 입력해 주세요.");
+        }
         RecruitmentPositionDto.toEntities(request.getRecruitmentPositions());
         User user = findUser(userPrincipal.getId());
         String semester = getCurrentSemester();

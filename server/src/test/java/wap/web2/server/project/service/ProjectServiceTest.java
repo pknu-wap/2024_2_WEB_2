@@ -338,6 +338,48 @@ class ProjectServiceTest {
             .isInstanceOf(com.fasterxml.jackson.core.JsonProcessingException.class);
     }
 
+    @Test
+    void 신규_프로젝트는_모집_정보_누락과_빈_목록을_거절한다() {
+        for (List<RecruitmentPositionDto> positions : java.util.Arrays.<List<RecruitmentPositionDto>>asList(null, List.of())) {
+            ProjectRequest request = baseRequestBuilder().recruitmentPositions(positions).build();
+            assertThatThrownBy(() -> projectService.save(request, null))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("모집 직무와 인원을 최소 한 개 입력해 주세요.");
+        }
+        verifyNoInteractions(projectRepository, userRepository, objectStorageService);
+    }
+
+    @Test
+    void 신규_프로젝트는_모집_정보가_있으면_등록한다() throws Exception {
+        User owner = owner();
+        UserPrincipal principal = principal(owner.getId());
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        ProjectRequest request = baseRequestBuilder()
+            .recruitmentPositions(List.of(new RecruitmentPositionDto("백엔드", 1))).build();
+
+        assertThat(projectService.save(request, principal)).isEqualTo("등록되었습니다.");
+        var saved = org.mockito.ArgumentCaptor.forClass(Project.class);
+        verify(projectRepository).save(saved.capture());
+        assertThat(saved.getValue().getRecruitmentPositions()).singleElement().satisfies(position -> {
+            assertThat(position.getRole()).isEqualTo("백엔드");
+            assertThat(position.getCount()).isEqualTo(1);
+        });
+    }
+
+    @Test
+    void 기존_프로젝트는_빈_모집_목록으로_수정할_수_있다() throws Exception {
+        User owner = owner();
+        UserPrincipal principal = principal(owner.getId());
+        Project project = project(owner);
+        when(userRepository.findById(owner.getId())).thenReturn(Optional.of(owner));
+        when(projectRepository.findById(10L)).thenReturn(Optional.of(project));
+
+        assertThat(projectService.update(10L,
+            baseRequestBuilder().recruitmentPositions(List.of()).build(), principal))
+            .isEqualTo("수정되었습니다.");
+        assertThat(project.getRecruitmentPositions()).isEmpty();
+    }
+
     private ProjectRequest.ProjectRequestBuilder baseRequestBuilder() {
         return ProjectRequest.builder()
             .title("updated title")

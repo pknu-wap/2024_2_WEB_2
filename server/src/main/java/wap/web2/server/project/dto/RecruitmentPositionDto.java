@@ -7,11 +7,12 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 import wap.web2.server.exception.BadRequestException;
 import wap.web2.server.project.entity.RecruitmentPosition;
+import wap.web2.server.teambuild.entity.Position;
 
 public record RecruitmentPositionDto(
     String role,
@@ -37,14 +38,16 @@ public record RecruitmentPositionDto(
         if (positions == null) {
             return result;
         }
-        Set<String> roles = new HashSet<>();
+        Set<Position> roles = EnumSet.noneOf(Position.class);
         for (RecruitmentPositionDto position : positions) {
             if (position == null || position.role() == null || position.role().isBlank()
                 || position.role().strip().length() > 50) {
                 throw new BadRequestException("모집 직무는 1~50자로 입력해 주세요.");
             }
             String role = position.role().strip();
-            if (!roles.add(role)) {
+            Position selectedPosition = Position.fromRecruitmentRole(role)
+                .orElseThrow(() -> new BadRequestException("존재하는 모집 직무를 선택해 주세요."));
+            if (!roles.add(selectedPosition)) {
                 throw new BadRequestException("모집 직무가 중복되었습니다.");
             }
             if (position.count() == null || position.count() < 1) {

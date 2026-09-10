@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Cookies from "../utils/authStorage";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { teamBuildApi } from "../api/team-build";
@@ -79,6 +79,32 @@ function TeamBuildApplyPage({ round = 1 }) {
   const [applicationDragOverPlacement, setApplicationDragOverPlacement] =
     useState("before");
   const [primaryPosition, setPrimaryPosition] = useState("");
+  const buttonPointerStart = useRef(false);
+  const pendingOrderChange = useRef(null);
+  const orderControls = useRef(new Map());
+  const [orderAnnouncement, setOrderAnnouncement] = useState("");
+
+  useEffect(() => {
+    const change = pendingOrderChange.current;
+    if (!change) return;
+    pendingOrderChange.current = null;
+    const index = projectApplications.findIndex((item) => item.id === change.id);
+    if (index < 0) return;
+    const application = projectApplications[index];
+    setOrderAnnouncement(
+      `${application.projectTitle} ${getPositionLabel(application.position)} 지원서가 ${index + 1}순위로 이동했습니다.`,
+    );
+    if (change.restoreFocus) {
+      const controls = orderControls.current.get(change.id);
+      const preferred = controls?.querySelector(
+        `[data-direction="${change.direction}"]`,
+      );
+      const target = preferred?.disabled
+        ? controls.querySelector("button:not(:disabled)")
+        : preferred;
+      target?.focus({ preventScroll: true });
+    }
+  }, [projectApplications]);
 
   useEffect(() => {
     if (isPreview) return;
@@ -213,7 +239,28 @@ function TeamBuildApplyPage({ round = 1 }) {
     setCancelTarget(null);
   };
 
+  const moveApplication = (applicationId, direction, event) => {
+    pendingOrderChange.current = {
+      id: applicationId,
+      direction,
+      restoreFocus: document.activeElement === event.currentTarget,
+    };
+    setProjectApplications((prev) => {
+      const index = prev.findIndex((item) => item.id === applicationId);
+      const targetIndex = index + direction;
+      if (index < 0 || targetIndex < 0 || targetIndex >= prev.length) return prev;
+
+      const next = [...prev];
+      [next[index], next[targetIndex]] = [next[targetIndex], next[index]];
+      return next;
+    });
+  };
+
   const handleApplicationDragStart = (applicationId) => (event) => {
+    if (buttonPointerStart.current || event.target.closest("button")) {
+      event.preventDefault();
+      return;
+    }
     setApplicationDraggingId(applicationId);
     event.dataTransfer.effectAllowed = "move";
     event.dataTransfer.setData("text/plain", String(applicationId));
@@ -235,6 +282,8 @@ function TeamBuildApplyPage({ round = 1 }) {
     event.preventDefault();
     if (!applicationDraggingId || applicationDraggingId === targetId) return;
 
+    pendingOrderChange.current = { id: applicationDraggingId };
+
     setProjectApplications((prev) => {
       const applicationById = new Map(
         prev.map((application) => [application.id, application]),
@@ -251,6 +300,7 @@ function TeamBuildApplyPage({ round = 1 }) {
   };
 
   const handleApplicationDragEnd = () => {
+    buttonPointerStart.current = false;
     setApplicationDraggingId(null);
     setApplicationDragOverId(null);
     setApplicationDragOverPlacement("before");
@@ -472,7 +522,7 @@ function TeamBuildApplyPage({ round = 1 }) {
                   </span>
                 )}
               </div>
-              <p>지원한 프로젝트를 확인하고, 드래그로 우선순위를 조정하세요</p>
+              <p>위·아래 버튼 또는 드래그로 우선순위를 조정하세요</p>
               <p>최소 {MIN_APPLICATIONS}개의 지원서를 작성해야합니다.</p>
             </div>
           </div>
@@ -509,6 +559,14 @@ function TeamBuildApplyPage({ round = 1 }) {
             </section>
           )}
 
+          <p
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+            className={styles.orderAnnouncement}
+          >
+            {orderAnnouncement}
+          </p>
           {projectApplications.length === 0 ? (
             <div className={styles.emptyApply}>
               <img src={emptyFolder} alt="" className={styles.emptyFolder} />
@@ -536,6 +594,15 @@ function TeamBuildApplyPage({ round = 1 }) {
                           : ""
                       } ${isDropTarget ? styles.dragOver : ""} ${dropPlacementClass}`}
                       draggable
+                      onPointerDownCapture={(event) => {
+                        // Native dragstart targets the draggable card, not the pressed button.
+                        buttonPointerStart.current = Boolean(
+                          event.target.closest("button"),
+                        );
+                      }}
+                      onPointerUp={() => {
+                        buttonPointerStart.current = false;
+                      }}
                       onDragStart={handleApplicationDragStart(application.id)}
                       onDragEnd={handleApplicationDragEnd}
                       onDragOver={handleApplicationDragOver(application.id)}
@@ -550,6 +617,38 @@ function TeamBuildApplyPage({ round = 1 }) {
                         <strong>{application.projectTitle}</strong>
                         <span>·</span>
                         <span>{getPositionLabel(application.position)}</span>
+                      </div>
+                      <div
+                        className={styles.applicationOrderControls}
+                        ref={(node) => {
+                          if (node) orderControls.current.set(application.id, node);
+                          else orderControls.current.delete(application.id);
+                        }}
+                      >
+                        <button
+                          type="button"
+                          className={styles.applicationOrderButton}
+                          disabled={index === 0}
+                          data-direction="-1"
+                          onClick={(event) =>
+                            moveApplication(application.id, -1, event)
+                          }
+                          aria-label={`${application.projectTitle} ${getPositionLabel(application.position)} 우선순위 올리기`}
+                        >
+                          ↑
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.applicationOrderButton}
+                          disabled={index === projectApplications.length - 1}
+                          data-direction="1"
+                          onClick={(event) =>
+                            moveApplication(application.id, 1, event)
+                          }
+                          aria-label={`${application.projectTitle} ${getPositionLabel(application.position)} 우선순위 내리기`}
+                        >
+                          ↓
+                        </button>
                       </div>
                       <button
                         type="button"

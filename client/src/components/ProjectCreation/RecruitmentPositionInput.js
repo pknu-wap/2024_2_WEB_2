@@ -46,8 +46,8 @@ export default function RecruitmentPositionInput({ positions, onChange }) {
   };
 
   return (
-    <section className={styles.recruitment} aria-label="직무별 모집 인원">
-      <h3>직무별 모집 인원</h3>
+    <section className={styles.recruitment} aria-label="모집 인원 (팀장 제외)">
+      <h3>모집 인원 (팀장 제외)</h3>
       <p>모집할 직무와 인원을 추가해 주세요. (선택)</p>
       {positions.map((position, index) => (
         <div className={styles.recruitment_row} key={index}>

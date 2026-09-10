@@ -7,6 +7,7 @@ jest.mock("../../api/admin", () => ({
   adminTeamBuildApi: {
     getTeamBuildStatus: jest.fn(),
     resetTeamBuild: jest.fn(),
+    resetTeamBuildCompletely: jest.fn(),
   },
 }));
 
@@ -50,5 +51,40 @@ test("요청 실패 시 기존 단계를 유지하고 다시 시도할 수 있�
   fireEvent.click(await renderReady());
   await waitFor(() => expect(window.alert).toHaveBeenCalledWith("팀 빌딩 초기화에 실패했습니다."));
   expect(screen.getByRole("button", { name: "팀 빌딩 초기화" })).toBeEnabled();
+  expect(screen.getByText("결과").closest("li")).toHaveAttribute("aria-current", "step");
+});
+
+
+test("완전 초기화는 삭제 범위를 안내하고 취소 시 요청하지 않는다", async () => {
+  await renderReady();
+  window.confirm.mockReturnValue(false);
+  fireEvent.click(screen.getByRole("button", { name: "팀 빌딩 완전 초기화" }));
+  expect(window.confirm).toHaveBeenCalledWith(expect.stringContaining("모든 차수의 지원·모집 데이터(희망 지원자 포함)"));
+  expect(adminTeamBuildApi.resetTeamBuildCompletely).not.toHaveBeenCalled();
+  expect(adminTeamBuildApi.resetTeamBuild).not.toHaveBeenCalled();
+});
+
+test("완전 초기화 중 다른 작업을 막고 성공 후 시작 단계로 갱신한다", async () => {
+  let finishReset;
+  adminTeamBuildApi.resetTeamBuildCompletely.mockImplementation(() => new Promise(resolve => { finishReset = resolve; }));
+  await renderReady();
+  fireEvent.click(screen.getByRole("button", { name: "팀 빌딩 완전 초기화" }));
+  expect(screen.getByRole("button", { name: "완전 초기화 중..." })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "팀 빌딩 초기화" })).toBeDisabled();
+  expect(screen.getByRole("button", { name: "지원 CSV 다운로드" })).toBeDisabled();
+  adminTeamBuildApi.getTeamBuildStatus.mockResolvedValue({ status: "OPEN", round: 1, completedRound: 0 });
+  finishReset();
+  await waitFor(() => expect(screen.getByRole("button", { name: "팀 빌딩 완전 초기화" })).toBeEnabled());
+  expect(adminTeamBuildApi.resetTeamBuildCompletely).toHaveBeenCalledTimes(1);
+  expect(adminTeamBuildApi.resetTeamBuild).not.toHaveBeenCalled();
+  expect(screen.getByText("시작").closest("li")).toHaveAttribute("aria-current", "step");
+});
+
+test("완전 초기화 실패 시 결과 단계를 유지하고 재시도할 수 있다", async () => {
+  adminTeamBuildApi.resetTeamBuildCompletely.mockRejectedValue(new Error("failed"));
+  await renderReady();
+  fireEvent.click(screen.getByRole("button", { name: "팀 빌딩 완전 초기화" }));
+  await waitFor(() => expect(window.alert).toHaveBeenCalledWith("팀 빌딩 완전 초기화에 실패했습니다."));
+  expect(screen.getByRole("button", { name: "팀 빌딩 완전 초기화" })).toBeEnabled();
   expect(screen.getByText("결과").closest("li")).toHaveAttribute("aria-current", "step");
 });

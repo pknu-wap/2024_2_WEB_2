@@ -13,7 +13,7 @@ const ManageTeamBuildPage = () => {
   const [status, setStatus] = useState("unavailable"); // 현재 팀빌딩 상태
   const [statusLoading, setStatusLoading] = useState(true); // 팀빌딩 상태 로드 여부
   const [statusChanging, setStatusChanging] = useState(false); // 상태 변경 중 여부(버튼 중복 클릭 방지)
-  const [resetting, setResetting] = useState(false);
+  const [resetting, setResetting] = useState(null);
   const semester = useSemester();
 
   const statusSteps = [
@@ -60,20 +60,25 @@ const ManageTeamBuildPage = () => {
     setStatusChanging(false);
   };
 
-  const handleResetTeamBuild = async () => {
+  const handleResetTeamBuild = async (complete = false) => {
     if (status === "unavailable" || statusLoading || statusChanging || loading) return;
-    if (!window.confirm(
-      `${semester} 팀 빌딩을 초기화하시겠습니까?\n배정 결과와 3차 분류 정보가 삭제되고 시작 단계로 돌아갑니다.\n지원·모집 데이터는 유지됩니다. 삭제한 결과는 복구할 수 없습니다.`,
-    )) return;
+    const message = complete
+      ? `${semester} 팀 빌딩을 완전 초기화하시겠습니까?\n모든 차수의 지원·모집 데이터(희망 지원자 포함), 배정 결과와 3차 분류 정보가 삭제되고 시작 단계로 돌아갑니다.\n프로젝트 글은 유지됩니다. 삭제한 데이터는 복구할 수 없습니다.`
+      : `${semester} 팀 빌딩을 초기화하시겠습니까?\n배정 결과와 3차 분류 정보가 삭제되고 시작 단계로 돌아갑니다.\n지원·모집 데이터는 유지됩니다. 삭제한 결과는 복구할 수 없습니다.`;
+    if (!window.confirm(message)) return;
     setStatusChanging(true);
-    setResetting(true);
+    setResetting(complete ? "complete" : "results");
     try {
-      await adminTeamBuildApi.resetTeamBuild();
+      if (complete) {
+        await adminTeamBuildApi.resetTeamBuildCompletely();
+      } else {
+        await adminTeamBuildApi.resetTeamBuild();
+      }
       await fetchStatus();
     } catch (e) {
-      alert("팀 빌딩 초기화에 실패했습니다.");
+      alert(complete ? "팀 빌딩 완전 초기화에 실패했습니다." : "팀 빌딩 초기화에 실패했습니다.");
     } finally {
-      setResetting(false);
+      setResetting(null);
       setStatusChanging(false);
     }
   };
@@ -175,10 +180,16 @@ const ManageTeamBuildPage = () => {
               <span className={styles.progressEyebrow}>{semester}</span>
               <h2>TEAM BUILDING</h2>
             </div>
-            <button className={styles.resetBtn} onClick={handleResetTeamBuild}
-              disabled={status === "unavailable" || statusLoading || statusChanging || loading}>
-              <FiRotateCcw aria-hidden="true" /> {resetting ? "초기화 중..." : "팀 빌딩 초기화"}
-            </button>
+            <div className={styles.resetActions}>
+              <button className={styles.resetBtn} onClick={() => handleResetTeamBuild()}
+                disabled={status === "unavailable" || statusLoading || statusChanging || loading}>
+                <FiRotateCcw aria-hidden="true" /> {resetting === "results" ? "초기화 중..." : "팀 빌딩 초기화"}
+              </button>
+              <button className={styles.resetBtn} onClick={() => handleResetTeamBuild(true)}
+                disabled={status === "unavailable" || statusLoading || statusChanging || loading}>
+                <FiRotateCcw aria-hidden="true" /> {resetting === "complete" ? "완전 초기화 중..." : "팀 빌딩 완전 초기화"}
+              </button>
+            </div>
           </div>
           <ol className={styles.stepper} aria-label="팀빌딩 진행 과정">
             {statusSteps.map((step, idx) => (

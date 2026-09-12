@@ -79,6 +79,10 @@ ul {
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.35);
 }
 
+.container--no-shadow {
+  box-shadow: none;
+}
+
 /* 콘텐츠 박스 */
 .content-box {
   display: flex;

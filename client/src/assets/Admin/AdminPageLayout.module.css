@@ -7,8 +7,8 @@
 }
 .container {
   --primary: #abd4fd;
-  padding: 30px 45px;
-  gap: 29px;
+  padding: 24px 34px;
+  gap: 20px;
   width: 100%;
   height: 100vh;
   display: flex;
@@ -20,7 +20,7 @@
 .main {
   display: flex;
   flex-direction: row;
-  gap: 38px;
+  gap: 24px;
   flex: 1;
   min-height: 0;
   position: relative;
@@ -28,14 +28,16 @@
 
 .sidebarWrapper {
   display: block;
+  flex: 0 0 280px;
+  min-width: 0;
 }
 
 .contentsBox {
   flex: 1;
   min-width: 0;
   height: 100%;
-  padding: 43px;
-  border-radius: 56px;
+  padding: 34px;
+  border-radius: 36px;
   background-color: #202020;
   box-sizing: border-box;
 }
@@ -73,7 +75,7 @@
 
 .logo {
   color: #adadad;
-  font-size: 32px;
+  font-size: 29px;
   font-weight: 800;
   cursor: pointer;
   user-select: none;
@@ -85,14 +87,14 @@
 }
 
 .adminUser {
-  font-size: 27px;
+  font-size: 23px;
   font-weight: 700;
   text-align: center;
   color: #c5c5c5;
 }
 
 .exitBtn {
-  font-size: 30px;
+  font-size: 24px;
   color: #adadad;
   font-weight: 600;
   align-self: flex-start;
@@ -116,10 +118,10 @@
   position: fixed;
   top: 0;
   left: 0;
-  width: 350px; /* 모바일 사이드바 너비 */
+  width: min(320px, 85vw); /* 모바일 사이드바 너비 */
   height: 100%;
   background-color: #1a1a1a; /* 배경색 지정 */
-  padding: 30px;
+  padding: 22px;
   box-sizing: border-box;
   z-index: 1000;
   box-shadow: 4px 0 15px rgba(0, 0, 0, 0.5);

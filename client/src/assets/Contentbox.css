@@ -149,6 +149,10 @@
   padding: 0 20px;
 }
 
+.hero + .content-box {
+  margin-top: 0;
+}
+
 .empty-state {
   width: 100%;
   max-width: 700px;
@@ -180,7 +184,7 @@
   width: 100%;
   max-width: 700px;
   height: auto;
-  margin: 10px 0;
+  margin: 6px 0;
   background-color: transparent;
   border-radius: 12px;
   padding: 0;
@@ -188,7 +192,7 @@
   display: flex;
   flex-direction: row;
   align-items: flex-start;
-  gap: 20px;
+  gap: 14px;
   position: relative;
 }
 .content-box .box .image {
@@ -218,7 +222,7 @@
   flex-direction: column;
   align-items: flex-start;
   justify-content: flex-start;
-  gap: 10px;
+  gap: 6px;
   padding: 1px;
   background: transparent;
   color: #ffffff;
@@ -229,9 +233,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin: 0;
+  margin: 5px 0 0;
   padding: 0;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   width: 100%;
   justify-content: flex-start;
   text-align: left;
@@ -239,18 +243,20 @@
 /* 제목 */
 .content-box .box .titlebox h2 {
   margin: 0;
-  margin-top: 5px;
   padding: 0;
   font-size: 20px;
-  font-weight: 700;
-  color: #ffffff;
+  letter-spacing: -0.3px;
+  font-weight: 900;
+  color: #ffffffd3;
   line-height: 1.1;
-  flex-basis: 100%;
+  flex: 0 1 auto;
+  min-width: 0;
   text-align: left !important;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  font-family: "Pretendard-bold";
 }
 /* 본문: 제목/태그 아래 줄 */
 .content-box .box .titlebox p {
@@ -271,8 +277,10 @@
   align-items: center;
   padding: 3px 5px;
   border-radius: 20px;
-  font-size: 7px;
-  font-weight: 600;
+  font-size: 8px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  font-weight: 800;
   color: #ffffff;
   line-height: 1;
 }
@@ -284,7 +292,7 @@
   min-height: 300px;
   display: flex;
   align-items: flex-end;
-  padding: 32px 20px 28px;
+  padding: 32px 20px 16px;
   box-sizing: border-box;
   isolation: isolate;
   background: linear-gradient(90deg, #a0aeffe8 0%, #b4edfed2 100%);
@@ -461,9 +469,10 @@
   background: transparent;
   color: #1f2937;
   font-size: 11px;
+  font-family: "pretendard-bold";
 }
 .hero__search .search-input::placeholder {
-  color: rgba(31, 41, 55, 0.72);
+  color: rgba(31, 41, 55, 0.644);
 }
 
 @media (max-width: 480px) {

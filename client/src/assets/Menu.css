@@ -41,10 +41,16 @@ body:has(nav.menu) .App-header {
   max-width: var(--container-max, 400px); /* App.css 변수 사용, 없으면 400px */
   height: calc(var(--vh, 1vh) * 100);
 
-  /* 배경 투명도 제거 및 기본 검정 배경 추가 */
+  /* 프로젝트 페이지 Hero와 같은 색상 및 300px 높이의 그라데이션 */
   background:
-    linear-gradient(to bottom, rgba(0, 0, 0, 0) 10%, #000 42%),
-    linear-gradient(135deg, #a0aeff 0%, #b4edfe 40%);
+    linear-gradient(
+      0deg,
+      rgba(0, 0, 0, 1) 0%,
+      rgba(30, 30, 30, 0.6) 40%,
+      rgba(102, 102, 102, 0) 100%
+    ) top / 100% 300px no-repeat,
+    linear-gradient(90deg, #a0aeffe8 0%, #b4edfed2 100%)
+      top / 100% 300px no-repeat;
   background-color: #000;
 
   color: #fff;
@@ -77,8 +83,8 @@ body:has(nav.menu) .App-header {
 }
 
 .welcome-message {
-  color: #fff;
-  font-size: 16px;
+  color: #ffffffa7;
+  font-size: 14px;
   font-weight: 500;
   margin-top: 20px;
   margin-bottom: 1px;
@@ -90,13 +96,13 @@ body:has(nav.menu) .App-header {
   font-weight: 700;
   text-align: center;
   color: #fff;
-  margin: 0 0 40px 0;
-  letter-spacing: 0.5px;
+  margin: 0 0 65px 0;
+  letter-spacing: -0.5px;
 }
 
 /* ===== 메뉴 섹션 및 아이템 ===== */
 .menu-section {
-  margin-bottom: 30px;
+  margin-bottom: 23px;
 }
 
 .section-title {
@@ -119,12 +125,12 @@ body:has(nav.menu) .App-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 20px;
+  padding: 12px 20px;
   background: none;
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 15px;
+  color: #ffffffa8;
+  font-size: 14px;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -157,15 +163,17 @@ body:has(nav.menu) .App-header {
 
 /* ===== 로그아웃 버튼 ===== */
 .logout-button {
-  width: 100%;
-  padding: 16px 2px;
-  margin-top: 30px;
-  background: none;
-  border: none;
+  width: fit-content;
+  padding: 8px 14px;
+  margin-top: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 999px;
+  box-sizing: border-box;
   color: #fff;
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 500;
-  text-align: left;
+  text-align: center;
   cursor: pointer;
   transition: opacity 0.2s;
   font-family: "Pretendard-Regular";

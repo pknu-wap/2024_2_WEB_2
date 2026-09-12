@@ -5,6 +5,7 @@ import "../App.css";
 import "../assets/Contentbox.css";
 import LoadingPage from "./LoadingPage";
 import useSemester from "../hooks/useSemester";
+import { previewProjects } from "../data/previewProjects";
 
 /* 알약 버튼 목록 (UI 전용) */
 const TYPE_OPTIONS = [
@@ -15,13 +16,13 @@ const TYPE_OPTIONS = [
   { label: "기타", value: "기타" },
 ];
 
-// 프로젝트 타입을 한글로 변환하는 함수
+// 프로젝트 타입을 영문 라벨로 변환하는 함수
 const getTypeLabel = (type) => {
   const typeMap = {
-    web: "웹",
-    app: "앱",
-    game: "게임",
-    기타: "기타",
+    web: "WEB",
+    app: "APP",
+    game: "GAME",
+    기타: "EMBEDDED",
   };
   return typeMap[type?.toLowerCase?.()] || type;
 };
@@ -60,6 +61,8 @@ const ContentBox = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const isPreview = searchParams.get("preview") === "1";
+
   // useSemester 훅을 사용하여 초기 학기/년도 상태 설정
   const semesterString = useSemester();
 
@@ -79,6 +82,13 @@ const ContentBox = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (isPreview) {
+      setData(previewProjects);
+      setFilteredData(previewProjects);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchData = async () => {
       try {
         const response = await projectApi.getProjectList(semesterFilter);
@@ -104,7 +114,7 @@ const ContentBox = () => {
     };
 
     fetchData();
-  }, [semesterFilter]);
+  }, [semesterFilter, isPreview]);
 
   // 유형+검색어 필터
   useEffect(() => {
@@ -129,7 +139,10 @@ const ContentBox = () => {
   const handleSemesterChange = (year, semester) => {
     const nextSemester = toSemester(year, semester);
     setSemesterFilter(nextSemester);
-    setSearchParams({ semester: nextSemester });
+    setSearchParams((params) => {
+      params.set("semester", nextSemester);
+      return params;
+    });
     setYearAccordionOpen(false);
   };
 
@@ -256,7 +269,8 @@ const ContentBox = () => {
             <div
               key={index}
               className="box"
-              onClick={() => navigate(`/project/${item.projectId}`)}
+              onClick={() => !isPreview && navigate(`/project/${item.projectId}`)}
+              style={isPreview ? { cursor: "default" } : undefined}
             >
               <div className="image">
                 {item.thumbnail && (

@@ -3,7 +3,7 @@ import styles from "../../assets/Admin/SideBar.module.css";
 import { IconVote, IconTeamBuild, IconPermission, IconPlan } from "./icons";
 
 // 어드민 페이지 사이드바 컴포넌트
-const SideBar = () => {
+const SideBar = ({ preview = false }) => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -35,7 +35,7 @@ const SideBar = () => {
         <div className={styles.kr}>관리자 페이지</div>
       </div>
       <div className={styles.pageBtn}>
-        {buttons.map((button) => {
+        {(preview ? [{ text: "투표 관리 (미리보기)", path: "/admin-preview", icon: IconVote }] : buttons).map((button) => {
           // 현재 경로와 버튼 경로가 일치하는지 확인
           const isActive = location.pathname === button.path;
           const IconComponent = button.icon;
